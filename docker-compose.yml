@@ -1,0 +1,101 @@
+name: gameday
+
+# ----------------------------------------------------------------------
+# GameDay local chassis — backing services only.
+#
+# This file brings up Postgres, Redis, MinIO, and Caddy. The four
+# application processes (api, www, teams, platform) run on the host via
+# pnpm during development for fast hot-reload; Caddy reaches them through
+# host.docker.internal. See README.md.
+#
+# This same topology is what Chad mirrors on the server. The only changes
+# at deploy time are: real managed endpoints in .env, the Caddy upstreams
+# switching from host.docker.internal to containerised service names, and
+# public certificates via ACME instead of mkcert.
+# ----------------------------------------------------------------------
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: gameday-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_SUPERUSER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-gameday}
+      # Passed through so the init script can create the runtime app role.
+      GAMEDAY_APP_PASSWORD: ${GAMEDAY_APP_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_SUPERUSER:-postgres} -d ${POSTGRES_DB:-gameday}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    container_name: gameday-redis
+    restart: unless-stopped
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD} ping | grep -q PONG"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    container_name: gameday-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # web console
+    volumes:
+      - minio-data:/data
+
+  # One-shot container: creates the buckets the platform needs, then exits.
+  minio-init:
+    image: minio/mc:latest
+    container_name: gameday-minio-init
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD}; do
+        echo 'waiting for minio...'; sleep 2;
+      done;
+      mc mb --ignore-existing local/${S3_BUCKET_PHOTOS};
+      mc mb --ignore-existing local/${S3_BUCKET_BADGES};
+      echo 'Buckets ready: ${S3_BUCKET_PHOTOS}, ${S3_BUCKET_BADGES}';
+      "
+
+  caddy:
+    image: caddy:2
+    container_name: gameday-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./infra/caddy/certs:/etc/caddy/certs:ro
+    extra_hosts:
+      # Lets the Caddy container reach app processes running on the host.
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  postgres-data:
+  redis-data:
+  minio-data:

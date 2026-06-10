@@ -1,0 +1,14 @@
+{
+  "name": "gameday",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20 <23"
+  },
+  "scripts": {
+    "infra:up": "docker compose up -d",
+    "infra:down": "docker compose down",
+    "infra:reset": "docker compose down -v",
+    "dev": "pnpm -r --parallel dev"
+  }
+}

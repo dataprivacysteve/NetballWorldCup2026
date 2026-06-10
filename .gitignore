@@ -1,0 +1,17 @@
+# dependencies
+node_modules/
+
+# secrets — never commit the filled-in env
+.env
+
+# local certificates — generated per machine, never committed
+infra/caddy/certs/*.pem
+
+# build output
+dist/
+.next/
+build/
+
+# logs / os cruft
+*.log
+.DS_Store

@@ -1,0 +1,38 @@
+# ----------------------------------------------------------------------
+# Caddy fronts the four local subdomains over HTTPS using the mkcert
+# certificate in ./certs. Each host proxies to an app process running on
+# the host machine via pnpm. See README.md for the port map.
+#
+# On Chad's server these reverse_proxy upstreams change from
+# host.docker.internal:PORT to the containerised service names, and the
+# tls lines are removed so Caddy obtains real public certificates.
+# Everything else stays the same.
+# ----------------------------------------------------------------------
+
+(tls_local) {
+	tls /etc/caddy/certs/netballamericas.test.pem /etc/caddy/certs/netballamericas.test-key.pem
+}
+
+# NestJS API
+api.netballamericas.test {
+	import tls_local
+	reverse_proxy host.docker.internal:3000
+}
+
+# Public surface (www) — Next.js. Login-free, no personal data.
+www.netballamericas.test {
+	import tls_local
+	reverse_proxy host.docker.internal:3001
+}
+
+# Delegation surface (teams) — Next.js. Tenant-scoped.
+teams.netballamericas.test {
+	import tls_local
+	reverse_proxy host.docker.internal:3002
+}
+
+# Operations console (platform) — Next.js. Committee & ops, hardened.
+platform.netballamericas.test {
+	import tls_local
+	reverse_proxy host.docker.internal:3003
+}
