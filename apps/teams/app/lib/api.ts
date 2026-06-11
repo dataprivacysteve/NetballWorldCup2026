@@ -67,10 +67,12 @@ export type Delegation = {
 };
 export type Player = {
   id: string;
-  fullName: string;
+  firstName: string;
+  lastName: string;
   position: string | null;
   jerseyNumber: number | null;
-  requiresGuardianConsent: boolean;
+  dateOfBirth: string | null;
+  isMinor: boolean;
 };
 export type Consent = {
   id: string;
@@ -103,10 +105,11 @@ export const api = {
 
   listPlayers: () => req<Player[]>("/players", { tenant: true }),
   createPlayer: (b: {
-    fullName: string;
+    firstName: string;
+    lastName: string;
+    dateOfBirth: string;
     position?: string;
     jerseyNumber?: number;
-    requiresGuardianConsent?: boolean;
   }) => req<Player>("/players", { method: "POST", body: b, tenant: true }),
   deletePlayer: (id: string) =>
     req<{ deleted: boolean }>(`/players/${id}`, {

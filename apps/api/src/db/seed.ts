@@ -70,42 +70,30 @@ async function main() {
       { delegationId: jamaica.id, appUserId: jamManager.id, role: 'manager' },
     ]);
 
-    // --- Players: 3 each, one minor on Barbados ----------------------------
+    // --- Players: 3 each. Amara Greaves (Barbados) is under 18, so she needs
+    //     guardian consent; everyone else is an adult and needs none. --------
     const brbPlayers = await db
       .insert(player)
       .values([
-        { delegationId: bardados.id, fullName: 'Shonette Azore', position: 'GS', jerseyNumber: 1 },
-        { delegationId: bardados.id, fullName: 'Tonisha Rock', position: 'GA', jerseyNumber: 2 },
-        {
-          delegationId: bardados.id,
-          fullName: 'Amara Greaves',
-          position: 'WA',
-          jerseyNumber: 3,
-          requiresGuardianConsent: true,
-        },
+        { delegationId: bardados.id, firstName: 'Shonette', lastName: 'Azore', dateOfBirth: '1996-03-14', position: 'GS', jerseyNumber: 1 },
+        { delegationId: bardados.id, firstName: 'Tonisha', lastName: 'Rock', dateOfBirth: '1999-07-22', position: 'GA', jerseyNumber: 2 },
+        { delegationId: bardados.id, firstName: 'Amara', lastName: 'Greaves', dateOfBirth: '2010-05-09', position: 'WA', jerseyNumber: 3 },
       ])
       .returning();
 
     const jamPlayers = await db
       .insert(player)
       .values([
-        { delegationId: jamaica.id, fullName: 'Jhaniele Fowler', position: 'GS', jerseyNumber: 1 },
-        { delegationId: jamaica.id, fullName: 'Shamera Sterling', position: 'GK', jerseyNumber: 2 },
-        { delegationId: jamaica.id, fullName: 'Latanya Wilson', position: 'GD', jerseyNumber: 3 },
+        { delegationId: jamaica.id, firstName: 'Jhaniele', lastName: 'Fowler', dateOfBirth: '1989-09-29', position: 'GS', jerseyNumber: 1 },
+        { delegationId: jamaica.id, firstName: 'Shamera', lastName: 'Sterling', dateOfBirth: '1997-01-08', position: 'GK', jerseyNumber: 2 },
+        { delegationId: jamaica.id, firstName: 'Latanya', lastName: 'Wilson', dateOfBirth: '2001-11-30', position: 'GD', jerseyNumber: 3 },
       ])
       .returning();
 
-    // --- Consent: adult 'player' consent + one 'guardian' for the minor ----
-    const minor = brbPlayers.find((p) => p.requiresGuardianConsent)!;
+    // --- Consent: only the minor needs a record. Seed her guardian consent
+    //     so Barbados is submittable out of the box. -------------------------
+    const minor = brbPlayers.find((p) => p.firstName === 'Amara')!;
     await db.insert(consentRecord).values([
-      {
-        playerId: brbPlayers[0].id,
-        delegationId: bardados.id,
-        type: 'player',
-        consentGiven: true,
-        consentingPartyName: brbPlayers[0].fullName,
-        consentedAt: new Date(),
-      },
       {
         playerId: minor.id,
         delegationId: bardados.id,
@@ -113,14 +101,6 @@ async function main() {
         consentGiven: true,
         consentingPartyName: 'Marcia Greaves',
         relationship: 'Mother',
-        consentedAt: new Date(),
-      },
-      {
-        playerId: jamPlayers[0].id,
-        delegationId: jamaica.id,
-        type: 'player',
-        consentGiven: true,
-        consentingPartyName: jamPlayers[0].fullName,
         consentedAt: new Date(),
       },
     ]);

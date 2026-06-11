@@ -4,6 +4,7 @@ import {
   text,
   integer,
   boolean,
+  date,
   timestamp,
 } from 'drizzle-orm/pg-core';
 import { consentType, photoStatus } from './enums';
@@ -11,22 +12,22 @@ import { delegation } from './delegation';
 
 // A player on a delegation's roster.
 //
-// NOTE on minors: Module 1 carries NO date_of_birth. Date-of-birth handling is
-// bundled into the on-hold identity-verification path (brief Section 11), so
-// minor status is captured here as a delegation-declared boolean only. If the
-// Association later confirms DOB is separable from identity verification, a
-// date_of_birth column can be added then.
+// NOTE on date_of_birth (Section 11): the brief defers DOB handling under the
+// on-hold identity-verification path. The data-protection lead authorised
+// collecting DOB HERE for roster/eligibility use only — to derive under-18
+// status and drive guardian-consent requirements — treating it as separable
+// from the on-hold identity-verification DOB (passport image + face/ID check),
+// which remains NOT built. Flagged for the DPIA re-scope.
 export const player = pgTable('player', {
   id: uuid('id').primaryKey().defaultRandom(),
   delegationId: uuid('delegation_id')
     .notNull()
     .references(() => delegation.id),
-  fullName: text('full_name').notNull(),
+  firstName: text('first_name').notNull(),
+  lastName: text('last_name').notNull(),
   position: text('position'),
   jerseyNumber: integer('jersey_number'),
-  requiresGuardianConsent: boolean('requires_guardian_consent')
-    .notNull()
-    .default(false),
+  dateOfBirth: date('date_of_birth'),
   createdAt: timestamp('created_at', { withTimezone: true })
     .defaultNow()
     .notNull(),

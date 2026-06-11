@@ -2,7 +2,16 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { asc, eq } from 'drizzle-orm';
 import { getTenant } from '../tenant/tenant-context';
 import * as schema from '../db/schema';
+import { isMinor } from './age';
 import { CreateConsentDto, CreatePlayerDto, UpdatePlayerDto } from './dto';
+
+type PlayerRow = typeof schema.player.$inferSelect;
+
+// Attach derived under-18 status so the UI can render the consent requirement
+// without re-implementing the age rule.
+function withMinor(p: PlayerRow) {
+  return { ...p, isMinor: isMinor(p.dateOfBirth) };
+}
 
 @Injectable()
 export class PlayerService {
@@ -10,7 +19,11 @@ export class PlayerService {
   // only ever touch the current delegation's rows.
   async list() {
     const { db } = getTenant();
-    return db.select().from(schema.player).orderBy(asc(schema.player.jerseyNumber));
+    const rows = await db
+      .select()
+      .from(schema.player)
+      .orderBy(asc(schema.player.lastName), asc(schema.player.firstName));
+    return rows.map(withMinor);
   }
 
   async create(dto: CreatePlayerDto) {
@@ -19,13 +32,14 @@ export class PlayerService {
       .insert(schema.player)
       .values({
         delegationId,
-        fullName: dto.fullName,
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        dateOfBirth: dto.dateOfBirth,
         position: dto.position,
         jerseyNumber: dto.jerseyNumber,
-        requiresGuardianConsent: dto.requiresGuardianConsent ?? false,
       })
       .returning();
-    return row;
+    return withMinor(row);
   }
 
   private async getOwnedPlayer(playerId: string) {
@@ -46,7 +60,7 @@ export class PlayerService {
       .set({ ...dto, updatedAt: new Date() })
       .where(eq(schema.player.id, playerId))
       .returning();
-    return row;
+    return withMinor(row);
   }
 
   async remove(playerId: string) {

@@ -15,6 +15,27 @@
       "when": 1781123519540,
       "tag": "0001_rls_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1781184343337,
+      "tag": "0002_add_first_last_dob",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1781184348868,
+      "tag": "0003_backfill_split_name",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1781184820197,
+      "tag": "0004_drop_full_name",
+      "breakpoints": true
     }
   ]
 }

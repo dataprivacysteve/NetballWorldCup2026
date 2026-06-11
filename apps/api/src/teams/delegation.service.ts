@@ -6,6 +6,7 @@ import {
 import { eq } from 'drizzle-orm';
 import { getTenant } from '../tenant/tenant-context';
 import * as schema from '../db/schema';
+import { isMinor } from './age';
 import { UpdateDelegationDto } from './dto';
 
 @Injectable()
@@ -62,18 +63,16 @@ export class DelegationService {
     const consents = await db.select().from(schema.consentRecord);
     const problems: string[] = [];
     for (const p of players) {
-      const given = consents.filter(
-        (c) => c.playerId === p.id && c.consentGiven,
+      // Adults need no consent record. Only under-18s require guardian
+      // consent — derived from date of birth.
+      if (!isMinor(p.dateOfBirth)) continue;
+      const hasGuardianConsent = consents.some(
+        (c) => c.playerId === p.id && c.consentGiven && c.type === 'guardian',
       );
-      if (given.length === 0) {
-        problems.push(`${p.fullName}: no consent on record`);
-        continue;
-      }
-      if (
-        p.requiresGuardianConsent &&
-        !given.some((c) => c.type === 'guardian')
-      ) {
-        problems.push(`${p.fullName}: minor requires guardian consent`);
+      if (!hasGuardianConsent) {
+        problems.push(
+          `${p.firstName} ${p.lastName}: under-18 player requires guardian consent`,
+        );
       }
     }
     if (problems.length > 0) {

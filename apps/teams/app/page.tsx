@@ -278,10 +278,11 @@ function AddPlayer({
   onError: (e: unknown) => void;
 }) {
   const [form, setForm] = useState({
-    fullName: "",
+    firstName: "",
+    lastName: "",
+    dateOfBirth: "",
     position: "",
     jerseyNumber: "",
-    requiresGuardianConsent: false,
   });
   const [busy, setBusy] = useState(false);
 
@@ -291,16 +292,18 @@ function AddPlayer({
     onError(null);
     try {
       await api.createPlayer({
-        fullName: form.fullName,
+        firstName: form.firstName,
+        lastName: form.lastName,
+        dateOfBirth: form.dateOfBirth,
         position: form.position || undefined,
         jerseyNumber: form.jerseyNumber ? Number(form.jerseyNumber) : undefined,
-        requiresGuardianConsent: form.requiresGuardianConsent,
       });
       setForm({
-        fullName: "",
+        firstName: "",
+        lastName: "",
+        dateOfBirth: "",
         position: "",
         jerseyNumber: "",
-        requiresGuardianConsent: false,
       });
       onAdded();
     } catch (err) {
@@ -316,38 +319,56 @@ function AddPlayer({
       className="space-y-3 rounded-lg border border-dashed border-gray-300 p-4"
     >
       <h3 className="text-sm font-semibold">Add player</h3>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <input
           className={inputCls}
-          placeholder="Full name"
-          value={form.fullName}
-          onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+          placeholder="First name"
+          value={form.firstName}
+          onChange={(e) => setForm({ ...form, firstName: e.target.value })}
           required
         />
         <input
           className={inputCls}
-          placeholder="Position (e.g. GS)"
-          value={form.position}
-          onChange={(e) => setForm({ ...form, position: e.target.value })}
-        />
-        <input
-          className={inputCls}
-          placeholder="Jersey #"
-          type="number"
-          value={form.jerseyNumber}
-          onChange={(e) => setForm({ ...form, jerseyNumber: e.target.value })}
+          placeholder="Last name"
+          value={form.lastName}
+          onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+          required
         />
       </div>
-      <label className="flex items-center gap-2 text-sm text-gray-700">
-        <input
-          type="checkbox"
-          checked={form.requiresGuardianConsent}
-          onChange={(e) =>
-            setForm({ ...form, requiresGuardianConsent: e.target.checked })
-          }
-        />
-        Player is a minor (requires guardian consent)
-      </label>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <label className="block">
+          <span className="mb-1 block text-xs text-gray-500">Date of birth</span>
+          <input
+            className={inputCls}
+            type="date"
+            value={form.dateOfBirth}
+            onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })}
+            required
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs text-gray-500">Position</span>
+          <input
+            className={inputCls}
+            placeholder="e.g. GS"
+            value={form.position}
+            onChange={(e) => setForm({ ...form, position: e.target.value })}
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-xs text-gray-500">Jersey #</span>
+          <input
+            className={inputCls}
+            type="number"
+            value={form.jerseyNumber}
+            onChange={(e) => setForm({ ...form, jerseyNumber: e.target.value })}
+          />
+        </label>
+      </div>
+      <p className="text-xs text-gray-500">
+        Under-18 players require guardian consent before submission; adults need
+        none — this is derived from the date of birth.
+      </p>
       <button className={btnCls} disabled={busy}>
         {busy ? "Adding…" : "Add player"}
       </button>
@@ -398,13 +419,15 @@ function PlayerCard({
             {player.jerseyNumber ?? "—"}
           </span>
           <span>
-            <span className="font-medium">{player.fullName}</span>
+            <span className="font-medium">
+              {player.firstName} {player.lastName}
+            </span>
             {player.position && (
               <span className="ml-2 text-xs text-gray-500">{player.position}</span>
             )}
-            {player.requiresGuardianConsent && (
+            {player.isMinor && (
               <span className="ml-2 rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-medium text-purple-700">
-                minor
+                U18
               </span>
             )}
           </span>
@@ -433,38 +456,55 @@ function PlayerCard({
             <p className="mb-1 text-xs font-semibold uppercase text-gray-500">
               Consent
             </p>
-            {consents.length === 0 ? (
-              <p className="text-sm text-gray-500">No consent recorded.</p>
+            {!player.isMinor ? (
+              <p className="text-sm text-gray-500">
+                Adult{player.dateOfBirth ? ` (b. ${player.dateOfBirth})` : ""} — no
+                consent required.
+              </p>
             ) : (
-              <ul className="space-y-1 text-sm">
-                {consents.map((c) => (
-                  <li key={c.id} className="flex items-center gap-2">
-                    <span
-                      className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
-                        c.type === "guardian"
-                          ? "bg-purple-100 text-purple-700"
-                          : "bg-gray-100 text-gray-700"
-                      }`}
-                    >
-                      {c.type}
-                    </span>
-                    <span>{c.consentingPartyName}</span>
-                    {c.relationship && (
-                      <span className="text-xs text-gray-500">
-                        ({c.relationship})
-                      </span>
-                    )}
-                    <span
-                      className={c.consentGiven ? "text-green-600" : "text-red-600"}
-                    >
-                      {c.consentGiven ? "✓ given" : "✗ not given"}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {editable && (
-              <ConsentForm player={player} onAdded={loadDetail} onError={onError} />
+              <>
+                {consents.length === 0 ? (
+                  <p className="text-sm text-amber-700">
+                    Under-18 — guardian consent required before submission.
+                  </p>
+                ) : (
+                  <ul className="space-y-1 text-sm">
+                    {consents.map((c) => (
+                      <li key={c.id} className="flex items-center gap-2">
+                        <span
+                          className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                            c.type === "guardian"
+                              ? "bg-purple-100 text-purple-700"
+                              : "bg-gray-100 text-gray-700"
+                          }`}
+                        >
+                          {c.type}
+                        </span>
+                        <span>{c.consentingPartyName}</span>
+                        {c.relationship && (
+                          <span className="text-xs text-gray-500">
+                            ({c.relationship})
+                          </span>
+                        )}
+                        <span
+                          className={
+                            c.consentGiven ? "text-green-600" : "text-red-600"
+                          }
+                        >
+                          {c.consentGiven ? "✓ given" : "✗ not given"}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {editable && (
+                  <ConsentForm
+                    player={player}
+                    onAdded={loadDetail}
+                    onError={onError}
+                  />
+                )}
+              </>
             )}
           </div>
 
@@ -495,9 +535,8 @@ function ConsentForm({
   onAdded: () => void;
   onError: (e: unknown) => void;
 }) {
-  const [type, setType] = useState<"player" | "guardian">(
-    player.requiresGuardianConsent ? "guardian" : "player",
-  );
+  // Rendered only for under-18s, so guardian consent is the default.
+  const [type, setType] = useState<"player" | "guardian">("guardian");
   const [name, setName] = useState("");
   const [relationship, setRelationship] = useState("");
   const [busy, setBusy] = useState(false);

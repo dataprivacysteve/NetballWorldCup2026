@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   IsBoolean,
+  IsDateString,
   IsEmail,
   IsIn,
   IsInt,
@@ -24,17 +25,21 @@ export class UpdateDelegationDto {
 }
 
 export class CreatePlayerDto {
-  @IsString() @MinLength(2) fullName!: string;
+  @IsString() @MinLength(1) firstName!: string;
+  @IsString() @MinLength(1) lastName!: string;
+  // YYYY-MM-DD. Required so under-18 status (and thus the consent requirement)
+  // can be derived. DOB-for-age only — not the Section 11 identity DOB.
+  @IsDateString() dateOfBirth!: string;
   @IsOptional() @IsString() position?: string;
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) jerseyNumber?: number;
-  @IsOptional() @IsBoolean() requiresGuardianConsent?: boolean;
 }
 
 export class UpdatePlayerDto {
-  @IsOptional() @IsString() @MinLength(2) fullName?: string;
+  @IsOptional() @IsString() @MinLength(1) firstName?: string;
+  @IsOptional() @IsString() @MinLength(1) lastName?: string;
+  @IsOptional() @IsDateString() dateOfBirth?: string;
   @IsOptional() @IsString() position?: string;
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) jerseyNumber?: number;
-  @IsOptional() @IsBoolean() requiresGuardianConsent?: boolean;
 }
 
 export class CreateConsentDto {
