@@ -12,6 +12,54 @@ import {
   type Player,
 } from "./lib/api";
 
+// ---- Shared brand classes (DESIGN-SYSTEM.md) ------------------------------
+const label =
+  "mb-1 block font-mono text-[0.7rem] font-semibold uppercase tracking-[0.08em] text-ink-muted";
+const input =
+  "w-full rounded-md border border-line-strong bg-white px-3 py-2 text-sm text-ink placeholder:text-ink-faded focus:border-navy focus:outline-none focus:ring-2 focus:ring-gold/50";
+const btnPrimary =
+  "rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white transition hover:bg-navy-soft disabled:opacity-50";
+const card = "rounded-2xl border border-line bg-white";
+
+function BrandMark() {
+  return (
+    <span
+      className="flex h-10 w-10 items-center justify-center rounded-lg font-display text-xl font-extrabold text-navy-deep"
+      style={{
+        background: "linear-gradient(135deg, var(--color-gold), var(--color-coral))",
+      }}
+    >
+      N
+    </span>
+  );
+}
+
+function TopBar() {
+  return (
+    <header className="sticky top-0 z-10 border-b-[3px] border-gold bg-navy-deep text-white">
+      <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-5 py-3">
+        <div className="flex items-center gap-3">
+          <BrandMark />
+          <div className="leading-tight">
+            <div className="font-display text-lg font-bold">NetballAmericas</div>
+            <div className="font-mono text-[0.6rem] uppercase tracking-[0.16em] text-gold-bright">
+              Delegation Portal
+            </div>
+          </div>
+        </div>
+        <div className="hidden text-right sm:block">
+          <div className="font-display text-sm font-bold">
+            Americas Regional Qualifier 2026
+          </div>
+          <div className="font-mono text-[0.58rem] uppercase tracking-[0.12em] text-white/70">
+            Garfield Sobers Gymnasium · 19–26 Oct
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}
+
 export default function Page() {
   const [hasDelegation, setHasDelegation] = useState<boolean | null>(null);
 
@@ -19,22 +67,23 @@ export default function Page() {
     setHasDelegation(Boolean(getDelegationId()));
   }, []);
 
-  if (hasDelegation === null) return null; // avoid hydration flash
-
   return (
-    <main className="mx-auto w-full max-w-3xl px-5 py-10">
-      <header className="mb-8">
-        <p className="text-xs font-semibold uppercase tracking-widest text-blue-700">
-          NetballAmericas · Delegations
+    <>
+      <TopBar />
+      <main className="mx-auto w-full max-w-4xl px-5 py-9">
+        <p className="font-mono text-[0.68rem] font-semibold uppercase tracking-[0.14em] text-navy">
+          Delegation registration &amp; roster
         </p>
-        <h1 className="text-2xl font-bold">Delegation registration &amp; roster</h1>
-      </header>
-      {hasDelegation ? (
-        <Dashboard onLeave={() => setHasDelegation(false)} />
-      ) : (
-        <Register onDone={() => setHasDelegation(true)} />
-      )}
-    </main>
+        <h1 className="mb-7 font-display text-3xl font-bold tracking-tight text-ink">
+          Build your delegation
+        </h1>
+        {hasDelegation === null ? null : hasDelegation ? (
+          <Dashboard onLeave={() => setHasDelegation(false)} />
+        ) : (
+          <Register onDone={() => setHasDelegation(true)} />
+        )}
+      </main>
+    </>
   );
 }
 
@@ -48,8 +97,8 @@ function ErrorBanner({ error }: { error: unknown }) {
       ? (error.payload as { problems: string[] }).problems
       : null;
   return (
-    <div className="mb-4 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800">
-      <p className="font-medium">{(error as Error).message}</p>
+    <div className="mb-4 rounded-xl border border-[#F2C9C1] bg-[#FBE6E2] p-3 text-sm text-bad">
+      <p className="font-semibold">{(error as Error).message}</p>
       {problems && (
         <ul className="mt-1 list-disc pl-5">
           {problems.map((p) => (
@@ -61,10 +110,20 @@ function ErrorBanner({ error }: { error: unknown }) {
   );
 }
 
-const inputCls =
-  "w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none";
-const btnCls =
-  "rounded-md bg-blue-700 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800 disabled:opacity-50";
+function Field({
+  label: text,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="block">
+      <span className={label}>{text}</span>
+      {children}
+    </label>
+  );
+}
 
 function Register({ onDone }: { onDone: () => void }) {
   const [form, setForm] = useState({
@@ -92,12 +151,14 @@ function Register({ onDone }: { onDone: () => void }) {
   }
 
   return (
-    <form onSubmit={submit} className="space-y-4 rounded-lg border border-gray-200 p-6">
-      <h2 className="text-lg font-semibold">Register your delegation</h2>
+    <form onSubmit={submit} className={`${card} space-y-4 p-6`}>
+      <h2 className="font-display text-lg font-bold text-ink">
+        Register your delegation
+      </h2>
       <ErrorBanner error={error} />
       <Field label="Country / delegation name">
         <input
-          className={inputCls}
+          className={input}
           value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
           required
@@ -105,7 +166,7 @@ function Register({ onDone }: { onDone: () => void }) {
       </Field>
       <Field label="Country code (ISO, e.g. BRB)">
         <input
-          className={inputCls}
+          className={input}
           value={form.countryCode}
           onChange={(e) => setForm({ ...form, countryCode: e.target.value })}
           maxLength={3}
@@ -114,7 +175,7 @@ function Register({ onDone }: { onDone: () => void }) {
       </Field>
       <Field label="Team manager name">
         <input
-          className={inputCls}
+          className={input}
           value={form.managerName}
           onChange={(e) => setForm({ ...form, managerName: e.target.value })}
           required
@@ -123,41 +184,39 @@ function Register({ onDone }: { onDone: () => void }) {
       <Field label="Team manager email">
         <input
           type="email"
-          className={inputCls}
+          className={input}
           value={form.managerEmail}
           onChange={(e) => setForm({ ...form, managerEmail: e.target.value })}
           required
         />
       </Field>
-      <button className={btnCls} disabled={busy}>
+      <button className={btnPrimary} disabled={busy}>
         {busy ? "Registering…" : "Register delegation"}
       </button>
     </form>
   );
 }
 
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function StatusPill({ status }: { status: string }) {
+  // draft / submitted / under_review → attention (gold); approved → ok;
+  // rejected → bad. Dot + label, never colour alone (DESIGN-SYSTEM §5/§6).
+  const map: Record<string, { bg: string; fg: string; dot: string }> = {
+    draft: { bg: "bg-[#FEF6E0]", fg: "text-warn", dot: "bg-warn" },
+    submitted: { bg: "bg-[#FEF6E0]", fg: "text-warn", dot: "bg-warn" },
+    under_review: { bg: "bg-[#FEF6E0]", fg: "text-warn", dot: "bg-warn" },
+    approved: { bg: "bg-[#E2F6EC]", fg: "text-ok", dot: "bg-ok" },
+    rejected: { bg: "bg-[#FBE6E2]", fg: "text-bad", dot: "bg-bad" },
+  };
+  const s = map[status] ?? map.draft;
   return (
-    <label className="block">
-      <span className="mb-1 block text-sm font-medium text-gray-700">{label}</span>
-      {children}
-    </label>
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 font-mono text-[0.62rem] font-semibold uppercase tracking-[0.08em] ${s.bg} ${s.fg}`}
+    >
+      <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
+      {status.replace("_", " ")}
+    </span>
   );
 }
-
-const STATUS_STYLES: Record<string, string> = {
-  draft: "bg-gray-100 text-gray-700",
-  submitted: "bg-amber-100 text-amber-800",
-  under_review: "bg-blue-100 text-blue-800",
-  approved: "bg-green-100 text-green-800",
-  rejected: "bg-red-100 text-red-800",
-};
 
 function Dashboard({ onLeave }: { onLeave: () => void }) {
   const [delegation, setDelegation] = useState<Delegation | null>(null);
@@ -200,30 +259,28 @@ function Dashboard({ onLeave }: { onLeave: () => void }) {
     onLeave();
   }
 
-  if (loading) return <p className="text-sm text-gray-500">Loading…</p>;
+  if (loading) return <p className="text-sm text-ink-muted">Loading…</p>;
 
   const isDraft = delegation?.status === "draft";
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between rounded-lg border border-gray-200 p-4">
+      <div className={`${card} flex items-center justify-between p-5`}>
         <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold">{delegation?.name}</h2>
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                STATUS_STYLES[delegation?.status ?? "draft"]
-              }`}
-            >
-              {delegation?.status}
-            </span>
+          <div className="flex items-center gap-2.5">
+            <h2 className="font-display text-xl font-bold text-ink">
+              {delegation?.name}
+            </h2>
+            <StatusPill status={delegation?.status ?? "draft"} />
           </div>
-          <p className="text-xs text-gray-500">{delegation?.countryCode}</p>
+          <p className="mt-0.5 font-mono text-xs uppercase tracking-[0.1em] text-ink-muted">
+            {delegation?.countryCode}
+          </p>
         </div>
         <button
           onClick={leave}
-          className="text-xs text-gray-500 underline hover:text-gray-700"
-          title="Dev: forget this delegation and register/select another"
+          className="font-mono text-[0.66rem] uppercase tracking-[0.08em] text-navy underline-offset-2 hover:underline"
+          title="Forget this delegation and register or select another"
         >
           switch delegation
         </button>
@@ -232,10 +289,8 @@ function Dashboard({ onLeave }: { onLeave: () => void }) {
       <ErrorBanner error={error} />
 
       <section>
-        <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-gray-500">
-          Roster ({players.length})
-        </h3>
-        <div className="space-y-2">
+        <h3 className={`${label} mb-2`}>Roster ({players.length})</h3>
+        <div className="space-y-2.5">
           {players.map((p) => (
             <PlayerCard
               key={p.id}
@@ -246,7 +301,7 @@ function Dashboard({ onLeave }: { onLeave: () => void }) {
             />
           ))}
           {players.length === 0 && (
-            <p className="text-sm text-gray-500">No players yet.</p>
+            <p className="text-sm text-ink-muted">No players yet.</p>
           )}
         </div>
       </section>
@@ -254,11 +309,11 @@ function Dashboard({ onLeave }: { onLeave: () => void }) {
       {isDraft && <AddPlayer onAdded={reload} onError={setError} />}
 
       {isDraft ? (
-        <button onClick={submit} className={btnCls}>
+        <button onClick={submit} className={btnPrimary}>
           Submit delegation for review
         </button>
       ) : (
-        <p className="rounded-md bg-amber-50 p-3 text-sm text-amber-800">
+        <p className="rounded-xl border border-[#EADFBE] bg-[#FEF6E0] p-3 text-sm text-warn">
           Submitted on{" "}
           {delegation?.submittedAt
             ? new Date(delegation.submittedAt).toLocaleString()
@@ -316,60 +371,59 @@ function AddPlayer({
   return (
     <form
       onSubmit={submit}
-      className="space-y-3 rounded-lg border border-dashed border-gray-300 p-4"
+      className="space-y-3 rounded-2xl border border-dashed border-line-strong bg-bg-soft/50 p-5"
     >
-      <h3 className="text-sm font-semibold">Add player</h3>
+      <h3 className="font-display text-base font-bold text-ink">Add player</h3>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <input
-          className={inputCls}
-          placeholder="First name"
-          value={form.firstName}
-          onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-          required
-        />
-        <input
-          className={inputCls}
-          placeholder="Last name"
-          value={form.lastName}
-          onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-          required
-        />
+        <Field label="First name">
+          <input
+            className={input}
+            value={form.firstName}
+            onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+            required
+          />
+        </Field>
+        <Field label="Last name">
+          <input
+            className={input}
+            value={form.lastName}
+            onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+            required
+          />
+        </Field>
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <label className="block">
-          <span className="mb-1 block text-xs text-gray-500">Date of birth</span>
+        <Field label="Date of birth">
           <input
-            className={inputCls}
+            className={input}
             type="date"
             value={form.dateOfBirth}
             onChange={(e) => setForm({ ...form, dateOfBirth: e.target.value })}
             required
           />
-        </label>
-        <label className="block">
-          <span className="mb-1 block text-xs text-gray-500">Position</span>
+        </Field>
+        <Field label="Position">
           <input
-            className={inputCls}
+            className={input}
             placeholder="e.g. GS"
             value={form.position}
             onChange={(e) => setForm({ ...form, position: e.target.value })}
           />
-        </label>
-        <label className="block">
-          <span className="mb-1 block text-xs text-gray-500">Jersey #</span>
+        </Field>
+        <Field label="Jersey #">
           <input
-            className={inputCls}
+            className={input}
             type="number"
             value={form.jerseyNumber}
             onChange={(e) => setForm({ ...form, jerseyNumber: e.target.value })}
           />
-        </label>
+        </Field>
       </div>
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-ink-muted">
         Under-18 players require guardian consent before submission; adults need
-        none — this is derived from the date of birth.
+        none. This is derived from the date of birth.
       </p>
-      <button className={btnCls} disabled={busy}>
+      <button className={btnPrimary} disabled={busy}>
         {busy ? "Adding…" : "Add player"}
       </button>
     </form>
@@ -405,18 +459,14 @@ function PlayerCard({
     }
   }, [player.id, onError]);
 
-  // Load the headshot on mount (so the roster circle shows it) and expose a
-  // reload for after an upload.
   const loadPhoto = useCallback(async () => {
-    const url = await api.photoImageUrl(player.id);
-    setPhotoUrl(url);
+    setPhotoUrl(await api.photoImageUrl(player.id));
   }, [player.id]);
 
   useEffect(() => {
     loadPhoto();
   }, [loadPhoto]);
 
-  // Revoke the object URL when it changes or the card unmounts.
   useEffect(() => {
     if (!photoUrl) return;
     return () => URL.revokeObjectURL(photoUrl);
@@ -432,33 +482,34 @@ function PlayerCard({
   }
 
   return (
-    <div className="rounded-lg border border-gray-200">
-      <div className="flex items-center justify-between p-3">
+    <div className={`${card} overflow-hidden`}>
+      <div className="flex items-center justify-between p-3.5">
         <button
           onClick={() => setOpen(!open)}
           className="flex items-center gap-3 text-left"
         >
-          <span className="inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-gray-100 text-xs font-medium">
+          <span className="inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-bg-sand font-mono text-xs font-semibold text-ink-soft ring-1 ring-line">
             {photoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={photoUrl}
-                alt=""
-                className="h-full w-full object-cover"
-              />
+              <img src={photoUrl} alt="" className="h-full w-full object-cover" />
             ) : (
               (player.jerseyNumber ?? "—")
             )}
           </span>
-          <span>
-            <span className="font-medium">
+          <span className="flex items-center gap-2">
+            <span className="font-display text-base font-bold text-ink">
               {player.firstName} {player.lastName}
             </span>
+            <span className="rounded bg-[rgba(244,196,48,0.18)] px-1.5 py-0.5 font-mono text-[0.58rem] font-semibold uppercase tracking-[0.06em] text-gold-deep">
+              Player
+            </span>
             {player.position && (
-              <span className="ml-2 text-xs text-gray-500">{player.position}</span>
+              <span className="font-mono text-[0.66rem] uppercase tracking-[0.06em] text-ink-muted">
+                {player.position}
+              </span>
             )}
             {player.isMinor && (
-              <span className="ml-2 rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-medium text-purple-700">
+              <span className="rounded bg-[#FBE6E2] px-1.5 py-0.5 font-mono text-[0.58rem] font-semibold uppercase tracking-[0.06em] text-bad">
                 U18
               </span>
             )}
@@ -475,7 +526,7 @@ function PlayerCard({
                 onError(err);
               }
             }}
-            className="text-xs text-red-600 hover:underline"
+            className="font-mono text-[0.66rem] uppercase tracking-[0.06em] text-bad hover:underline"
           >
             remove
           </button>
@@ -483,46 +534,41 @@ function PlayerCard({
       </div>
 
       {open && (
-        <div className="space-y-4 border-t border-gray-100 p-3">
+        <div className="space-y-4 border-t border-line bg-bg-soft/40 p-4">
           <div>
-            <p className="mb-1 text-xs font-semibold uppercase text-gray-500">
-              Consent
-            </p>
+            <p className={label}>Consent</p>
             {!player.isMinor ? (
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-ink-soft">
                 Adult{player.dateOfBirth ? ` (b. ${player.dateOfBirth})` : ""} — no
                 consent required.
               </p>
             ) : (
               <>
                 {consents.length === 0 ? (
-                  <p className="text-sm text-amber-700">
-                    Under-18 — guardian consent required before submission.
+                  <p className="text-sm text-warn">
+                    Under-18 — guardian consent is required before this delegation
+                    can be submitted.
                   </p>
                 ) : (
-                  <ul className="space-y-1 text-sm">
+                  <ul className="space-y-1 text-sm text-ink">
                     {consents.map((c) => (
                       <li key={c.id} className="flex items-center gap-2">
                         <span
-                          className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                          className={`rounded px-1.5 py-0.5 font-mono text-[0.58rem] font-semibold uppercase tracking-[0.06em] ${
                             c.type === "guardian"
-                              ? "bg-purple-100 text-purple-700"
-                              : "bg-gray-100 text-gray-700"
+                              ? "bg-[rgba(107,75,168,0.14)] text-violet"
+                              : "bg-bg-sand text-ink-soft"
                           }`}
                         >
                           {c.type}
                         </span>
                         <span>{c.consentingPartyName}</span>
                         {c.relationship && (
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs text-ink-muted">
                             ({c.relationship})
                           </span>
                         )}
-                        <span
-                          className={
-                            c.consentGiven ? "text-green-600" : "text-red-600"
-                          }
-                        >
+                        <span className={c.consentGiven ? "text-ok" : "text-bad"}>
                           {c.consentGiven ? "✓ given" : "✗ not given"}
                         </span>
                       </li>
@@ -541,16 +587,14 @@ function PlayerCard({
           </div>
 
           <div>
-            <p className="mb-1 text-xs font-semibold uppercase text-gray-500">
-              Photo {photoCount !== null && `(${photoCount})`}
-            </p>
+            <p className={label}>Photo {photoCount !== null && `(${photoCount})`}</p>
             <div className="flex items-center gap-3">
               {photoUrl && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={photoUrl}
                   alt="Player headshot"
-                  className="h-16 w-16 rounded-md object-cover"
+                  className="h-16 w-16 rounded-lg object-cover ring-1 ring-line"
                 />
               )}
               {editable && (
@@ -577,7 +621,6 @@ function ConsentForm({
   onAdded: () => void;
   onError: (e: unknown) => void;
 }) {
-  // Rendered only for under-18s, so guardian consent is the default.
   const [type, setType] = useState<"player" | "guardian">("guardian");
   const [name, setName] = useState("");
   const [relationship, setRelationship] = useState("");
@@ -609,13 +652,13 @@ function ConsentForm({
       <select
         value={type}
         onChange={(e) => setType(e.target.value as "player" | "guardian")}
-        className="rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+        className="rounded-md border border-line-strong bg-white px-2 py-1.5 text-sm text-ink"
       >
-        <option value="player">Player</option>
         <option value="guardian">Guardian</option>
+        <option value="player">Player</option>
       </select>
       <input
-        className="flex-1 rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+        className="flex-1 rounded-md border border-line-strong bg-white px-2 py-1.5 text-sm text-ink placeholder:text-ink-faded"
         placeholder="Consenting party name"
         value={name}
         onChange={(e) => setName(e.target.value)}
@@ -623,14 +666,14 @@ function ConsentForm({
       />
       {type === "guardian" && (
         <input
-          className="rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+          className="rounded-md border border-line-strong bg-white px-2 py-1.5 text-sm text-ink placeholder:text-ink-faded"
           placeholder="Relationship"
           value={relationship}
           onChange={(e) => setRelationship(e.target.value)}
         />
       )}
       <button
-        className="rounded-md bg-gray-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-900 disabled:opacity-50"
+        className="rounded-md bg-navy px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-navy-soft disabled:opacity-50"
         disabled={busy}
       >
         Record consent
@@ -672,7 +715,7 @@ function PhotoUpload({
       accept="image/*"
       onChange={onFile}
       disabled={busy}
-      className="text-sm file:mr-3 file:rounded-md file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-blue-700"
+      className="text-sm text-ink-soft file:mr-3 file:rounded-md file:border file:border-line-strong file:bg-bg-soft file:px-3 file:py-1.5 file:font-mono file:text-xs file:font-semibold file:uppercase file:tracking-[0.06em] file:text-navy hover:file:bg-bg-sand"
     />
   );
 }
