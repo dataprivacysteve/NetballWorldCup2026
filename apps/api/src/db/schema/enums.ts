@@ -19,3 +19,13 @@ export const consentType = pgEnum('consent_type', ['player', 'guardian']);
 
 // Lifecycle of a player photo's bytes in the gameday-photos bucket.
 export const photoStatus = pgEnum('photo_status', ['pending', 'uploaded']);
+
+// Accreditation category of a roster member (concept: players + officials +
+// media + broadcast + technical). Drives the credential category colour.
+export const personCategory = pgEnum('person_category', [
+  'player',
+  'official',
+  'technical',
+  'media',
+  'broadcast',
+]);

@@ -43,7 +43,11 @@ export class CreatePlayerDto {
   // YYYY-MM-DD. Required so under-18 status (and thus the consent requirement)
   // can be derived. DOB-for-age only — not the Section 11 identity DOB.
   @IsDateString() dateOfBirth!: string;
-  @IsOptional() @IsString() position?: string;
+  @IsIn(['player', 'official', 'technical', 'media', 'broadcast'])
+  category!: 'player' | 'official' | 'technical' | 'media' | 'broadcast';
+  // For players, a netball position (validated server-side); for others, a
+  // free-text title (e.g. "Head Coach").
+  @IsOptional() @IsString() role?: string;
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) jerseyNumber?: number;
 }
 
@@ -51,7 +55,10 @@ export class UpdatePlayerDto {
   @IsOptional() @IsString() @MinLength(1) firstName?: string;
   @IsOptional() @IsString() @MinLength(1) lastName?: string;
   @IsOptional() @IsDateString() dateOfBirth?: string;
-  @IsOptional() @IsString() position?: string;
+  @IsOptional()
+  @IsIn(['player', 'official', 'technical', 'media', 'broadcast'])
+  category?: 'player' | 'official' | 'technical' | 'media' | 'broadcast';
+  @IsOptional() @IsString() role?: string;
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) jerseyNumber?: number;
 }
 
@@ -60,4 +67,5 @@ export class CreateConsentDto {
   @IsBoolean() consentGiven!: boolean;
   @IsString() @MinLength(2) consentingPartyName!: string;
   @IsOptional() @IsString() relationship?: string;
+  @IsOptional() @IsString() consentingPartyPhone?: string;
 }

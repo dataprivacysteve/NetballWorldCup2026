@@ -70,6 +70,14 @@ export class PlayerController {
     return this.players.addConsent(id, dto);
   }
 
+  @Delete(':id/consents/:consentId')
+  removeConsent(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('consentId', ParseUUIDPipe) consentId: string,
+  ) {
+    return this.players.removeConsent(id, consentId);
+  }
+
   @Get(':id/photos')
   listPhotos(@Param('id', ParseUUIDPipe) id: string) {
     return this.players.listPhotos(id);

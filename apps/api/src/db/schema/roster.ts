@@ -7,7 +7,7 @@ import {
   date,
   timestamp,
 } from 'drizzle-orm/pg-core';
-import { consentType, photoStatus } from './enums';
+import { consentType, personCategory, photoStatus } from './enums';
 import { delegation } from './delegation';
 
 // A player on a delegation's roster.
@@ -25,7 +25,8 @@ export const player = pgTable('player', {
     .references(() => delegation.id),
   firstName: text('first_name').notNull(),
   lastName: text('last_name').notNull(),
-  position: text('position'),
+  category: personCategory('category').notNull().default('player'),
+  role: text('role'),
   jerseyNumber: integer('jersey_number'),
   dateOfBirth: date('date_of_birth'),
   createdAt: timestamp('created_at', { withTimezone: true })
@@ -54,6 +55,7 @@ export const consentRecord = pgTable('consent_record', {
   consentGiven: boolean('consent_given').notNull().default(false),
   consentingPartyName: text('consenting_party_name').notNull(),
   relationship: text('relationship'),
+  consentingPartyPhone: text('consenting_party_phone'),
   consentedAt: timestamp('consented_at', { withTimezone: true }),
 });
 

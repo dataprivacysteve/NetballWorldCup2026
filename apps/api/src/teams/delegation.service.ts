@@ -50,29 +50,35 @@ export class DelegationService {
   // editing. The committee's review/approval is Module 2.
   async submit() {
     const { db, delegationId } = getTenant();
-    const current = await this.getCurrent();
-    if (current.status !== 'draft') {
-      throw new BadRequestException('Delegation has already been submitted');
-    }
+    // Registration approval is already enforced by the interceptor for this
+    // route. Re-submission is allowed (revise and resubmit before the deadline).
 
     const players = await db.select().from(schema.player);
     if (players.length === 0) {
       throw new BadRequestException('Cannot submit an empty roster');
     }
 
-    const consents = await db.select().from(schema.consentRecord);
+    const [photos, consents] = await Promise.all([
+      db.select().from(schema.playerPhoto),
+      db.select().from(schema.consentRecord),
+    ]);
+    const withPhoto = new Set(photos.map((p) => p.playerId));
+
+    // Hard requirements for accreditation submission (non-negotiable): every
+    // person has a photograph, and every under-18 has guardian consent.
     const problems: string[] = [];
     for (const p of players) {
-      // Adults need no consent record. Only under-18s require guardian
-      // consent — derived from date of birth.
-      if (!isMinor(p.dateOfBirth)) continue;
-      const hasGuardianConsent = consents.some(
-        (c) => c.playerId === p.id && c.consentGiven && c.type === 'guardian',
-      );
-      if (!hasGuardianConsent) {
-        problems.push(
-          `${p.firstName} ${p.lastName}: under-18 player requires guardian consent`,
-        );
+      const name = `${p.firstName} ${p.lastName}`;
+      if (!withPhoto.has(p.id)) {
+        problems.push(`${name}: photograph required`);
+      }
+      if (
+        isMinor(p.dateOfBirth) &&
+        !consents.some(
+          (c) => c.playerId === p.id && c.consentGiven && c.type === 'guardian',
+        )
+      ) {
+        problems.push(`${name}: guardian consent required (under 18)`);
       }
     }
     if (problems.length > 0) {

@@ -1,8 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { asc, eq } from 'drizzle-orm';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { and, asc, eq } from 'drizzle-orm';
 import { getTenant } from '../tenant/tenant-context';
 import * as schema from '../db/schema';
 import { isMinor } from './age';
+import { POSITION_NAMES } from './positions';
 import { CreateConsentDto, CreatePlayerDto, UpdatePlayerDto } from './dto';
 
 type PlayerRow = typeof schema.player.$inferSelect;
@@ -13,21 +18,49 @@ function withMinor(p: PlayerRow) {
   return { ...p, isMinor: isMinor(p.dateOfBirth) };
 }
 
+// Players must use a controlled netball position; others use a free-text role.
+function validateRole(
+  category: string,
+  role: string | undefined | null,
+): void {
+  if (category === 'player' && role && !POSITION_NAMES.has(role)) {
+    throw new BadRequestException(
+      `Invalid position "${role}" — choose one of the seven netball positions.`,
+    );
+  }
+}
+
 @Injectable()
 export class PlayerService {
   // All reads/writes below run on the tenant-bound db; RLS guarantees they
   // only ever touch the current delegation's rows.
   async list() {
     const { db } = getTenant();
-    const rows = await db
-      .select()
-      .from(schema.player)
-      .orderBy(asc(schema.player.lastName), asc(schema.player.firstName));
-    return rows.map(withMinor);
+    const [rows, photos, consents] = await Promise.all([
+      db
+        .select()
+        .from(schema.player)
+        .orderBy(asc(schema.player.lastName), asc(schema.player.firstName)),
+      db.select().from(schema.playerPhoto),
+      db.select().from(schema.consentRecord),
+    ]);
+    const withPhoto = new Set(photos.map((p) => p.playerId));
+    return rows.map((p) => {
+      const minor = isMinor(p.dateOfBirth);
+      const hasPhoto = withPhoto.has(p.id);
+      const hasGuardianConsent = consents.some(
+        (c) => c.playerId === p.id && c.consentGiven && c.type === 'guardian',
+      );
+      // Concept readiness: photo + DOB + (under-18 ⇒ guardian consent).
+      const ready =
+        hasPhoto && !!p.dateOfBirth && (!minor || hasGuardianConsent);
+      return { ...p, isMinor: minor, hasPhoto, ready };
+    });
   }
 
   async create(dto: CreatePlayerDto) {
     const { db, delegationId } = getTenant();
+    validateRole(dto.category, dto.role);
     const [row] = await db
       .insert(schema.player)
       .values({
@@ -35,7 +68,8 @@ export class PlayerService {
         firstName: dto.firstName,
         lastName: dto.lastName,
         dateOfBirth: dto.dateOfBirth,
-        position: dto.position,
+        category: dto.category,
+        role: dto.role,
         jerseyNumber: dto.jerseyNumber,
       })
       .returning();
@@ -99,10 +133,25 @@ export class PlayerService {
         consentGiven: dto.consentGiven,
         consentingPartyName: dto.consentingPartyName,
         relationship: dto.relationship,
+        consentingPartyPhone: dto.consentingPartyPhone,
         consentedAt: dto.consentGiven ? new Date() : null,
       })
       .returning();
     return row;
+  }
+
+  async removeConsent(playerId: string, consentId: string) {
+    const { db } = getTenant();
+    await this.getOwnedPlayer(playerId);
+    await db
+      .delete(schema.consentRecord)
+      .where(
+        and(
+          eq(schema.consentRecord.id, consentId),
+          eq(schema.consentRecord.playerId, playerId),
+        ),
+      );
+    return { deleted: true };
   }
 
   async listPhotos(playerId: string) {

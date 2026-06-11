@@ -1,0 +1,1 @@
+ALTER TABLE "consent_record" ADD COLUMN "consenting_party_phone" text;

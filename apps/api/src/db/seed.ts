@@ -99,9 +99,10 @@ async function main() {
     const jamPlayers = await db
       .insert(schema.player)
       .values([
-        { delegationId: jamId, firstName: 'Jhaniele', lastName: 'Fowler', dateOfBirth: '1989-09-29', position: 'GS', jerseyNumber: 1 },
-        { delegationId: jamId, firstName: 'Shamera', lastName: 'Sterling', dateOfBirth: '1997-01-08', position: 'GK', jerseyNumber: 2 },
-        { delegationId: jamId, firstName: 'Amara', lastName: 'Greaves', dateOfBirth: '2010-05-09', position: 'WA', jerseyNumber: 3 },
+        { delegationId: jamId, firstName: 'Jhaniele', lastName: 'Fowler', dateOfBirth: '1989-09-29', category: 'player', role: 'Goal Shooter', jerseyNumber: 1 },
+        { delegationId: jamId, firstName: 'Shamera', lastName: 'Sterling', dateOfBirth: '1997-01-08', category: 'player', role: 'Goal Keeper', jerseyNumber: 2 },
+        { delegationId: jamId, firstName: 'Amara', lastName: 'Greaves', dateOfBirth: '2010-05-09', category: 'player', role: 'Wing Attack', jerseyNumber: 3 },
+        { delegationId: jamId, firstName: 'Dale', lastName: 'Henry', dateOfBirth: '1980-02-17', category: 'official', role: 'Head Coach' },
       ])
       .returning();
     const jamMinor = jamPlayers.find((p) => p.firstName === 'Amara')!;
@@ -112,6 +113,7 @@ async function main() {
       consentGiven: true,
       consentingPartyName: 'Marcia Greaves',
       relationship: 'Mother',
+      consentingPartyPhone: '+1 876 555 0188',
       consentedAt: new Date(),
     });
 

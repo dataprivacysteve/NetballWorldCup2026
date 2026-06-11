@@ -1,47 +1,29 @@
-// Thin client for the GameDay API. The delegation id is kept in localStorage
-// as a DEV stand-in for the authenticated session that arrives in Module 2;
-// it is sent as the x-delegation-id header the API's TenantInterceptor reads.
+// Client for the GameDay teams API. Auth is a session cookie (httpOnly, set by
+// the API on login/register), so every request uses credentials:"include" and
+// there is no client-managed tenant header — tenancy comes from the session.
 const BASE = process.env.NEXT_PUBLIC_API_BASE_URL as string;
-const KEY = "gameday.delegationId";
-
-export function getDelegationId(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(KEY);
-}
-export function setDelegationId(id: string) {
-  localStorage.setItem(KEY, id);
-}
-export function clearDelegationId() {
-  localStorage.removeItem(KEY);
-}
 
 export class ApiError extends Error {
   constructor(
     public status: number,
     public payload: unknown,
   ) {
-    super(typeof payload === "object" && payload && "message" in payload
-      ? String((payload as { message: unknown }).message)
-      : `Request failed (${status})`);
+    super(
+      typeof payload === "object" && payload && "message" in payload
+        ? String((payload as { message: unknown }).message)
+        : `Request failed (${status})`,
+    );
   }
 }
 
-type Options = {
-  method?: string;
-  body?: unknown;
-  tenant?: boolean;
-  form?: FormData;
-};
-
-async function req<T>(path: string, opts: Options = {}): Promise<T> {
+async function req<T>(
+  path: string,
+  opts: { method?: string; body?: unknown; form?: FormData } = {},
+): Promise<T> {
   const headers: Record<string, string> = {};
-  if (opts.tenant) {
-    const id = getDelegationId();
-    if (id) headers["x-delegation-id"] = id;
-  }
   let body: BodyInit | undefined;
   if (opts.form) {
-    body = opts.form; // browser sets multipart content-type
+    body = opts.form;
   } else if (opts.body !== undefined) {
     headers["content-type"] = "application/json";
     body = JSON.stringify(opts.body);
@@ -50,6 +32,7 @@ async function req<T>(path: string, opts: Options = {}): Promise<T> {
     method: opts.method ?? "GET",
     headers,
     body,
+    credentials: "include",
   });
   const text = await res.text();
   const data = text ? JSON.parse(text) : null;
@@ -58,21 +41,58 @@ async function req<T>(path: string, opts: Options = {}): Promise<T> {
 }
 
 // ---- Types ----------------------------------------------------------------
+export type Country = { code: string; name: string };
+export type RegistrationStatus =
+  | "draft"
+  | "submitted"
+  | "approved"
+  | "rejected";
 export type Delegation = {
   id: string;
   name: string;
   countryCode: string;
-  status: "draft" | "submitted" | "under_review" | "approved" | "rejected";
+  registrationStatus: RegistrationStatus;
+  status: "draft" | "submitted";
+  associationName: string | null;
+  headOfDelegation: string | null;
+  headCoach: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  expectedSquadSize: number | null;
+  travellingParty: number | null;
+  arrivalDate: string | null;
+  departureDate: string | null;
+  notes: string | null;
   submittedAt: string | null;
+  approvedAt: string | null;
 };
-export type Player = {
+export type Me = {
+  user: { email: string; displayName: string; isAdmin: boolean } | null;
+  delegation: {
+    id: string;
+    name: string;
+    countryCode: string;
+    registrationStatus: RegistrationStatus;
+    status: string;
+  } | null;
+};
+export type Category =
+  | "player"
+  | "official"
+  | "technical"
+  | "media"
+  | "broadcast";
+export type Person = {
   id: string;
   firstName: string;
   lastName: string;
-  position: string | null;
-  jerseyNumber: number | null;
+  category: Category;
+  role: string | null;
   dateOfBirth: string | null;
+  jerseyNumber: number | null;
   isMinor: boolean;
+  hasPhoto: boolean;
+  ready: boolean;
 };
 export type Consent = {
   id: string;
@@ -80,79 +100,97 @@ export type Consent = {
   consentGiven: boolean;
   consentingPartyName: string;
   relationship: string | null;
+  consentingPartyPhone: string | null;
 };
-export type Photo = {
-  id: string;
-  objectKey: string;
-  status: string;
-  uploadedAt: string | null;
-};
+
+// ---- Static reference (matches the API) -----------------------------------
+export const POSITIONS = [
+  "Goal Shooter",
+  "Goal Attack",
+  "Wing Attack",
+  "Centre",
+  "Wing Defence",
+  "Goal Defence",
+  "Goal Keeper",
+];
+export const CATEGORIES: { value: Category; label: string }[] = [
+  { value: "player", label: "Player" },
+  { value: "official", label: "Team Official" },
+  { value: "technical", label: "Technical Official" },
+  { value: "media", label: "Media" },
+  { value: "broadcast", label: "Broadcast" },
+];
 
 // ---- Endpoints ------------------------------------------------------------
 export const api = {
+  me: async (): Promise<Me | null> => {
+    try {
+      return await req<Me>("/me");
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) return null;
+      throw e;
+    }
+  },
+  login: (email: string, password: string) =>
+    req<Me>("/login", { method: "POST", body: { email, password } }),
+  logout: () => req<{ ok: boolean }>("/logout", { method: "POST" }),
+
+  eligibleCountries: () => req<Country[]>("/eligible-countries"),
   register: (b: {
-    name: string;
     countryCode: string;
-    managerEmail: string;
-    managerName: string;
-  }) => req<Delegation>("/delegations", { method: "POST", body: b }),
+    associationName: string;
+    headOfDelegation: string;
+    headCoach?: string;
+    contactEmail: string;
+    password: string;
+    contactPhone: string;
+    expectedSquadSize?: number;
+    dpaConsent: boolean;
+  }) => req<Me>("/register", { method: "POST", body: b }),
 
-  getDelegation: () => req<Delegation>("/delegation", { tenant: true }),
-  updateDelegation: (b: { name?: string; countryCode?: string }) =>
-    req<Delegation>("/delegation", { method: "PATCH", body: b, tenant: true }),
-  submit: () =>
-    req<Delegation>("/delegation/submit", { method: "POST", tenant: true }),
+  getDelegation: () => req<Delegation>("/delegation"),
+  submitRoster: () =>
+    req<Delegation>("/delegation/submit", { method: "POST" }),
 
-  listPlayers: () => req<Player[]>("/players", { tenant: true }),
-  createPlayer: (b: {
+  listPlayers: () => req<Person[]>("/players"),
+  createPerson: (b: {
     firstName: string;
     lastName: string;
     dateOfBirth: string;
-    position?: string;
+    category: Category;
+    role?: string;
     jerseyNumber?: number;
-  }) => req<Player>("/players", { method: "POST", body: b, tenant: true }),
-  deletePlayer: (id: string) =>
-    req<{ deleted: boolean }>(`/players/${id}`, {
-      method: "DELETE",
-      tenant: true,
-    }),
+  }) => req<Person>("/players", { method: "POST", body: b }),
+  deletePerson: (id: string) =>
+    req<{ deleted: boolean }>(`/players/${id}`, { method: "DELETE" }),
 
-  listConsents: (playerId: string) =>
-    req<Consent[]>(`/players/${playerId}/consents`, { tenant: true }),
+  listConsents: (id: string) =>
+    req<Consent[]>(`/players/${id}/consents`),
   addConsent: (
-    playerId: string,
+    id: string,
     b: {
       type: "player" | "guardian";
       consentGiven: boolean;
       consentingPartyName: string;
       relationship?: string;
+      consentingPartyPhone?: string;
     },
-  ) =>
-    req<Consent>(`/players/${playerId}/consents`, {
-      method: "POST",
-      body: b,
-      tenant: true,
+  ) => req<Consent>(`/players/${id}/consents`, { method: "POST", body: b }),
+  deleteConsent: (id: string, consentId: string) =>
+    req<{ deleted: boolean }>(`/players/${id}/consents/${consentId}`, {
+      method: "DELETE",
     }),
 
-  listPhotos: (playerId: string) =>
-    req<Photo[]>(`/players/${playerId}/photos`, { tenant: true }),
-  // Fetches the headshot as a blob (an <img> tag can't send the tenant
-  // header) and returns an object URL, or null if the player has no photo.
-  photoImageUrl: async (playerId: string): Promise<string | null> => {
-    const id = getDelegationId();
-    const res = await fetch(`${BASE}/players/${playerId}/photo/image`, {
-      headers: id ? { "x-delegation-id": id } : {},
+  uploadPhoto: (id: string, file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return req<unknown>(`/players/${id}/photo`, { method: "POST", form });
+  },
+  photoImageUrl: async (id: string): Promise<string | null> => {
+    const res = await fetch(`${BASE}/players/${id}/photo/image`, {
+      credentials: "include",
     });
     if (!res.ok) return null;
     return URL.createObjectURL(await res.blob());
-  },
-  uploadPhoto: (playerId: string, file: File) => {
-    const form = new FormData();
-    form.append("file", file);
-    return req<Photo>(`/players/${playerId}/photo`, {
-      method: "POST",
-      form,
-      tenant: true,
-    });
   },
 };

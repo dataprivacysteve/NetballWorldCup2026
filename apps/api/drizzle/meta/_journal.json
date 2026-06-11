@@ -43,6 +43,34 @@
       "when": 1781190797065,
       "tag": "0005_auth_and_registration",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1781193572893,
+      "tag": "0006_add_category_role",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1781193577902,
+      "tag": "0007_backfill_role",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1781193613123,
+      "tag": "0008_drop_position",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1781195141564,
+      "tag": "0009_consent_phone",
+      "breakpoints": true
     }
   ]
 }
