@@ -54,6 +54,26 @@ export type PendingDelegation = {
 };
 
 export type RegWindow = { closesAt: string | null; open: boolean };
+export type AccreditedDelegation = {
+  id: string;
+  name: string;
+  countryCode: string;
+  accreditedAt: string | null;
+};
+export type ScanResult =
+  | {
+      valid: true;
+      credentialId: string;
+      person: {
+        id: string;
+        firstName: string;
+        lastName: string;
+        category: string;
+        role: string | null;
+      } | null;
+      delegation: { name: string; countryCode: string } | null;
+    }
+  | { valid: false; reason: string };
 export type ReviewQueueItem = {
   id: string;
   name: string;
@@ -120,6 +140,11 @@ export const api = {
       method: "PATCH",
       body: { closesAt },
     }),
+
+  // Badges + gate scan
+  listAccredited: () => req<AccreditedDelegation[]>("/admin/accredited"),
+  verifyScan: (token: string) =>
+    req<ScanResult>("/admin/scan/verify", { method: "POST", body: { token } }),
 
   // Roster accreditation review
   listReview: () => req<ReviewQueueItem[]>("/admin/review"),

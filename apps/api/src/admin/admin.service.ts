@@ -309,6 +309,70 @@ export class AdminService {
     return this.getRegistrationWindow();
   }
 
+  // ---- Badges + gate scan ----
+  listAccredited() {
+    return this.db
+      .select({
+        id: schema.delegation.id,
+        name: schema.delegation.name,
+        countryCode: schema.delegation.countryCode,
+        accreditedAt: schema.delegation.accreditedAt,
+      })
+      .from(schema.delegation)
+      .where(eq(schema.delegation.status, 'approved'))
+      .orderBy(asc(schema.delegation.name));
+  }
+
+  // Server-side credential verification for the gate. Verifies the QR token's
+  // signature, then confirms the credential exists and is still issued.
+  async verifyScan(token: string) {
+    let payload: {
+      typ?: string;
+      cid?: string;
+      cat?: string;
+    };
+    try {
+      payload = this.jwt.verify(token);
+    } catch {
+      return { valid: false as const, reason: 'Unrecognised or expired credential' };
+    }
+    if (payload.typ !== 'credential' || !payload.cid) {
+      return { valid: false as const, reason: 'Not a GameDay credential' };
+    }
+    const [cred] = await this.db
+      .select()
+      .from(schema.credential)
+      .where(eq(schema.credential.id, payload.cid));
+    if (!cred) return { valid: false as const, reason: 'Credential not found' };
+    if (cred.status !== 'issued') {
+      return { valid: false as const, reason: 'Credential has been revoked' };
+    }
+    const [person] = await this.db
+      .select()
+      .from(schema.player)
+      .where(eq(schema.player.id, cred.playerId));
+    const [del] = await this.db
+      .select()
+      .from(schema.delegation)
+      .where(eq(schema.delegation.id, cred.delegationId));
+    return {
+      valid: true as const,
+      credentialId: cred.id,
+      person: person
+        ? {
+            id: person.id,
+            firstName: person.firstName,
+            lastName: person.lastName,
+            category: person.category,
+            role: person.role,
+          }
+        : null,
+      delegation: del
+        ? { name: del.name, countryCode: del.countryCode }
+        : null,
+    };
+  }
+
   async credentialToken(credentialId: string): Promise<string> {
     const [cred] = await this.db
       .select()

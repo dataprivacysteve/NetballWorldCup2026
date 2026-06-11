@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   api,
+  type AccreditedDelegation,
   type Me,
   type PendingDelegation,
   type RegWindow,
@@ -174,7 +175,7 @@ function NotAuthorised({ onSignOut }: { onSignOut: () => void }) {
   );
 }
 
-type Section = "registrations" | "review" | "settings";
+type Section = "registrations" | "review" | "badges" | "settings";
 
 function Console({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
   const [section, setSection] = useState<Section>("registrations");
@@ -187,6 +188,7 @@ function Console({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
   const tabs: { id: Section; label: string }[] = [
     { id: "registrations", label: "Registrations" },
     { id: "review", label: "Roster review" },
+    { id: "badges", label: "Badges" },
     { id: "settings", label: "Settings" },
   ];
 
@@ -210,6 +212,12 @@ function Console({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
                 accreditation staff
               </div>
             </div>
+            <a
+              href="/scan"
+              className="text-xs text-gold-bright underline-offset-2 hover:underline"
+            >
+              Gate scan ↗
+            </a>
             <button
               onClick={signOut}
               className="text-xs text-white/70 underline-offset-2 hover:underline"
@@ -240,6 +248,8 @@ function Console({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
           <Registrations />
         ) : section === "review" ? (
           <RosterReview />
+        ) : section === "badges" ? (
+          <Badges />
         ) : (
           <Settings />
         )}
@@ -357,6 +367,226 @@ function Settings() {
             </button>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// Country theming for badges (DESIGN-SYSTEM: country colour leads). Static for
+// now; could move to eligible_country.
+const COUNTRY_COLORS: Record<string, string> = {
+  JAM: "#009639",
+  TTO: "#DA1A35",
+  BRB: "#00267F",
+  LCA: "#1187C9",
+  GUY: "#009E49",
+  ARG: "#6CACE4",
+  USA: "#3C3B6E",
+  CAN: "#D52B1E",
+};
+const CAT_BAND: Record<string, { bg: string; fg: string }> = {
+  player: { bg: "var(--color-gold)", fg: "var(--color-navy-deep)" },
+  official: { bg: "var(--color-navy)", fg: "#fff" },
+  technical: { bg: "var(--color-teal)", fg: "#fff" },
+  media: { bg: "var(--color-coral)", fg: "#fff" },
+  broadcast: { bg: "var(--color-violet)", fg: "#fff" },
+};
+
+function Badges() {
+  const [list, setList] = useState<AccreditedDelegation[] | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [detail, setDetail] = useState<ReviewDetail | null>(null);
+  const [error, setError] = useState<unknown>(null);
+
+  useEffect(() => {
+    api.listAccredited().then(setList).catch(setError);
+  }, []);
+  useEffect(() => {
+    if (!selected) {
+      setDetail(null);
+      return;
+    }
+    api.reviewDetail(selected).then(setDetail).catch(setError);
+  }, [selected]);
+
+  if (selected && detail) {
+    const color = COUNTRY_COLORS[detail.delegation.countryCode] ?? "#1B2A6B";
+    return (
+      <div>
+        <div className="no-print mb-4 flex items-center justify-between gap-3">
+          <button
+            onClick={() => setSelected(null)}
+            className="text-sm text-navy hover:underline"
+          >
+            ← Back to accredited
+          </button>
+          <button onClick={() => window.print()} className={btnPrimary}>
+            Print badges
+          </button>
+        </div>
+        <div className="no-print mb-4">
+          <h1 className="font-display text-2xl font-bold text-ink">
+            {detail.delegation.name} — badges
+          </h1>
+          <p className="text-sm text-ink-muted">
+            {detail.people.length} credentials. Prints four per US-Letter page.
+          </p>
+        </div>
+        <div className="badge-sheet grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {detail.people.map((p) => (
+            <BadgeCard
+              key={p.id}
+              person={p}
+              country={detail.delegation}
+              color={color}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <p className="font-mono text-[0.66rem] font-semibold uppercase tracking-[0.14em] text-navy">
+        Credentials
+      </p>
+      <h1 className="mb-6 font-display text-3xl font-bold tracking-tight text-ink">
+        Badge production
+      </h1>
+      <ErrorBanner error={error} />
+      {list === null ? (
+        <p className="text-sm text-ink-muted">Loading…</p>
+      ) : list.length === 0 ? (
+        <div className={`${panel} p-8 text-center`}>
+          <p className="font-display text-lg font-bold text-ink">
+            No accredited delegations yet
+          </p>
+          <p className="mt-1 text-sm text-ink-muted">
+            Accredit a roster in Roster review to print its badges here.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {list.map((d) => (
+            <div
+              key={d.id}
+              className={`${panel} flex items-center justify-between p-5`}
+            >
+              <div className="flex items-center gap-2">
+                <h2 className="font-display text-lg font-bold text-ink">
+                  {d.name}
+                </h2>
+                <span className="rounded bg-[rgba(27,42,107,0.12)] px-1.5 py-0.5 font-mono text-[0.58rem] font-bold uppercase tracking-[0.04em] text-navy">
+                  {d.countryCode}
+                </span>
+              </div>
+              <button onClick={() => setSelected(d.id)} className={btnPrimary}>
+                Badges →
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BadgeCard({
+  person,
+  country,
+  color,
+}: {
+  person: ReviewPerson;
+  country: { name: string; countryCode: string };
+  color: string;
+}) {
+  const [photo, setPhoto] = useState<string | null>(null);
+  const [qr, setQr] = useState<string | null>(null);
+
+  useEffect(() => {
+    let r: string | null = null;
+    api.blobUrl(`/admin/players/${person.id}/photo/image`).then((u) => {
+      r = u;
+      setPhoto(u);
+    });
+    return () => {
+      if (r) URL.revokeObjectURL(r);
+    };
+  }, [person.id]);
+  useEffect(() => {
+    if (!person.credentialId) return;
+    let r: string | null = null;
+    api.blobUrl(`/admin/credentials/${person.credentialId}/qr`).then((u) => {
+      r = u;
+      setQr(u);
+    });
+    return () => {
+      if (r) URL.revokeObjectURL(r);
+    };
+  }, [person.credentialId]);
+
+  const band = CAT_BAND[person.category] ?? CAT_BAND.player;
+
+  return (
+    <div
+      className="badge overflow-hidden rounded-xl border border-line bg-white"
+      style={{ borderTop: `6px solid ${color}` }}
+    >
+      <div
+        className="bg-navy-deep px-4 py-2"
+        style={{ borderBottom: "3px solid var(--color-gold)" }}
+      >
+        <div className="font-mono text-[0.52rem] uppercase tracking-[0.16em] text-gold-bright">
+          Americas Regional Qualifier 2026
+        </div>
+        <div className="font-mono text-[0.5rem] uppercase tracking-[0.12em] text-white/60">
+          Accreditation credential
+        </div>
+      </div>
+      <div className="flex gap-3 p-4">
+        <div className="h-24 w-20 shrink-0 overflow-hidden rounded-md bg-bg-sand ring-1 ring-line">
+          {photo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={photo} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center font-mono text-xs text-ink-muted">
+              {person.firstName.charAt(0)}
+              {person.lastName.charAt(0)}
+            </div>
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div
+            className="font-mono text-[0.55rem] font-bold uppercase tracking-[0.1em]"
+            style={{ color }}
+          >
+            {country.name} · {country.countryCode}
+          </div>
+          <div className="font-display text-lg font-bold leading-tight text-ink">
+            {person.firstName} {person.lastName}
+          </div>
+          <div className="font-mono text-[0.6rem] uppercase tracking-[0.05em] text-ink-muted">
+            {person.role}
+          </div>
+          <span
+            className="mt-2 inline-block rounded px-2 py-0.5 font-mono text-[0.58rem] font-bold uppercase tracking-[0.06em]"
+            style={{ background: band.bg, color: band.fg }}
+          >
+            {person.category}
+          </span>
+        </div>
+        <div className="shrink-0">
+          {qr ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={qr} alt="" className="h-20 w-20" />
+          ) : (
+            <div className="h-20 w-20 rounded bg-bg-soft" />
+          )}
+        </div>
+      </div>
+      <div className="truncate border-t border-line px-4 py-1 font-mono text-[0.5rem] uppercase tracking-[0.08em] text-ink-faded">
+        {person.credentialId}
       </div>
     </div>
   );

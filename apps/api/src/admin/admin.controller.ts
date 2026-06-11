@@ -14,7 +14,7 @@ import {
 import type { Response } from 'express';
 import { AuthGuard, AdminGuard } from '../auth/auth.guard';
 import { AdminService } from './admin.service';
-import { ReturnRosterDto, SetWindowDto } from './admin.dto';
+import { ReturnRosterDto, ScanDto, SetWindowDto } from './admin.dto';
 import { qrPng } from './qr.util';
 
 // Stopgap OC console endpoints. Admin-only; not tenant-scoped — acts across
@@ -51,6 +51,17 @@ export class AdminController {
     return this.admin.setRegistrationWindow(
       dto.closesAt ? new Date(dto.closesAt) : null,
     );
+  }
+
+  // --- Badges + gate scan ---
+  @Get('accredited')
+  accredited() {
+    return this.admin.listAccredited();
+  }
+
+  @Post('scan/verify')
+  scanVerify(@Body() dto: ScanDto) {
+    return this.admin.verifyScan(dto.token);
   }
 
   // --- Roster accreditation review ---

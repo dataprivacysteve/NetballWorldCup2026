@@ -1,7 +1,17 @@
-import { IsDateString, IsOptional, IsString, ValidateIf } from 'class-validator';
+import {
+  IsDateString,
+  IsOptional,
+  IsString,
+  MinLength,
+  ValidateIf,
+} from 'class-validator';
 
 export class ReturnRosterDto {
   @IsOptional() @IsString() note?: string;
+}
+
+export class ScanDto {
+  @IsString() @MinLength(1) token!: string;
 }
 
 export class SetWindowDto {

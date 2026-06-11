@@ -40,3 +40,27 @@ body {
   color: var(--color-ink);
   font-family: var(--font-body);
 }
+
+/* Four-up badge printing: hide app chrome, lay out 2x2 per US-Letter page. */
+@media print {
+  @page {
+    size: letter;
+    margin: 0.4in;
+  }
+  body {
+    background: #fff;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .badge-sheet {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+  .badge {
+    break-inside: avoid;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
