@@ -103,4 +103,16 @@ export class PlayerController {
   ) {
     return this.photos.upload(id, file);
   }
+
+  // View-only credential QR for the delegation's own person (a read — stays
+  // available after the registration cutoff). Printing/use is the OC's role.
+  @Get(':id/credential/qr')
+  @Header('Cache-Control', 'no-store')
+  async credentialQr(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    res.set('Content-Type', 'image/png');
+    return new StreamableFile(await this.players.credentialQr(id));
+  }
 }

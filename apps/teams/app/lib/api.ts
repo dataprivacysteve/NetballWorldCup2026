@@ -52,7 +52,7 @@ export type Delegation = {
   name: string;
   countryCode: string;
   registrationStatus: RegistrationStatus;
-  status: "draft" | "submitted";
+  status: "draft" | "submitted" | "under_review" | "approved" | "rejected";
   associationName: string | null;
   headOfDelegation: string | null;
   headCoach: string | null;
@@ -190,6 +190,14 @@ export const api = {
   },
   photoImageUrl: async (id: string): Promise<string | null> => {
     const res = await fetch(`${BASE}/players/${id}/photo/image`, {
+      credentials: "include",
+    });
+    if (!res.ok) return null;
+    return URL.createObjectURL(await res.blob());
+  },
+  // View-only credential QR (no download — printing/use is the OC's function).
+  credentialQrUrl: async (id: string): Promise<string | null> => {
+    const res = await fetch(`${BASE}/players/${id}/credential/qr`, {
       credentials: "include",
     });
     if (!res.ok) return null;

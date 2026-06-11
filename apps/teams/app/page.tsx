@@ -280,7 +280,14 @@ function RegisterForm({ onAuthed }: { onAuthed: () => void }) {
           {closed.closesAt
             ? `Registration closed on ${new Date(closed.closesAt).toLocaleString()}.`
             : "Registration is currently closed."}{" "}
-          Contact the Organising Committee if you need assistance.
+          Contact the Organising Committee at{" "}
+          <a
+            href="mailto:loc@netballamericas.org"
+            className="font-semibold text-navy underline"
+          >
+            loc@netballamericas.org
+          </a>{" "}
+          if you need assistance.
         </p>
       </div>
     );
@@ -559,8 +566,14 @@ function Portal({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
           <div className="mb-4 rounded-xl border border-[#F2C9C1] bg-[#FBE6E2] p-3 text-sm text-bad">
             Registration closed
             {closesAt ? ` on ${new Date(closesAt).toLocaleString()}` : ""} — your
-            roster is locked. Contact the Organising Committee if you need a
-            change.
+            roster is locked. Contact the Organising Committee at{" "}
+            <a
+              href="mailto:loc@netballamericas.org"
+              className="font-semibold underline"
+            >
+              loc@netballamericas.org
+            </a>{" "}
+            if you need a change.
           </div>
         )}
         {tab === "overview" && (
@@ -1299,6 +1312,7 @@ function Submit({
     },
   ];
   const submitted = delegation.status === "submitted";
+  const accredited = delegation.status === "approved";
 
   async function submit() {
     setBusy(true);
@@ -1324,7 +1338,21 @@ function Submit({
           accreditation review. You can revise and resubmit before the deadline.
         </p>
       </div>
-      {submitted && (
+      {accredited ? (
+        <div className="flex items-start gap-3 rounded-2xl border border-[#BFE6CE] bg-[#E7F7EE] p-4">
+          <span className="text-lg">✓</span>
+          <div>
+            <p className="font-display font-bold text-ink">
+              Accredited — credentials issued
+            </p>
+            <p className="text-sm text-ink-soft">
+              The Organising Committee has accredited your roster. Credentials
+              are shown below for confirmation; the OC prints and distributes
+              the physical badges.
+            </p>
+          </div>
+        </div>
+      ) : submitted ? (
         <div className="flex items-start gap-3 rounded-2xl border border-[#BFE6CE] bg-[#E7F7EE] p-4">
           <span className="text-lg">📨</span>
           <div>
@@ -1336,35 +1364,97 @@ function Submit({
               {delegation.submittedAt
                 ? new Date(delegation.submittedAt).toLocaleString()
                 : ""}
-              . You can still revise and resubmit.
+              . The Organising Committee will review it.
             </p>
           </div>
         </div>
+      ) : null}
+
+      {accredited ? (
+        <Credentials players={players} />
+      ) : (
+        <>
+          <div className={panel}>
+            <div className="border-b border-line px-5 py-3">
+              <h2 className="font-display font-bold text-ink">Readiness check</h2>
+            </div>
+            <ul className="divide-y divide-line px-5">
+              {checks.map((c) => (
+                <CheckItem key={c.label} done={c.done} title={c.label} sub="" />
+              ))}
+            </ul>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={submit}
+              className={btnGold}
+              disabled={busy || !approved || total === 0 || !allReady || locked}
+            >
+              {busy ? "Submitting…" : "Submit roster for accreditation"}
+            </button>
+            {!allReady && total > 0 && (
+              <span className="text-sm text-warn">
+                Every person needs a photograph, and every under-18 needs
+                guardian consent, before you can submit.
+              </span>
+            )}
+          </div>
+        </>
       )}
-      <div className={panel}>
-        <div className="border-b border-line px-5 py-3">
-          <h2 className="font-display font-bold text-ink">Readiness check</h2>
-        </div>
-        <ul className="divide-y divide-line px-5">
-          {checks.map((c) => (
-            <CheckItem key={c.label} done={c.done} title={c.label} sub="" />
-          ))}
-        </ul>
+    </div>
+  );
+}
+
+function Credentials({ players }: { players: Person[] }) {
+  return (
+    <div className={panel}>
+      <div className="border-b border-line px-5 py-3">
+        <h2 className="font-display font-bold text-ink">
+          Issued credentials ({players.length})
+        </h2>
+        <p className="mt-0.5 text-xs text-ink-muted">
+          Confirmation only. The Organising Committee prints and distributes the
+          physical badges.
+        </p>
       </div>
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          onClick={submit}
-          className={btnGold}
-          disabled={busy || !approved || total === 0 || !allReady || locked}
-        >
-          {busy ? "Submitting…" : "Submit roster for accreditation"}
-        </button>
-        {!allReady && total > 0 && (
-          <span className="text-sm text-warn">
-            Every person needs a photograph, and every under-18 needs guardian
-            consent, before you can submit.
-          </span>
-        )}
+      <div className="grid grid-cols-2 gap-4 p-5 sm:grid-cols-3">
+        {players.map((p) => (
+          <CredentialThumb key={p.id} person={p} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CredentialThumb({ person }: { person: Person }) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let revoke: string | null = null;
+    api.credentialQrUrl(person.id).then((u) => {
+      revoke = u;
+      setUrl(u);
+    });
+    return () => {
+      if (revoke) URL.revokeObjectURL(revoke);
+    };
+  }, [person.id]);
+  return (
+    <div className="flex flex-col items-center gap-1.5 text-center">
+      {url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={url}
+          alt=""
+          className="h-28 w-28 rounded-lg ring-1 ring-line"
+        />
+      ) : (
+        <div className="flex h-28 w-28 items-center justify-center rounded-lg bg-bg-soft text-xs text-ink-muted ring-1 ring-line">
+          …
+        </div>
+      )}
+      <div className="text-sm font-semibold text-ink">{initials(person)}</div>
+      <div className="font-mono text-[0.62rem] uppercase tracking-[0.05em] text-ink-muted">
+        {person.role}
       </div>
     </div>
   );

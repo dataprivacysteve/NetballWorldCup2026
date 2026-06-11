@@ -8,6 +8,7 @@ import { getTenant } from '../tenant/tenant-context';
 import * as schema from '../db/schema';
 import { isMinor } from './age';
 import { POSITION_NAMES } from './positions';
+import { qrPng } from '../admin/qr.util';
 import { CreateConsentDto, CreatePlayerDto, UpdatePlayerDto } from './dto';
 
 type PlayerRow = typeof schema.player.$inferSelect;
@@ -161,5 +162,19 @@ export class PlayerService {
       .select()
       .from(schema.playerPhoto)
       .where(eq(schema.playerPhoto.playerId, playerId));
+  }
+
+  // The QR image for this player's issued credential (own delegation, via RLS).
+  // View-only here; printing/distribution is the Organising Committee's function.
+  async credentialQr(playerId: string): Promise<Buffer> {
+    const { db } = getTenant();
+    await this.getOwnedPlayer(playerId);
+    const [cred] = await db
+      .select()
+      .from(schema.credential)
+      .where(eq(schema.credential.playerId, playerId))
+      .limit(1);
+    if (!cred) throw new NotFoundException('No credential issued');
+    return qrPng(cred.token);
   }
 }
