@@ -136,6 +136,16 @@ export const api = {
 
   listPhotos: (playerId: string) =>
     req<Photo[]>(`/players/${playerId}/photos`, { tenant: true }),
+  // Fetches the headshot as a blob (an <img> tag can't send the tenant
+  // header) and returns an object URL, or null if the player has no photo.
+  photoImageUrl: async (playerId: string): Promise<string | null> => {
+    const id = getDelegationId();
+    const res = await fetch(`${BASE}/players/${playerId}/photo/image`, {
+      headers: id ? { "x-delegation-id": id } : {},
+    });
+    if (!res.ok) return null;
+    return URL.createObjectURL(await res.blob());
+  },
   uploadPhoto: (playerId: string, file: File) => {
     const form = new FormData();
     form.append("file", file);

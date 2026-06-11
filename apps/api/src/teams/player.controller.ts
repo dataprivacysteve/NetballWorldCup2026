@@ -3,14 +3,18 @@ import {
   Controller,
   Delete,
   Get,
+  Header,
   Param,
   ParseUUIDPipe,
   Patch,
   Post,
+  Res,
+  StreamableFile,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import type { Response } from 'express';
 import { TenantInterceptor } from '../tenant/tenant.interceptor';
 import { PlayerService } from './player.service';
 import { PhotoService } from './photo.service';
@@ -66,6 +70,18 @@ export class PlayerController {
   @Get(':id/photos')
   listPhotos(@Param('id', ParseUUIDPipe) id: string) {
     return this.players.listPhotos(id);
+  }
+
+  // Serves the player's latest photo bytes (so the UI can display the headshot).
+  @Get(':id/photo/image')
+  @Header('Cache-Control', 'no-store')
+  async photoImage(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { contentType, buffer } = await this.photos.getLatestImage(id);
+    res.set('Content-Type', contentType);
+    return new StreamableFile(buffer);
   }
 
   @Post(':id/photo')

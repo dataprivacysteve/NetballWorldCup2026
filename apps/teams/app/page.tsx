@@ -390,6 +390,7 @@ function PlayerCard({
   const [open, setOpen] = useState(false);
   const [consents, setConsents] = useState<Consent[]>([]);
   const [photoCount, setPhotoCount] = useState<number | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
 
   const loadDetail = useCallback(async () => {
     try {
@@ -404,9 +405,31 @@ function PlayerCard({
     }
   }, [player.id, onError]);
 
+  // Load the headshot on mount (so the roster circle shows it) and expose a
+  // reload for after an upload.
+  const loadPhoto = useCallback(async () => {
+    const url = await api.photoImageUrl(player.id);
+    setPhotoUrl(url);
+  }, [player.id]);
+
+  useEffect(() => {
+    loadPhoto();
+  }, [loadPhoto]);
+
+  // Revoke the object URL when it changes or the card unmounts.
+  useEffect(() => {
+    if (!photoUrl) return;
+    return () => URL.revokeObjectURL(photoUrl);
+  }, [photoUrl]);
+
   useEffect(() => {
     if (open) loadDetail();
   }, [open, loadDetail]);
+
+  function afterUpload() {
+    loadDetail();
+    loadPhoto();
+  }
 
   return (
     <div className="rounded-lg border border-gray-200">
@@ -415,8 +438,17 @@ function PlayerCard({
           onClick={() => setOpen(!open)}
           className="flex items-center gap-3 text-left"
         >
-          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-xs font-medium">
-            {player.jerseyNumber ?? "—"}
+          <span className="inline-flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-gray-100 text-xs font-medium">
+            {photoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={photoUrl}
+                alt=""
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              (player.jerseyNumber ?? "—")
+            )}
           </span>
           <span>
             <span className="font-medium">
@@ -512,13 +544,23 @@ function PlayerCard({
             <p className="mb-1 text-xs font-semibold uppercase text-gray-500">
               Photo {photoCount !== null && `(${photoCount})`}
             </p>
-            {editable && (
-              <PhotoUpload
-                player={player}
-                onUploaded={loadDetail}
-                onError={onError}
-              />
-            )}
+            <div className="flex items-center gap-3">
+              {photoUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={photoUrl}
+                  alt="Player headshot"
+                  className="h-16 w-16 rounded-md object-cover"
+                />
+              )}
+              {editable && (
+                <PhotoUpload
+                  player={player}
+                  onUploaded={afterUpload}
+                  onError={onError}
+                />
+              )}
+            </div>
           </div>
         </div>
       )}

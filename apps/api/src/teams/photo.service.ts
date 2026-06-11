@@ -1,8 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { eq } from 'drizzle-orm';
+import {
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
+import { desc, eq } from 'drizzle-orm';
 import { getTenant } from '../tenant/tenant-context';
 import * as schema from '../db/schema';
 
@@ -63,5 +67,29 @@ export class PhotoService {
       })
       .returning();
     return row;
+  }
+
+  // Streams the player's most recent photo bytes back from MinIO. Tenant-scoped
+  // (the player lookup runs under RLS), so a delegation can only fetch its own
+  // photos. The browser reaches this through the API with the tenant header —
+  // it never talks to MinIO directly (which is plain HTTP).
+  async getLatestImage(playerId: string) {
+    const { db } = getTenant();
+    const [photo] = await db
+      .select()
+      .from(schema.playerPhoto)
+      .where(eq(schema.playerPhoto.playerId, playerId))
+      .orderBy(desc(schema.playerPhoto.uploadedAt))
+      .limit(1);
+    if (!photo) throw new NotFoundException('No photo for this player');
+
+    const object = await this.s3.send(
+      new GetObjectCommand({ Bucket: this.bucket, Key: photo.objectKey }),
+    );
+    const bytes = await object.Body!.transformToByteArray();
+    return {
+      contentType: photo.contentType ?? 'application/octet-stream',
+      buffer: Buffer.from(bytes),
+    };
   }
 }
