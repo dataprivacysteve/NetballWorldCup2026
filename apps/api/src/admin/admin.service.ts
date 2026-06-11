@@ -286,6 +286,29 @@ export class AdminService {
     };
   }
 
+  // ---- Registration window (cutoff) ----
+  async getRegistrationWindow() {
+    const [event] = await this.db
+      .select()
+      .from(schema.tournament)
+      .limit(1);
+    const closesAt = event?.registrationClosesAt ?? null;
+    return { closesAt, open: !closesAt || new Date() < closesAt };
+  }
+
+  async setRegistrationWindow(closesAt: Date | null) {
+    const [event] = await this.db
+      .select({ id: schema.tournament.id })
+      .from(schema.tournament)
+      .limit(1);
+    if (!event) throw new NotFoundException('No tournament is configured');
+    await this.db
+      .update(schema.tournament)
+      .set({ registrationClosesAt: closesAt })
+      .where(eq(schema.tournament.id, event.id));
+    return this.getRegistrationWindow();
+  }
+
   async credentialToken(credentialId: string): Promise<string> {
     const [cred] = await this.db
       .select()

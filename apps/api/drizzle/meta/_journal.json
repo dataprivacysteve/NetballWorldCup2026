@@ -85,6 +85,13 @@
       "when": 1781205532613,
       "tag": "0011_credential_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1781211314746,
+      "tag": "0012_registration_closes",
+      "breakpoints": true
     }
   ]
 }

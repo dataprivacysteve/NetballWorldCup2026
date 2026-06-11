@@ -10,6 +10,11 @@ export const tournament = pgTable('tournament', {
   name: text('name').notNull(),
   startsOn: date('starts_on'),
   endsOn: date('ends_on'),
+  // When delegation registration / roster changes close. Null = open. Set by
+  // the OC on the platform; enforced on the teams surface.
+  registrationClosesAt: timestamp('registration_closes_at', {
+    withTimezone: true,
+  }),
   createdAt: timestamp('created_at', { withTimezone: true })
     .defaultNow()
     .notNull(),

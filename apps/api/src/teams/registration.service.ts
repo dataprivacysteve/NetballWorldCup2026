@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Inject,
   Injectable,
 } from '@nestjs/common';
@@ -26,6 +27,15 @@ export class RegistrationService {
       .select()
       .from(schema.eligibleCountry)
       .orderBy(asc(schema.eligibleCountry.name));
+  }
+
+  // The registration cutoff (single tournament-level date). open = no date set
+  // or now is before it.
+  async registrationWindow() {
+    const db = drizzle(this.pool, { schema });
+    const [event] = await db.select().from(schema.tournament).limit(1);
+    const closesAt = event?.registrationClosesAt ?? null;
+    return { closesAt, open: !closesAt || new Date() < closesAt };
   }
 
   // Registers a delegation FOR APPROVAL and creates its manager account.
@@ -63,6 +73,9 @@ export class RegistrationService {
 
       const [event] = await db.select().from(schema.tournament).limit(1);
       if (!event) throw new BadRequestException('No tournament is configured.');
+      if (event.registrationClosesAt && new Date() > event.registrationClosesAt) {
+        throw new ForbiddenException('Registration has closed.');
+      }
 
       const [created] = await db
         .insert(schema.delegation)

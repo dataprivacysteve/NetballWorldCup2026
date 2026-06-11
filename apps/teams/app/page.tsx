@@ -258,10 +258,33 @@ function RegisterForm({ onAuthed }: { onAuthed: () => void }) {
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
+  const [closed, setClosed] = useState<{ closesAt: string | null } | null>(null);
 
   useEffect(() => {
     api.eligibleCountries().then(setCountries).catch(() => {});
+    api
+      .registrationWindow()
+      .then((w) => {
+        if (!w.open) setClosed({ closesAt: w.closesAt });
+      })
+      .catch(() => {});
   }, []);
+
+  if (closed) {
+    return (
+      <div className="space-y-2 text-center">
+        <h1 className="font-display text-lg font-bold text-ink">
+          Registration has closed
+        </h1>
+        <p className="text-sm text-ink-soft">
+          {closed.closesAt
+            ? `Registration closed on ${new Date(closed.closesAt).toLocaleString()}.`
+            : "Registration is currently closed."}{" "}
+          Contact the Organising Committee if you need assistance.
+        </p>
+      </div>
+    );
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -419,8 +442,11 @@ function Portal({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
   const [delegation, setDelegation] = useState<Delegation | null>(null);
   const [players, setPlayers] = useState<Person[]>([]);
   const [error, setError] = useState<unknown>(null);
+  const [windowOpen, setWindowOpen] = useState(true);
+  const [closesAt, setClosesAt] = useState<string | null>(null);
 
   const approved = delegation?.registrationStatus === "approved";
+  const locked = !windowOpen;
 
   const reload = useCallback(async () => {
     setError(null);
@@ -440,6 +466,16 @@ function Portal({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
   useEffect(() => {
     reload();
   }, [reload]);
+
+  useEffect(() => {
+    api
+      .registrationWindow()
+      .then((w) => {
+        setWindowOpen(w.open);
+        setClosesAt(w.closesAt);
+      })
+      .catch(() => {});
+  }, []);
 
   async function signOut() {
     await api.logout().catch(() => {});
@@ -519,6 +555,14 @@ function Portal({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
 
       <main className="mx-auto w-full max-w-4xl px-5 py-8">
         <ErrorBanner error={error} />
+        {locked && (
+          <div className="mb-4 rounded-xl border border-[#F2C9C1] bg-[#FBE6E2] p-3 text-sm text-bad">
+            Registration closed
+            {closesAt ? ` on ${new Date(closesAt).toLocaleString()}` : ""} — your
+            roster is locked. Contact the Organising Committee if you need a
+            change.
+          </div>
+        )}
         {tab === "overview" && (
           <Overview delegation={delegation} players={players} onGoto={setTab} />
         )}
@@ -526,6 +570,7 @@ function Portal({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
         {tab === "roster" && (
           <Roster
             approved={approved}
+            locked={locked}
             players={players}
             onChanged={reload}
             onError={setError}
@@ -536,6 +581,7 @@ function Portal({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
             delegation={delegation}
             players={players}
             approved={approved}
+            locked={locked}
             onSubmitted={reload}
             onError={setError}
           />
@@ -736,11 +782,13 @@ function Registration({ delegation }: { delegation: Delegation | null }) {
 
 function Roster({
   approved,
+  locked,
   players,
   onChanged,
   onError,
 }: {
   approved: boolean;
+  locked: boolean;
   players: Person[];
   onChanged: () => void;
   onError: (e: unknown) => void;
@@ -769,12 +817,13 @@ function Roster({
           of birth; under-18s need guardian consent before review.
         </p>
       </div>
-      <AddPerson onAdded={onChanged} onError={onError} />
+      {!locked && <AddPerson onAdded={onChanged} onError={onError} />}
       <div className="space-y-2.5">
         {players.map((p) => (
           <PersonCard
             key={p.id}
             person={p}
+            editable={!locked}
             onChanged={onChanged}
             onError={onError}
           />
@@ -885,10 +934,12 @@ function AddPerson({
 
 function PersonCard({
   person,
+  editable,
   onChanged,
   onError,
 }: {
   person: Person;
+  editable: boolean;
   onChanged: () => void;
   onError: (e: unknown) => void;
 }) {
@@ -958,20 +1009,22 @@ function PersonCard({
           <span className="h-1.5 w-1.5 rounded-full bg-current" />
           {person.ready ? "ready" : "incomplete"}
         </span>
-        <button
-          onClick={async () => {
-            onError(null);
-            try {
-              await api.deletePerson(person.id);
-              onChanged();
-            } catch (err) {
-              onError(err);
-            }
-          }}
-          className="font-mono text-[0.64rem] uppercase tracking-[0.05em] text-bad hover:underline"
-        >
-          remove
-        </button>
+        {editable && (
+          <button
+            onClick={async () => {
+              onError(null);
+              try {
+                await api.deletePerson(person.id);
+                onChanged();
+              } catch (err) {
+                onError(err);
+              }
+            }}
+            className="font-mono text-[0.64rem] uppercase tracking-[0.05em] text-bad hover:underline"
+          >
+            remove
+          </button>
+        )}
       </div>
 
       {open && (
@@ -1011,26 +1064,28 @@ function PersonCard({
                         <span className={c.consentGiven ? "text-ok" : "text-bad"}>
                           {c.consentGiven ? "✓ given" : "✗"}
                         </span>
-                        <button
-                          onClick={async () => {
-                            onError(null);
-                            try {
-                              await api.deleteConsent(person.id, c.id);
-                              loadConsents();
-                              onChanged();
-                            } catch (err) {
-                              onError(err);
-                            }
-                          }}
-                          className="ml-auto font-mono text-[0.6rem] uppercase tracking-[0.05em] text-bad hover:underline"
-                        >
-                          remove
-                        </button>
+                        {editable && (
+                          <button
+                            onClick={async () => {
+                              onError(null);
+                              try {
+                                await api.deleteConsent(person.id, c.id);
+                                loadConsents();
+                                onChanged();
+                              } catch (err) {
+                                onError(err);
+                              }
+                            }}
+                            className="ml-auto font-mono text-[0.6rem] uppercase tracking-[0.05em] text-bad hover:underline"
+                          >
+                            remove
+                          </button>
+                        )}
                       </li>
                     ))}
                   </ul>
                 )}
-                {!consents.some((c) => c.type === "guardian") && (
+                {editable && !consents.some((c) => c.type === "guardian") && (
                   <ConsentForm
                     person={person}
                     onAdded={() => {
@@ -1046,19 +1101,23 @@ function PersonCard({
           <div>
             <p className={labelCls}>Photo</p>
             <div className="flex items-center gap-3">
-              {photoUrl && (
+              {photoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={photoUrl} alt="" className="h-16 w-16 rounded-lg object-cover ring-1 ring-line" />
+              ) : (
+                <span className="text-sm text-ink-muted">No photo on file.</span>
               )}
-              <PhotoUpload
-                person={person}
-                hasPhoto={!!photoUrl}
-                onUploaded={() => {
-                  loadPhoto();
-                  onChanged();
-                }}
-                onError={onError}
-              />
+              {editable && (
+                <PhotoUpload
+                  person={person}
+                  hasPhoto={!!photoUrl}
+                  onUploaded={() => {
+                    loadPhoto();
+                    onChanged();
+                  }}
+                  onError={onError}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -1206,12 +1265,14 @@ function Submit({
   delegation,
   players,
   approved,
+  locked,
   onSubmitted,
   onError,
 }: {
   delegation: Delegation | null;
   players: Person[];
   approved: boolean;
+  locked: boolean;
   onSubmitted: () => void;
   onError: (e: unknown) => void;
 }) {
@@ -1294,7 +1355,7 @@ function Submit({
         <button
           onClick={submit}
           className={btnGold}
-          disabled={busy || !approved || total === 0 || !allReady}
+          disabled={busy || !approved || total === 0 || !allReady || locked}
         >
           {busy ? "Submitting…" : "Submit roster for accreditation"}
         </button>

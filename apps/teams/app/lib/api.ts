@@ -136,6 +136,8 @@ export const api = {
   logout: () => req<{ ok: boolean }>("/logout", { method: "POST" }),
 
   eligibleCountries: () => req<Country[]>("/eligible-countries"),
+  registrationWindow: () =>
+    req<{ closesAt: string | null; open: boolean }>("/registration-window"),
   register: (b: {
     countryCode: string;
     associationName: string;

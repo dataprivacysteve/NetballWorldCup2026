@@ -53,6 +53,7 @@ export type PendingDelegation = {
   registrationSubmittedAt: string | null;
 };
 
+export type RegWindow = { closesAt: string | null; open: boolean };
 export type ReviewQueueItem = {
   id: string;
   name: string;
@@ -110,6 +111,15 @@ export const api = {
       `/admin/delegations/${id}/reject`,
       { method: "POST" },
     ),
+
+  // Registration window (cutoff)
+  getRegistrationWindow: () =>
+    req<RegWindow>("/admin/registration-window"),
+  setRegistrationWindow: (closesAt: string | null) =>
+    req<RegWindow>("/admin/registration-window", {
+      method: "PATCH",
+      body: { closesAt },
+    }),
 
   // Roster accreditation review
   listReview: () => req<ReviewQueueItem[]>("/admin/review"),

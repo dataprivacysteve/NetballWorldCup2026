@@ -59,6 +59,8 @@ async function main() {
         name: 'Americas Netball Regional Qualifier 2026',
         startsOn: '2026-10-19',
         endsOn: '2026-10-26',
+        // Future date so the demo stays open; the OC adjusts this on platform.
+        registrationClosesAt: new Date('2026-08-31T23:59:59Z'),
       })
       .returning();
 

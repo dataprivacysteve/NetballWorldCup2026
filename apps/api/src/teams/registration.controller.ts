@@ -21,6 +21,11 @@ export class RegistrationController {
     return this.registration.eligibleCountries();
   }
 
+  @Get('registration-window')
+  registrationWindow() {
+    return this.registration.registrationWindow();
+  }
+
   @Post('register')
   async register(
     @Body() dto: RegisterDelegationDto,

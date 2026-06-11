@@ -39,12 +39,15 @@ export class TenantInterceptor implements NestInterceptor {
         ctx.getHandler(),
         ctx.getClass(),
       ]) ?? false;
-    return from(this.runInTenant(delegationId, allowUnapproved, next));
+    // Reads stay open after the registration cutoff; mutations are locked.
+    const mutating = !['GET', 'HEAD', 'OPTIONS'].includes(req.method);
+    return from(this.runInTenant(delegationId, allowUnapproved, mutating, next));
   }
 
   private async runInTenant(
     delegationId: string,
     allowUnapproved: boolean,
+    mutating: boolean,
     next: CallHandler,
   ): Promise<unknown> {
     const client = await this.pool.connect();
@@ -54,6 +57,22 @@ export class TenantInterceptor implements NestInterceptor {
         "SELECT set_config('app.current_delegation_id', $1, true)",
         [delegationId],
       );
+
+      if (mutating) {
+        // Registration cutoff (tournament-level; tournament is not RLS-scoped).
+        const w = await client.query(
+          'SELECT registration_closes_at FROM tournament LIMIT 1',
+        );
+        const closesAt = w.rows[0]?.registration_closes_at as
+          | string
+          | Date
+          | null;
+        if (closesAt && new Date() > new Date(closesAt)) {
+          throw new ForbiddenException(
+            'Registration has closed; the roster is locked.',
+          );
+        }
+      }
 
       if (!allowUnapproved) {
         // Reads the delegation's own row under RLS (context is set above).

@@ -5,6 +5,7 @@ import {
   api,
   type Me,
   type PendingDelegation,
+  type RegWindow,
   type ReviewDetail,
   type ReviewPerson,
   type ReviewQueueItem,
@@ -173,7 +174,7 @@ function NotAuthorised({ onSignOut }: { onSignOut: () => void }) {
   );
 }
 
-type Section = "registrations" | "review";
+type Section = "registrations" | "review" | "settings";
 
 function Console({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
   const [section, setSection] = useState<Section>("registrations");
@@ -186,6 +187,7 @@ function Console({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
   const tabs: { id: Section; label: string }[] = [
     { id: "registrations", label: "Registrations" },
     { id: "review", label: "Roster review" },
+    { id: "settings", label: "Settings" },
   ];
 
   return (
@@ -234,9 +236,129 @@ function Console({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
       </header>
 
       <main className="mx-auto w-full max-w-4xl px-5 py-8">
-        {section === "registrations" ? <Registrations /> : <RosterReview />}
+        {section === "registrations" ? (
+          <Registrations />
+        ) : section === "review" ? (
+          <RosterReview />
+        ) : (
+          <Settings />
+        )}
       </main>
     </>
+  );
+}
+
+// ISO -> value for a <input type="datetime-local"> (local time, no seconds).
+function toLocalInput(iso: string): string {
+  const d = new Date(iso);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(
+    d.getHours(),
+  )}:${p(d.getMinutes())}`;
+}
+
+function Settings() {
+  const [win, setWin] = useState<RegWindow | null>(null);
+  const [value, setValue] = useState("");
+  const [error, setError] = useState<unknown>(null);
+  const [note, setNote] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    setError(null);
+    try {
+      const w = await api.getRegistrationWindow();
+      setWin(w);
+      setValue(w.closesAt ? toLocalInput(w.closesAt) : "");
+    } catch (e) {
+      setError(e);
+    }
+  }, []);
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function save(closesAt: string | null) {
+    setBusy(true);
+    setError(null);
+    setNote(null);
+    try {
+      const w = await api.setRegistrationWindow(closesAt);
+      setWin(w);
+      setValue(w.closesAt ? toLocalInput(w.closesAt) : "");
+      setNote(closesAt ? "Registration close date saved." : "Registration re-opened.");
+    } catch (e) {
+      setError(e);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const closed = win ? !win.open : false;
+
+  return (
+    <div>
+      <p className="font-mono text-[0.66rem] font-semibold uppercase tracking-[0.14em] text-navy">
+        Configuration
+      </p>
+      <h1 className="mb-6 font-display text-3xl font-bold tracking-tight text-ink">
+        Settings
+      </h1>
+      <ErrorBanner error={error} />
+      {note && (
+        <div className="mb-4 rounded-xl border border-[#BFE6CE] bg-[#E7F7EE] p-3 text-sm text-ok">
+          {note}
+        </div>
+      )}
+      <div className={`${panel} max-w-xl p-5`}>
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-lg font-bold text-ink">
+            Registration window
+          </h2>
+          {win && (
+            <span
+              className={`rounded-full px-2.5 py-0.5 font-mono text-[0.6rem] font-semibold uppercase tracking-[0.08em] ${
+                closed ? "bg-[#FBE6E2] text-bad" : "bg-[#E2F6EC] text-ok"
+              }`}
+            >
+              {closed ? "closed" : "open"}
+            </span>
+          )}
+        </div>
+        <p className="mt-1 text-sm text-ink-soft">
+          After this date, delegations can no longer register or change their
+          rosters. The committee can still review and accredit what was
+          submitted. Leave empty to keep registration open.
+        </p>
+        <label className="mt-4 block">
+          <span className={labelCls}>Registration closes</span>
+          <input
+            type="datetime-local"
+            className={`${inputCls} max-w-xs`}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+          />
+        </label>
+        <div className="mt-4 flex gap-2">
+          <button
+            onClick={() => save(value ? new Date(value).toISOString() : null)}
+            disabled={busy}
+            className={btnPrimary}
+          >
+            {busy ? "Saving…" : "Save"}
+          </button>
+          {win?.closesAt && (
+            <button
+              onClick={() => save(null)}
+              disabled={busy}
+              className={btnGhost}
+            >
+              Clear (re-open)
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 

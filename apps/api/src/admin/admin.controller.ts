@@ -5,6 +5,7 @@ import {
   Header,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Res,
   StreamableFile,
@@ -13,7 +14,7 @@ import {
 import type { Response } from 'express';
 import { AuthGuard, AdminGuard } from '../auth/auth.guard';
 import { AdminService } from './admin.service';
-import { ReturnRosterDto } from './admin.dto';
+import { ReturnRosterDto, SetWindowDto } from './admin.dto';
 import { qrPng } from './qr.util';
 
 // Stopgap OC console endpoints. Admin-only; not tenant-scoped — acts across
@@ -37,6 +38,19 @@ export class AdminController {
   @Post('delegations/:id/reject')
   rejectRegistration(@Param('id', ParseUUIDPipe) id: string) {
     return this.admin.rejectRegistration(id);
+  }
+
+  // --- Registration window (cutoff) ---
+  @Get('registration-window')
+  registrationWindow() {
+    return this.admin.getRegistrationWindow();
+  }
+
+  @Patch('registration-window')
+  setRegistrationWindow(@Body() dto: SetWindowDto) {
+    return this.admin.setRegistrationWindow(
+      dto.closesAt ? new Date(dto.closesAt) : null,
+    );
   }
 
   // --- Roster accreditation review ---
