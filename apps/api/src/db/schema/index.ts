@@ -4,5 +4,6 @@ export * from './enums';
 export * from './eligible-country';
 export * from './tournament';
 export * from './delegation';
+export * from './credential';
 export * from './user';
 export * from './roster';

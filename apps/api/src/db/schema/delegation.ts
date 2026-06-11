@@ -45,9 +45,11 @@ export const delegation = pgTable(
     }),
     approvedAt: timestamp('approved_at', { withTimezone: true }),
 
-    // --- Roster / accreditation submission ---
+    // --- Roster / accreditation submission + committee review ---
     status: delegationStatus('status').notNull().default('draft'),
     submittedAt: timestamp('submitted_at', { withTimezone: true }),
+    reviewNote: text('review_note'),
+    accreditedAt: timestamp('accredited_at', { withTimezone: true }),
 
     createdAt: timestamp('created_at', { withTimezone: true })
       .defaultNow()

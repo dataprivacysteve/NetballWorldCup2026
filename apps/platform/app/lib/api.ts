@@ -53,6 +53,39 @@ export type PendingDelegation = {
   registrationSubmittedAt: string | null;
 };
 
+export type ReviewQueueItem = {
+  id: string;
+  name: string;
+  countryCode: string;
+  status: string;
+  submittedAt: string | null;
+};
+export type ReviewPerson = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  category: string;
+  role: string | null;
+  dateOfBirth: string | null;
+  isMinor: boolean;
+  checks: { photo: boolean; dob: boolean; consent: boolean; identity: string };
+  ready: boolean;
+  credentialId: string | null;
+};
+export type ReviewDetail = {
+  delegation: {
+    id: string;
+    name: string;
+    countryCode: string;
+    associationName: string | null;
+    status: string;
+    submittedAt: string | null;
+    reviewNote: string | null;
+    accreditedAt: string | null;
+  };
+  people: ReviewPerson[];
+};
+
 export const api = {
   me: async (): Promise<Me | null> => {
     try {
@@ -77,4 +110,25 @@ export const api = {
       `/admin/delegations/${id}/reject`,
       { method: "POST" },
     ),
+
+  // Roster accreditation review
+  listReview: () => req<ReviewQueueItem[]>("/admin/review"),
+  reviewDetail: (id: string) => req<ReviewDetail>(`/admin/review/${id}`),
+  approveRoster: (id: string) =>
+    req<{ accredited: boolean; issued: number; total: number }>(
+      `/admin/review/${id}/approve`,
+      { method: "POST" },
+    ),
+  returnRoster: (id: string, note: string) =>
+    req<{ id: string; status: string }>(`/admin/review/${id}/return`, {
+      method: "POST",
+      body: { note },
+    }),
+
+  // Media (blob -> object URL; an <img> can't carry the session cookie header)
+  blobUrl: async (path: string): Promise<string | null> => {
+    const res = await fetch(`${BASE}${path}`, { credentials: "include" });
+    if (!res.ok) return null;
+    return URL.createObjectURL(await res.blob());
+  },
 };

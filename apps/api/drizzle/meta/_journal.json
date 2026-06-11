@@ -71,6 +71,20 @@
       "when": 1781195141564,
       "tag": "0009_consent_phone",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1781205527467,
+      "tag": "0010_credentials",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1781205532613,
+      "tag": "0011_credential_rls",
+      "breakpoints": true
     }
   ]
 }

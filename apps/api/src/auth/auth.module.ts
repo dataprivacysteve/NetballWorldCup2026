@@ -20,6 +20,8 @@ import { AuthGuard, AdminGuard } from './auth.guard';
   ],
   controllers: [AuthController],
   providers: [AuthService, AuthGuard, AdminGuard],
-  exports: [AuthService, AuthGuard, AdminGuard],
+  // Export JwtModule too so other modules (admin credential issuance) can sign
+  // tokens with the same configured secret.
+  exports: [AuthService, AuthGuard, AdminGuard, JwtModule],
 })
 export class AuthModule {}

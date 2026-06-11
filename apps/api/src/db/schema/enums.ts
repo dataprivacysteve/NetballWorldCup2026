@@ -29,3 +29,9 @@ export const personCategory = pgEnum('person_category', [
   'media',
   'broadcast',
 ]);
+
+// Lifecycle of an issued accreditation credential.
+export const credentialStatus = pgEnum('credential_status', [
+  'issued',
+  'revoked',
+]);
