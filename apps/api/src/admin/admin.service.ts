@@ -26,6 +26,8 @@ export class AdminService {
         associationName: schema.delegation.associationName,
         headOfDelegation: schema.delegation.headOfDelegation,
         contactEmail: schema.delegation.contactEmail,
+        contactPhone: schema.delegation.contactPhone,
+        expectedSquadSize: schema.delegation.expectedSquadSize,
         registrationSubmittedAt: schema.delegation.registrationSubmittedAt,
       })
       .from(schema.delegation)

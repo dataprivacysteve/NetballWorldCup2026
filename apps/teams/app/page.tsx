@@ -97,7 +97,42 @@ export default function Page() {
 
   if (me === undefined) return null;
   if (!me?.user) return <AuthScreen onAuthed={refresh} />;
+  if (me.user.isAdmin)
+    return <AdminElsewhere onSignOut={() => setMe(null)} />;
   return <Portal me={me} onSignOut={() => setMe(null)} />;
+}
+
+function AdminElsewhere({ onSignOut }: { onSignOut: () => void }) {
+  async function out() {
+    await api.logout().catch(() => {});
+    onSignOut();
+  }
+  return (
+    <div className="flex min-h-screen items-center justify-center px-5">
+      <div className={`${panel} max-w-md p-8 text-center`}>
+        <h1 className="font-display text-xl font-bold text-ink">
+          You&apos;re signed in as Organising Committee staff
+        </h1>
+        <p className="mt-2 text-sm text-ink-soft">
+          This portal is for delegations. To review and approve delegations,
+          use{" "}
+          <a
+            href="https://platform.netballamericas.test"
+            className="font-semibold text-navy underline-offset-2 hover:underline"
+          >
+            platform.netballamericas.test
+          </a>
+          .
+        </p>
+        <button
+          onClick={out}
+          className="mt-4 text-xs text-ink-muted underline-offset-2 hover:underline"
+        >
+          Sign out
+        </button>
+      </div>
+    </div>
+  );
 }
 
 // ===========================================================================

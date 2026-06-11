@@ -122,12 +122,16 @@ export class RegistrationService {
 }
 
 function isUniqueViolation(err: unknown, constraint: string): boolean {
-  return (
-    typeof err === 'object' &&
-    err !== null &&
-    (err as { code?: string }).code === '23505' &&
-    String((err as { constraint?: string }).constraint ?? '').includes(
-      constraint,
-    )
+  // Drizzle wraps the pg error in a DrizzleQueryError, so the 23505 code and
+  // constraint name live on err.cause — check both the error and its cause.
+  const candidates = [err, (err as { cause?: unknown })?.cause];
+  return candidates.some(
+    (e) =>
+      typeof e === 'object' &&
+      e !== null &&
+      (e as { code?: string }).code === '23505' &&
+      String((e as { constraint?: string }).constraint ?? '').includes(
+        constraint,
+      ),
   );
 }

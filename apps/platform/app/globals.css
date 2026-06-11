@@ -1,26 +1,42 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* GameDay brand tokens (see DESIGN-SYSTEM.md). The platform/ops console is
+   Console (light), same palette and fonts as teams. */
+@theme {
+  --color-navy: #1b2a6b;
+  --color-navy-deep: #0f1a4a;
+  --color-navy-soft: #2d3f8e;
+  --color-gold: #f4c430;
+  --color-gold-bright: #ffd93d;
+  --color-gold-deep: #b8860b;
+  --color-coral: #e8553d;
+  --color-teal: #0e8c82;
+  --color-violet: #6b4ba8;
+
+  --color-ink: #0e1230;
+  --color-ink-soft: #3d4163;
+  --color-ink-muted: #6e7191;
+  --color-ink-faded: #a0a4b8;
+  --color-bg: #faf7f0;
+  --color-bg-soft: #f2eddf;
+  --color-bg-sand: #e8e0cc;
+  --color-white: #ffffff;
+  --color-line: rgba(14, 18, 48, 0.08);
+  --color-line-strong: rgba(14, 18, 48, 0.16);
+
+  --color-ok: #1e9e5a;
+  --color-warn: #c9911a;
+  --color-bad: #d8442c;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-display: var(--font-fraunces), Georgia, serif;
+  --font-body: var(--font-manrope), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-body);
 }
