@@ -13,10 +13,23 @@ import {
 } from 'class-validator';
 
 export class RegisterDelegationDto {
-  @IsString() @MinLength(2) name!: string;
+  // Chosen from GET /eligible-countries.
   @IsString() @Length(2, 3) countryCode!: string;
-  @IsEmail() managerEmail!: string;
-  @IsString() @MinLength(2) managerName!: string;
+  @IsString() @MinLength(2) associationName!: string;
+  @IsString() @MinLength(2) headOfDelegation!: string;
+  @IsOptional() @IsString() headCoach?: string;
+  // The HOD's login + primary contact, and the password that unlocks roster
+  // access once the OC approves.
+  @IsEmail() contactEmail!: string;
+  @IsString() @MinLength(8) password!: string;
+  @IsString() @MinLength(5) contactPhone!: string;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) expectedSquadSize?: number;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) travellingParty?: number;
+  @IsOptional() @IsDateString() arrivalDate?: string;
+  @IsOptional() @IsDateString() departureDate?: string;
+  @IsOptional() @IsString() notes?: string;
+  // Must be true — the data-processing acknowledgement (Barbados DPA 2019-29).
+  @IsBoolean() dpaConsent!: boolean;
 }
 
 export class UpdateDelegationDto {

@@ -1,54 +1,73 @@
 import {
-  BadRequestException,
   CallHandler,
   ExecutionContext,
+  ForbiddenException,
   Inject,
   Injectable,
   NestInterceptor,
 } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { Observable, from, lastValueFrom } from 'rxjs';
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { PG_POOL } from '../db/db.tokens';
 import { tenantStorage } from './tenant-context';
+import { ALLOW_UNAPPROVED } from '../auth/auth.metadata';
 import * as schema from '../db/schema';
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-// Wraps every tenant-scoped request in a single DB transaction whose
-// app.current_delegation_id GUC is set (transaction-local via set_config's
-// third arg). The same RLS proven in psql then governs every query the
-// handler runs. The delegation id comes from the x-delegation-id header — a
-// DEV stand-in for the authenticated session that arrives with Module 2.
+// Wraps every tenant-scoped request in one DB transaction whose
+// app.current_delegation_id GUC is set, so RLS governs every query. The
+// delegation id comes from the AUTHENTICATED session (req.user, set by
+// AuthGuard) — never from a client-supplied header. Also enforces the OC
+// approval gate: unless the route is @AllowUnapproved, the delegation must be
+// registration_status = 'approved'.
 @Injectable()
 export class TenantInterceptor implements NestInterceptor {
-  constructor(@Inject(PG_POOL) private readonly pool: Pool) {}
+  constructor(
+    @Inject(PG_POOL) private readonly pool: Pool,
+    private readonly reflector: Reflector,
+  ) {}
 
   intercept(ctx: ExecutionContext, next: CallHandler): Observable<unknown> {
     const req = ctx.switchToHttp().getRequest();
-    const delegationId = req.header('x-delegation-id');
-    if (!delegationId || !UUID_RE.test(delegationId)) {
-      throw new BadRequestException(
-        'Missing or invalid x-delegation-id header',
-      );
+    const delegationId: string | undefined = req.user?.delegationId;
+    if (!delegationId) {
+      throw new ForbiddenException('No delegation is associated with this session');
     }
-    return from(this.runInTenant(delegationId, next));
+    const allowUnapproved =
+      this.reflector.getAllAndOverride<boolean>(ALLOW_UNAPPROVED, [
+        ctx.getHandler(),
+        ctx.getClass(),
+      ]) ?? false;
+    return from(this.runInTenant(delegationId, allowUnapproved, next));
   }
 
   private async runInTenant(
     delegationId: string,
+    allowUnapproved: boolean,
     next: CallHandler,
   ): Promise<unknown> {
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
-      // Parameterised set_config (third arg = local) — never string-interpolate
-      // the id into SQL. local = reverts when the transaction ends.
       await client.query(
         "SELECT set_config('app.current_delegation_id', $1, true)",
         [delegationId],
       );
+
+      if (!allowUnapproved) {
+        // Reads the delegation's own row under RLS (context is set above).
+        const r = await client.query(
+          'SELECT registration_status FROM delegation WHERE id = $1',
+          [delegationId],
+        );
+        if (r.rows[0]?.registration_status !== 'approved') {
+          throw new ForbiddenException(
+            'Delegation is pending Organising Committee approval',
+          );
+        }
+      }
+
       const db = drizzle(client, { schema });
       const result = await tenantStorage.run({ delegationId, db }, () =>
         lastValueFrom(next.handle()),
@@ -56,7 +75,7 @@ export class TenantInterceptor implements NestInterceptor {
       await client.query('COMMIT');
       return result;
     } catch (err) {
-      await client.query('ROLLBACK');
+      await client.query('ROLLBACK').catch(() => {});
       throw err;
     } finally {
       client.release();

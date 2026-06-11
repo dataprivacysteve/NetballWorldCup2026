@@ -4,6 +4,8 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from './db/database.module';
+import { AuthModule } from './auth/auth.module';
+import { AdminModule } from './admin/admin.module';
 import { TeamsModule } from './teams/teams.module';
 
 @Module({
@@ -15,6 +17,8 @@ import { TeamsModule } from './teams/teams.module';
       envFilePath: [resolve(process.cwd(), '../../.env')],
     }),
     DatabaseModule,
+    AuthModule,
+    AdminModule,
     TeamsModule,
   ],
   controllers: [AppController],

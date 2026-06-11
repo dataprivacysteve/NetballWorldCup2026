@@ -36,6 +36,13 @@
       "when": 1781184820197,
       "tag": "0004_drop_full_name",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1781190797065,
+      "tag": "0005_auth_and_registration",
+      "breakpoints": true
     }
   ]
 }

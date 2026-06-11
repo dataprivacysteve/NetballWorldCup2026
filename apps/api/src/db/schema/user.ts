@@ -1,15 +1,24 @@
-import { pgTable, uuid, text, timestamp, unique } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  uuid,
+  text,
+  boolean,
+  timestamp,
+  unique,
+} from 'drizzle-orm/pg-core';
 import { membershipRole } from './enums';
 import { delegation } from './delegation';
 
-// A platform user. Real authentication (sessions, MFA) arrives in later
-// modules; here app_user only models WHO belongs to a delegation so the roster
-// can be attributed and the teams surface scoped. Not itself tenant-scoped —
-// a user may (later) belong to more than one delegation via memberships.
+// A platform user. The team manager authenticates with email + password
+// (first-party auth; the password is set at registration and the account is
+// gated by the delegation's approval). is_admin marks the stopgap OC approver
+// until the platform/ops surface (Module 2) provides the real approver UI.
 export const appUser = pgTable('app_user', {
   id: uuid('id').primaryKey().defaultRandom(),
   email: text('email').notNull().unique(),
   displayName: text('display_name').notNull(),
+  passwordHash: text('password_hash'),
+  isAdmin: boolean('is_admin').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true })
     .defaultNow()
     .notNull(),

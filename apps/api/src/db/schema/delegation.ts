@@ -3,27 +3,64 @@ import {
   uuid,
   text,
   varchar,
+  integer,
+  date,
+  boolean,
   timestamp,
+  unique,
 } from 'drizzle-orm/pg-core';
 import { delegationStatus } from './enums';
 import { tournament } from './tournament';
 
-// The tenant boundary. Every tenant-scoped table keys back to a delegation,
-// and the RLS policies isolate rows by delegation id. A delegation belongs to
-// exactly one tournament.
-export const delegation = pgTable('delegation', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  tournamentId: uuid('tournament_id')
-    .notNull()
-    .references(() => tournament.id),
-  countryCode: varchar('country_code', { length: 3 }).notNull(),
-  name: text('name').notNull(),
-  status: delegationStatus('status').notNull().default('draft'),
-  submittedAt: timestamp('submitted_at', { withTimezone: true }),
-  createdAt: timestamp('created_at', { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-});
+// The tenant boundary. Two distinct lifecycles live here:
+//   registration_status — the OC approval gate that unlocks roster access.
+//   status              — the roster/accreditation submission (existing).
+export const delegation = pgTable(
+  'delegation',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    tournamentId: uuid('tournament_id')
+      .notNull()
+      .references(() => tournament.id),
+    countryCode: varchar('country_code', { length: 3 }).notNull(),
+    name: text('name').notNull(),
+
+    // --- Registration (approval gate) ---
+    registrationStatus: delegationStatus('registration_status')
+      .notNull()
+      .default('draft'),
+    associationName: text('association_name'),
+    headOfDelegation: text('head_of_delegation'),
+    headCoach: text('head_coach'),
+    contactEmail: text('contact_email'),
+    contactPhone: text('contact_phone'),
+    expectedSquadSize: integer('expected_squad_size'),
+    travellingParty: integer('travelling_party'),
+    arrivalDate: date('arrival_date'),
+    departureDate: date('departure_date'),
+    notes: text('notes'),
+    dpaConsent: boolean('dpa_consent').notNull().default(false),
+    registrationSubmittedAt: timestamp('registration_submitted_at', {
+      withTimezone: true,
+    }),
+    approvedAt: timestamp('approved_at', { withTimezone: true }),
+
+    // --- Roster / accreditation submission ---
+    status: delegationStatus('status').notNull().default('draft'),
+    submittedAt: timestamp('submitted_at', { withTimezone: true }),
+
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    // One delegation per country per tournament.
+    unique('delegation_tournament_country_unique').on(
+      t.tournamentId,
+      t.countryCode,
+    ),
+  ],
+);

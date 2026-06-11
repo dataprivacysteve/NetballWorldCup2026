@@ -11,11 +11,13 @@ import {
   Res,
   StreamableFile,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { TenantInterceptor } from '../tenant/tenant.interceptor';
+import { AuthGuard } from '../auth/auth.guard';
 import { PlayerService } from './player.service';
 import { PhotoService } from './photo.service';
 import { CreateConsentDto, CreatePlayerDto, UpdatePlayerDto } from './dto';
@@ -24,6 +26,7 @@ import { CreateConsentDto, CreatePlayerDto, UpdatePlayerDto } from './dto';
 // every route in the RLS transaction; FileInterceptor (for photo) composes
 // fine — the upload handler still runs inside that transaction.
 @Controller('players')
+@UseGuards(AuthGuard)
 @UseInterceptors(TenantInterceptor)
 export class PlayerController {
   constructor(

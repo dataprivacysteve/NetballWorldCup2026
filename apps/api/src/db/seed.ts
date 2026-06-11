@@ -1,30 +1,33 @@
-// Dev-only seed. Populates TWO delegations so the tenant-isolation test in
-// RLS-TEST.md is meaningful. Runs via the ADMIN connection (superuser), which
-// bypasses RLS, so it can insert across both tenants in one pass.
-//
-// NOT run on the server — this is local validation data only. Re-runnable: it
-// truncates the Module 1 tables first.
+// Dev-only seed. Populates eligible countries, an OC admin, a pre-approved
+// delegation (with players) so login -> roster works out of the box, and two
+// pending delegations for the admin approval queue. Runs via the admin
+// (superuser) connection, which bypasses RLS so it can set up all tenants and
+// statuses in one pass. NOT run on the server.
 import './env';
+import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { sql } from 'drizzle-orm';
 import * as schema from './schema';
+import { hashPassword } from '../auth/password.util';
 
-const {
-  tournament,
-  delegation,
-  appUser,
-  delegationMembership,
-  player,
-  consentRecord,
-  playerPhoto,
-} = schema;
+const COUNTRIES = [
+  ['JAM', 'Jamaica'],
+  ['TTO', 'Trinidad & Tobago'],
+  ['BRB', 'Barbados'],
+  ['LCA', 'Saint Lucia'],
+  ['GUY', 'Guyana'],
+  ['ARG', 'Argentina'],
+  ['USA', 'United States'],
+  ['CAN', 'Canada'],
+];
+
+const DEMO_PASSWORD = 'gameday-demo-1234';
+const ADMIN_PASSWORD = 'oc-admin-1234';
 
 async function main() {
   const url = process.env.MIGRATION_DATABASE_URL;
-  if (!url) {
-    throw new Error('MIGRATION_DATABASE_URL is not set (see root .env)');
-  }
+  if (!url) throw new Error('MIGRATION_DATABASE_URL is not set (see root .env)');
 
   const pool = new Pool({ connectionString: url });
   try {
@@ -33,12 +36,16 @@ async function main() {
     await db.execute(sql`
       TRUNCATE TABLE
         "player_photo", "consent_record", "delegation_membership",
-        "player", "delegation", "app_user", "tournament"
+        "player", "delegation", "app_user", "tournament", "eligible_country"
       RESTART IDENTITY CASCADE
     `);
 
+    await db
+      .insert(schema.eligibleCountry)
+      .values(COUNTRIES.map(([code, name]) => ({ code, name })));
+
     const [event] = await db
-      .insert(tournament)
+      .insert(schema.tournament)
       .values({
         slug: 'americas-qualifier-2026',
         name: 'Americas Netball Regional Qualifier 2026',
@@ -47,87 +54,102 @@ async function main() {
       })
       .returning();
 
-    // --- Two delegations (the two tenants) ---------------------------------
-    const [bardados, jamaica] = await db
-      .insert(delegation)
-      .values([
-        { tournamentId: event.id, countryCode: 'BRB', name: 'Barbados' },
-        { tournamentId: event.id, countryCode: 'JAM', name: 'Jamaica' },
-      ])
+    const demoHash = await hashPassword(DEMO_PASSWORD);
+
+    // --- OC admin (stopgap approver) ---
+    await db.insert(schema.appUser).values({
+      email: 'admin@netballamericas.org',
+      displayName: 'OC Administrator',
+      passwordHash: await hashPassword(ADMIN_PASSWORD),
+      isAdmin: true,
+    });
+
+    // --- Pre-approved delegation: Jamaica, with a roster ---
+    const jamId = randomUUID();
+    await db.insert(schema.delegation).values({
+      id: jamId,
+      tournamentId: event.id,
+      countryCode: 'JAM',
+      name: 'Jamaica',
+      registrationStatus: 'approved',
+      registrationSubmittedAt: new Date(),
+      approvedAt: new Date(),
+      associationName: 'Jamaica Netball Association',
+      headOfDelegation: 'P. Campbell',
+      headCoach: 'D. Henry',
+      contactEmail: 'manager@jamaicanetball.org',
+      contactPhone: '+1 876 555 0142',
+      expectedSquadSize: 12,
+      travellingParty: 18,
+      dpaConsent: true,
+    });
+    const [jamMgr] = await db
+      .insert(schema.appUser)
+      .values({
+        email: 'manager@jamaicanetball.org',
+        displayName: 'P. Campbell',
+        passwordHash: demoHash,
+      })
       .returning();
-
-    // --- A manager user per delegation -------------------------------------
-    const [brbManager, jamManager] = await db
-      .insert(appUser)
-      .values([
-        { email: 'manager@netball.bb', displayName: 'Barbados Manager' },
-        { email: 'manager@netball.jm', displayName: 'Jamaica Manager' },
-      ])
-      .returning();
-
-    await db.insert(delegationMembership).values([
-      { delegationId: bardados.id, appUserId: brbManager.id, role: 'manager' },
-      { delegationId: jamaica.id, appUserId: jamManager.id, role: 'manager' },
-    ]);
-
-    // --- Players: 3 each. Amara Greaves (Barbados) is under 18, so she needs
-    //     guardian consent; everyone else is an adult and needs none. --------
-    const brbPlayers = await db
-      .insert(player)
-      .values([
-        { delegationId: bardados.id, firstName: 'Shonette', lastName: 'Azore', dateOfBirth: '1996-03-14', position: 'GS', jerseyNumber: 1 },
-        { delegationId: bardados.id, firstName: 'Tonisha', lastName: 'Rock', dateOfBirth: '1999-07-22', position: 'GA', jerseyNumber: 2 },
-        { delegationId: bardados.id, firstName: 'Amara', lastName: 'Greaves', dateOfBirth: '2010-05-09', position: 'WA', jerseyNumber: 3 },
-      ])
-      .returning();
-
+    await db.insert(schema.delegationMembership).values({
+      delegationId: jamId,
+      appUserId: jamMgr.id,
+      role: 'manager',
+    });
     const jamPlayers = await db
-      .insert(player)
+      .insert(schema.player)
       .values([
-        { delegationId: jamaica.id, firstName: 'Jhaniele', lastName: 'Fowler', dateOfBirth: '1989-09-29', position: 'GS', jerseyNumber: 1 },
-        { delegationId: jamaica.id, firstName: 'Shamera', lastName: 'Sterling', dateOfBirth: '1997-01-08', position: 'GK', jerseyNumber: 2 },
-        { delegationId: jamaica.id, firstName: 'Latanya', lastName: 'Wilson', dateOfBirth: '2001-11-30', position: 'GD', jerseyNumber: 3 },
+        { delegationId: jamId, firstName: 'Jhaniele', lastName: 'Fowler', dateOfBirth: '1989-09-29', position: 'GS', jerseyNumber: 1 },
+        { delegationId: jamId, firstName: 'Shamera', lastName: 'Sterling', dateOfBirth: '1997-01-08', position: 'GK', jerseyNumber: 2 },
+        { delegationId: jamId, firstName: 'Amara', lastName: 'Greaves', dateOfBirth: '2010-05-09', position: 'WA', jerseyNumber: 3 },
       ])
       .returning();
+    const jamMinor = jamPlayers.find((p) => p.firstName === 'Amara')!;
+    await db.insert(schema.consentRecord).values({
+      playerId: jamMinor.id,
+      delegationId: jamId,
+      type: 'guardian',
+      consentGiven: true,
+      consentingPartyName: 'Marcia Greaves',
+      relationship: 'Mother',
+      consentedAt: new Date(),
+    });
 
-    // --- Consent: only the minor needs a record. Seed her guardian consent
-    //     so Barbados is submittable out of the box. -------------------------
-    const minor = brbPlayers.find((p) => p.firstName === 'Amara')!;
-    await db.insert(consentRecord).values([
-      {
-        playerId: minor.id,
-        delegationId: bardados.id,
-        type: 'guardian',
-        consentGiven: true,
-        consentingPartyName: 'Marcia Greaves',
-        relationship: 'Mother',
-        consentedAt: new Date(),
-      },
-    ]);
+    // --- Pending delegations for the admin approval queue ---
+    for (const [code, name, hod, email] of [
+      ['TTO', 'Trinidad & Tobago', 'R. Maraj', 'manager@ttnetball.org'],
+      ['BRB', 'Barbados', 'S. Forde', 'manager@barbadosnetball.org'],
+    ] as const) {
+      const id = randomUUID();
+      await db.insert(schema.delegation).values({
+        id,
+        tournamentId: event.id,
+        countryCode: code,
+        name,
+        registrationStatus: 'submitted',
+        registrationSubmittedAt: new Date(),
+        associationName: `${name} Netball Association`,
+        headOfDelegation: hod,
+        contactEmail: email,
+        contactPhone: '+1 868 555 0100',
+        expectedSquadSize: 12,
+        dpaConsent: true,
+      });
+      const [mgr] = await db
+        .insert(schema.appUser)
+        .values({ email, displayName: hod, passwordHash: demoHash })
+        .returning();
+      await db.insert(schema.delegationMembership).values({
+        delegationId: id,
+        appUserId: mgr.id,
+        role: 'manager',
+      });
+    }
 
-    // --- One photo metadata row per delegation -----------------------------
-    await db.insert(playerPhoto).values([
-      {
-        playerId: brbPlayers[0].id,
-        delegationId: bardados.id,
-        objectKey: `${bardados.id}/${brbPlayers[0].id}.jpg`,
-        contentType: 'image/jpeg',
-        status: 'uploaded',
-        uploadedAt: new Date(),
-      },
-      {
-        playerId: jamPlayers[0].id,
-        delegationId: jamaica.id,
-        objectKey: `${jamaica.id}/${jamPlayers[0].id}.jpg`,
-        contentType: 'image/jpeg',
-        status: 'uploaded',
-        uploadedAt: new Date(),
-      },
-    ]);
-
-    console.log('Seed complete:');
-    console.log(`  Barbados delegation id: ${bardados.id}`);
-    console.log(`  Jamaica  delegation id: ${jamaica.id}`);
+    console.log('Seed complete.');
+    console.log('  OC admin:        admin@netballamericas.org /', ADMIN_PASSWORD);
+    console.log('  Jamaica (approved) manager: manager@jamaicanetball.org /', DEMO_PASSWORD);
+    console.log('  T&T / Barbados (pending) managers also use:', DEMO_PASSWORD);
   } finally {
     await pool.end();
   }
