@@ -372,24 +372,45 @@ function Settings() {
   );
 }
 
-// Country theming for badges (DESIGN-SYSTEM: country colour leads). Static for
-// now; could move to eligible_country.
-const COUNTRY_COLORS: Record<string, string> = {
-  JAM: "#009639",
-  TTO: "#DA1A35",
-  BRB: "#00267F",
-  LCA: "#1187C9",
-  GUY: "#009E49",
-  ARG: "#6CACE4",
-  USA: "#3C3B6E",
-  CAN: "#D52B1E",
+// Per-country badge theming, derived from each nation's flag (DESIGN-SYSTEM:
+// country colour leads). `primary` carries the header + access block + avatar;
+// `secondary` is the diagonal flag accent. Static for now; could move to
+// eligible_country once the OC signs off the palette.
+type CountryTheme = {
+  name: string;
+  flag: string;
+  primary: string;
+  secondary: string;
 };
-const CAT_BAND: Record<string, { bg: string; fg: string }> = {
-  player: { bg: "var(--color-gold)", fg: "var(--color-navy-deep)" },
-  official: { bg: "var(--color-navy)", fg: "#fff" },
-  technical: { bg: "var(--color-teal)", fg: "#fff" },
-  media: { bg: "var(--color-coral)", fg: "#fff" },
-  broadcast: { bg: "var(--color-violet)", fg: "#fff" },
+const COUNTRY_THEME: Record<string, CountryTheme> = {
+  JAM: { name: "Jamaica", flag: "🇯🇲", primary: "#009639", secondary: "#FED100" },
+  TTO: { name: "Trinidad & Tobago", flag: "🇹🇹", primary: "#DA1A35", secondary: "#0b0b0b" },
+  BRB: { name: "Barbados", flag: "🇧🇧", primary: "#00267F", secondary: "#FFC726" },
+  LCA: { name: "Saint Lucia", flag: "🇱🇨", primary: "#1187C9", secondary: "#FCD116" },
+  GUY: { name: "Guyana", flag: "🇬🇾", primary: "#009E49", secondary: "#FCD116" },
+  ARG: { name: "Argentina", flag: "🇦🇷", primary: "#3C8DC4", secondary: "#F6B40E" },
+  USA: { name: "United States", flag: "🇺🇸", primary: "#3C3B6E", secondary: "#B22234" },
+  CAN: { name: "Canada", flag: "🇨🇦", primary: "#D52B1E", secondary: "#0b0b0b" },
+};
+function countryTheme(code: string, fallbackName: string): CountryTheme {
+  return (
+    COUNTRY_THEME[code] ?? {
+      name: fallbackName,
+      flag: "🏳️",
+      primary: "#1b2a6b",
+      secondary: "#f4c430",
+    }
+  );
+}
+
+// Access zones by accreditation category. The full accreditation matrix is an
+// OC open item; this is the working set for badge production.
+const ACCESS_ZONES: Record<string, string[]> = {
+  player: ["Field of Play", "Team Bench", "Warm-up Court", "Mixed Zone"],
+  official: ["Field of Play", "Team Bench", "Warm-up Court", "Mixed Zone"],
+  technical: ["Field of Play", "Technical Area", "Mixed Zone"],
+  media: ["Media Tribune", "Mixed Zone", "Press Conference"],
+  broadcast: ["Broadcast Positions", "Field of Play", "Mixed Zone"],
 };
 
 function Badges() {
@@ -410,7 +431,6 @@ function Badges() {
   }, [selected]);
 
   if (selected && detail) {
-    const color = COUNTRY_COLORS[detail.delegation.countryCode] ?? "#1B2A6B";
     return (
       <div>
         <div className="no-print mb-4 flex items-center justify-between gap-3">
@@ -432,13 +452,13 @@ function Badges() {
             {detail.people.length} credentials. Prints four per US-Letter page.
           </p>
         </div>
-        <div className="badge-sheet grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="badge-sheet grid grid-cols-1 gap-5 sm:grid-cols-2">
           {detail.people.map((p) => (
             <BadgeCard
               key={p.id}
               person={p}
-              country={detail.delegation}
-              color={color}
+              countryCode={detail.delegation.countryCode}
+              countryName={detail.delegation.name}
             />
           ))}
         </div>
@@ -494,14 +514,15 @@ function Badges() {
 
 function BadgeCard({
   person,
-  country,
-  color,
+  countryCode,
+  countryName,
 }: {
   person: ReviewPerson;
-  country: { name: string; countryCode: string };
-  color: string;
+  countryCode: string;
+  countryName: string;
 }) {
   const [photo, setPhoto] = useState<string | null>(null);
+  const [photoOk, setPhotoOk] = useState(false);
   const [qr, setQr] = useState<string | null>(null);
 
   useEffect(() => {
@@ -526,69 +547,141 @@ function BadgeCard({
     };
   }, [person.credentialId]);
 
-  const band = CAT_BAND[person.category] ?? CAT_BAND.player;
+  const theme = countryTheme(countryCode, countryName);
+  const zones = ACCESS_ZONES[person.category] ?? ACCESS_ZONES.player;
+  const initials =
+    `${person.firstName.charAt(0)}${person.lastName.charAt(0)}`.toUpperCase();
+  // Readable badge reference (AFN-<code>-XXXX) derived from the credential id.
+  const ref = person.credentialId
+    ? `AFN-${countryCode}-${person.credentialId.replace(/-/g, "").slice(0, 4).toUpperCase()}`
+    : "AFN — pending";
 
   return (
-    <div
-      className="badge overflow-hidden rounded-xl border border-line bg-white"
-      style={{ borderTop: `6px solid ${color}` }}
-    >
+    <div className="badge mx-auto flex w-full max-w-[300px] flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-line">
+      {/* Header — country primary with a horizontal flag-coloured accent */}
       <div
-        className="bg-navy-deep px-4 py-2"
-        style={{ borderBottom: "3px solid var(--color-gold)" }}
+        className="relative overflow-hidden px-4 pb-4 pt-3 text-white"
+        style={{ background: theme.primary }}
       >
-        <div className="font-mono text-[0.52rem] uppercase tracking-[0.16em] text-gold-bright">
-          Americas Regional Qualifier 2026
-        </div>
-        <div className="font-mono text-[0.5rem] uppercase tracking-[0.12em] text-white/60">
-          Accreditation credential
-        </div>
-      </div>
-      <div className="flex gap-3 p-4">
-        <div className="h-24 w-20 shrink-0 overflow-hidden rounded-md bg-bg-sand ring-1 ring-line">
-          {photo ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={photo} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center font-mono text-xs text-ink-muted">
-              {person.firstName.charAt(0)}
-              {person.lastName.charAt(0)}
+        <div
+          aria-hidden
+          className="absolute bottom-0 left-0 h-3 w-full"
+          style={{ background: theme.secondary }}
+        />
+        <div className="relative flex items-start justify-between">
+          <div className="leading-[0.92]">
+            <div className="font-display text-[1.05rem] font-extrabold tracking-tight">
+              NETBALL
             </div>
-          )}
-        </div>
-        <div className="min-w-0 flex-1">
-          <div
-            className="font-mono text-[0.55rem] font-bold uppercase tracking-[0.1em]"
-            style={{ color }}
-          >
-            {country.name} · {country.countryCode}
+            <div className="font-display text-[1.05rem] font-extrabold tracking-tight">
+              AMERICAS
+            </div>
+            <div className="mt-1.5 font-mono text-[0.46rem] uppercase tracking-[0.16em] text-white/80">
+              Americas Qualifier 2026
+            </div>
           </div>
-          <div className="font-display text-lg font-bold leading-tight text-ink">
-            {person.firstName} {person.lastName}
-          </div>
-          <div className="font-mono text-[0.6rem] uppercase tracking-[0.05em] text-ink-muted">
-            {person.role}
-          </div>
-          <span
-            className="mt-2 inline-block rounded px-2 py-0.5 font-mono text-[0.58rem] font-bold uppercase tracking-[0.06em]"
-            style={{ background: band.bg, color: band.fg }}
-          >
+          <span className="font-mono text-[0.62rem] font-bold uppercase tracking-[0.12em]">
             {person.category}
           </span>
         </div>
-        <div className="shrink-0">
-          {qr ? (
+      </div>
+
+      {/* Body — flag-coloured avatar (photo when present), name, country */}
+      <div className="relative flex flex-1 flex-col items-center px-4 pt-5 text-center">
+        <NetballWatermark />
+        <div
+          className="relative h-40 w-40 overflow-hidden rounded-3xl shadow-sm ring-1 ring-black/5"
+          style={{ background: theme.primary }}
+        >
+          <span className="absolute inset-0 flex items-center justify-center font-display text-5xl font-extrabold text-white">
+            {initials}
+          </span>
+          {photo && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={qr} alt="" className="h-20 w-20" />
-          ) : (
-            <div className="h-20 w-20 rounded bg-bg-soft" />
+            <img
+              src={photo}
+              alt=""
+              onLoad={(e) =>
+                setPhotoOk(e.currentTarget.naturalWidth >= 32)
+              }
+              onError={() => setPhotoOk(false)}
+              className={
+                photoOk
+                  ? "absolute inset-0 h-full w-full object-cover"
+                  : "hidden"
+              }
+            />
           )}
         </div>
+        <div className="relative mt-3 font-display text-xl font-bold leading-tight text-ink">
+          {person.firstName.charAt(0)}. {person.lastName}
+        </div>
+        <div className="relative font-body text-sm text-ink-soft">
+          {person.role || person.category}
+        </div>
+        <div
+          className="relative mt-1.5 flex items-center justify-center gap-1.5 font-bold"
+          style={{ color: theme.primary }}
+        >
+          <span className="text-base leading-none">{theme.flag}</span>
+          <span className="font-mono text-[0.7rem] uppercase tracking-[0.08em]">
+            {theme.name}
+          </span>
+        </div>
       </div>
-      <div className="truncate border-t border-line px-4 py-1 font-mono text-[0.5rem] uppercase tracking-[0.08em] text-ink-faded">
-        {person.credentialId}
+
+      {/* Access block — country-coloured, carries QR + zones + reference */}
+      <div
+        className="m-4 mt-3 rounded-xl px-3 py-2.5 text-white"
+        style={{ background: theme.primary }}
+      >
+        <div className="flex items-center gap-3">
+          <div className="shrink-0 rounded-md bg-white p-1">
+            {qr ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={qr} alt="" className="h-14 w-14" />
+            ) : (
+              <div className="h-14 w-14" />
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="font-mono text-[0.55rem] font-bold uppercase tracking-[0.14em] text-gold-bright">
+              Access
+            </div>
+            <ul className="mt-0.5 space-y-px">
+              {zones.map((z) => (
+                <li
+                  key={z}
+                  className="font-body text-[0.62rem] leading-tight text-white/90"
+                >
+                  {z}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+        <div className="mt-2 border-t border-white/20 pt-1 font-mono text-[0.55rem] tracking-[0.1em] text-white/75">
+          {ref}
+        </div>
       </div>
     </div>
+  );
+}
+
+function NetballWatermark() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 100 100"
+      className="pointer-events-none absolute -right-6 top-2 h-44 w-44 text-ink opacity-[0.04]"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2.5}
+    >
+      <circle cx="50" cy="50" r="46" />
+      <path d="M50 4 V96 M4 50 H96" />
+      <path d="M14 22 Q50 50 14 78 M86 22 Q50 50 86 78" />
+    </svg>
   );
 }
 

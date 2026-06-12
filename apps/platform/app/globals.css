@@ -41,11 +41,12 @@ body {
   font-family: var(--font-body);
 }
 
-/* Four-up badge printing: hide app chrome, lay out 2x2 per US-Letter page. */
+/* Four-up badge printing: hide app chrome, lay out 2x2 per US-Letter page at a
+   respectable size (each badge ~3.6in x 4.85in — readable at arm's length). */
 @media print {
   @page {
     size: letter;
-    margin: 0.4in;
+    margin: 0.35in;
   }
   body {
     background: #fff;
@@ -56,11 +57,21 @@ body {
   .badge-sheet {
     display: grid !important;
     grid-template-columns: 1fr 1fr;
-    gap: 0;
+    justify-items: center;
+    gap: 0.2in;
   }
   .badge {
+    width: 2.95in;
+    height: 4.7in;
+    max-width: none;
     break-inside: avoid;
+    box-shadow: none !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
+}
+
+/* On-screen badge sizing so the preview matches the printed portrait proportions. */
+.badge {
+  min-height: 470px;
 }
