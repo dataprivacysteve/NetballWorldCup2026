@@ -29,6 +29,10 @@ export const federation = {
     subLead: "1 court ·",
     subAccent: "1 ticket to the World Cup",
     host: "Barbados",
+    // Big hero background photo (e.g. the players jumping). Served from
+    // apps/web/public/. Drop the file there and it shows behind the scrim;
+    // falls back to the gradient if missing. Use a wide, compressed JPG/WebP.
+    image: "/photos/hero.jpg" as string | null,
   },
 
   // External destinations (demo: alert stubs; swap for real URLs).

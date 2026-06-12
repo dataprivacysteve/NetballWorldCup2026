@@ -71,7 +71,16 @@ export default async function Home() {
 
       {/* HERO */}
       <section className="hero" id="top">
-        <div className="hero-photo" />
+        <div
+          className="hero-photo"
+          style={
+            federation.hero.image
+              ? {
+                  backgroundImage: `url(${federation.hero.image}), radial-gradient(circle at 70% 30%, #1c2b4a, #0a0a12 60%)`,
+                }
+              : undefined
+          }
+        />
         <div className="hero-scrim" />
         <div className="wrap hero-inner">
           <h1 className="disp">

@@ -47,7 +47,7 @@ header.scrolled { background: rgba(10, 10, 18, 0.86); backdrop-filter: blur(16px
 
 /* HERO */
 .hero { position: relative; min-height: 100vh; display: flex; align-items: flex-start; overflow: hidden; background: var(--bg); }
-.hero-photo { position: absolute; inset: 0; z-index: 0; background-image: radial-gradient(circle at 70% 30%, #1c2b4a, #0a0a12 60%); }
+.hero-photo { position: absolute; inset: 0; z-index: 0; background-size: cover; background-position: center right; background-image: radial-gradient(circle at 70% 30%, #1c2b4a, #0a0a12 60%); }
 .hero-scrim { position: absolute; inset: 0; z-index: 1; background: linear-gradient(100deg, rgba(10, 10, 18, 0.96) 0%, rgba(10, 10, 18, 0.82) 30%, rgba(10, 10, 18, 0.35) 62%, rgba(10, 10, 18, 0.6) 100%); }
 .hero::before { content: ""; position: absolute; inset: 0; z-index: 2; background-image: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.022) 0 1px, transparent 1px 4px); pointer-events: none; }
 .hero-inner { position: relative; z-index: 4; width: 100%; padding: 7rem 0 3rem; }
