@@ -54,15 +54,20 @@ body {
   .no-print {
     display: none !important;
   }
+  main {
+    padding: 0 !important;
+    max-width: none !important;
+  }
   .badge-sheet {
     display: grid !important;
     grid-template-columns: 1fr 1fr;
     justify-items: center;
-    gap: 0.2in;
+    gap: 0.15in;
   }
   .badge {
     width: 2.95in;
-    height: 4.7in;
+    height: 4.5in;
+    min-height: 0; /* cancel the on-screen min-height so the row fits */
     max-width: none;
     break-inside: avoid;
     box-shadow: none !important;

@@ -194,7 +194,7 @@ function Console({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
 
   return (
     <>
-      <header className="sticky top-0 z-20 border-b-[3px] border-gold bg-navy-deep text-white">
+      <header className="no-print sticky top-0 z-20 border-b-[3px] border-gold bg-navy-deep text-white">
         <div className="mx-auto flex max-w-4xl items-center gap-3 px-5 py-2.5">
           <BrandMark />
           <div className="leading-tight">
@@ -587,10 +587,10 @@ function BadgeCard({
       </div>
 
       {/* Body — flag-coloured avatar (photo when present), name, country */}
-      <div className="relative flex flex-1 flex-col items-center px-4 pt-5 text-center">
+      <div className="relative flex flex-1 flex-col items-center px-4 pt-4 text-center">
         <NetballWatermark />
         <div
-          className="relative h-40 w-40 overflow-hidden rounded-3xl shadow-sm ring-1 ring-black/5"
+          className="relative h-36 w-36 overflow-hidden rounded-3xl shadow-sm ring-1 ring-black/5"
           style={{ background: theme.primary }}
         >
           <span className="absolute inset-0 flex items-center justify-center font-display text-5xl font-extrabold text-white">
@@ -613,7 +613,7 @@ function BadgeCard({
             />
           )}
         </div>
-        <div className="relative mt-3 font-display text-xl font-bold leading-tight text-ink">
+        <div className="relative mt-2 font-display text-xl font-bold leading-tight text-ink">
           {person.firstName.charAt(0)}. {person.lastName}
         </div>
         <div className="relative font-body text-sm text-ink-soft">
@@ -632,7 +632,7 @@ function BadgeCard({
 
       {/* Access block — country-coloured, carries QR + zones + reference */}
       <div
-        className="m-4 mt-3 rounded-xl px-3 py-2.5 text-white"
+        className="m-3 mt-2 rounded-xl px-3 py-2 text-white"
         style={{ background: theme.primary }}
       >
         <div className="flex items-center gap-3">
