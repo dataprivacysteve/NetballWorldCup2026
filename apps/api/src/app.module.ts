@@ -7,6 +7,7 @@ import { DatabaseModule } from './db/database.module';
 import { AuthModule } from './auth/auth.module';
 import { AdminModule } from './admin/admin.module';
 import { TeamsModule } from './teams/teams.module';
+import { PublicModule } from './public/public.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { TeamsModule } from './teams/teams.module';
     AuthModule,
     AdminModule,
     TeamsModule,
+    PublicModule,
   ],
   controllers: [AppController],
   providers: [AppService],
