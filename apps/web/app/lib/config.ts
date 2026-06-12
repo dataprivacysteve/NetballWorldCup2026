@@ -17,6 +17,9 @@ export const federation = {
     address: "#14 Bannatyne Gardens, Christ Church, Barbados",
     contactEmail: "steven@sports.bb",
     domain: "www.netballamericas.org",
+    // Official logo, served from apps/web/public/brand/. Drop the file there and
+    // it replaces the text wordmark in the nav; falls back to text if absent.
+    logoSrc: "/brand/event-logo.svg" as string | null,
   },
 
   hero: {
@@ -77,4 +80,11 @@ export function nationTheme(code: string) {
       color: "#62627A",
     }
   );
+}
+
+// Path to a nation's flag image (apps/web/public/flags/<code>.svg). The Crest
+// tries this first and falls back to the emoji/ISO monogram if the file is
+// missing, so dropping flag files in is all that's needed.
+export function flagSrc(code: string) {
+  return `/flags/${code.toLowerCase()}.svg`;
 }
