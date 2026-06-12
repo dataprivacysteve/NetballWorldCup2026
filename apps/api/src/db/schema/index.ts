@@ -7,3 +7,4 @@ export * from './delegation';
 export * from './credential';
 export * from './user';
 export * from './roster';
+export * from './match';

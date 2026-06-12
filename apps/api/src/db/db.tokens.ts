@@ -8,3 +8,9 @@ export const PG_POOL = 'PG_POOL';
 // data — that always goes through PG_POOL under RLS. Replaced by proper
 // committee RLS policies in Module 2.
 export const PRIVILEGED_POOL = 'PRIVILEGED_POOL';
+
+// Public read pool (PUBLIC_DATABASE_URL -> gameday_public). SELECT-only role
+// with access ONLY to the public match tables + public-safe views — never the
+// tenant base tables. Used exclusively by the unauthenticated www read layer
+// (Module 4) so a bug there can read only public projections and never write.
+export const PUBLIC_POOL = 'PUBLIC_POOL';

@@ -35,3 +35,13 @@ export const credentialStatus = pgEnum('credential_status', [
   'issued',
   'revoked',
 ]);
+
+// Lifecycle of a match on the public match centre (Module 4). Scores are null
+// until a result is entered; 'final' freezes the result and feeds standings.
+// 'live' is set by the OC (or, later, the Module 5 scoring companion).
+export const matchStatus = pgEnum('match_status', [
+  'scheduled',
+  'live',
+  'final',
+  'postponed',
+]);

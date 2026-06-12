@@ -43,10 +43,14 @@ async function main() {
 
     await db.execute(sql`
       TRUNCATE TABLE
+        "match", "group_entry", "stage",
         "credential", "player_photo", "consent_record", "delegation_membership",
         "player", "delegation", "app_user", "tournament", "eligible_country"
       RESTART IDENTITY CASCADE
     `);
+
+    // country code -> delegation id, for wiring fixtures (Module 4) below.
+    const nations: Record<string, string> = {};
 
     await db
       .insert(schema.eligibleCountry)
@@ -76,6 +80,7 @@ async function main() {
 
     // --- Pre-approved delegation: Jamaica, with a roster ---
     const jamId = randomUUID();
+    nations.JAM = jamId;
     await db.insert(schema.delegation).values({
       id: jamId,
       tournamentId: event.id,
@@ -168,6 +173,7 @@ async function main() {
       ['BRB', 'Barbados', 'S. Forde', 'manager@barbadosnetball.org'],
     ] as const) {
       const id = randomUUID();
+      nations[code] = id;
       await db.insert(schema.delegation).values({
         id,
         tournamentId: event.id,
@@ -193,7 +199,91 @@ async function main() {
       });
     }
 
+    // -----------------------------------------------------------------------
+    // Module 4 — public match centre. The remaining nations as delegations,
+    // two groups of four, and a fixture set (some played, some upcoming) so the
+    // www surface shows real schedule / results / standings out of the box.
+    // -----------------------------------------------------------------------
+    const REST = [
+      ['LCA', 'Saint Lucia'],
+      ['GUY', 'Guyana'],
+      ['ARG', 'Argentina'],
+      ['USA', 'United States'],
+      ['CAN', 'Canada'],
+    ] as const;
+    for (const [code, name] of REST) {
+      const id = randomUUID();
+      nations[code] = id;
+      await db.insert(schema.delegation).values({
+        id,
+        tournamentId: event.id,
+        countryCode: code,
+        name,
+        registrationStatus: 'approved',
+        approvedAt: new Date(),
+        dpaConsent: true,
+      });
+    }
+
+    // Mark a captain on Jamaica's roster (shows on the public squad page).
+    await db
+      .update(schema.player)
+      .set({ isCaptain: true })
+      .where(eq(schema.player.id, jamPlayers[0].id));
+
+    const [groupA] = await db
+      .insert(schema.stage)
+      .values({ tournamentId: event.id, name: 'Group A', kind: 'group', sortOrder: 1 })
+      .returning();
+    const [groupB] = await db
+      .insert(schema.stage)
+      .values({ tournamentId: event.id, name: 'Group B', kind: 'group', sortOrder: 2 })
+      .returning();
+
+    const GROUPS: Record<string, string[]> = {
+      [groupA.id]: ['JAM', 'BRB', 'LCA', 'GUY'],
+      [groupB.id]: ['ARG', 'USA', 'CAN', 'TTO'],
+    };
+    for (const [stageId, codes] of Object.entries(GROUPS)) {
+      await db.insert(schema.groupEntry).values(
+        codes.map((code, i) => ({
+          stageId,
+          delegationId: nations[code],
+          sortOrder: i,
+        })),
+      );
+    }
+
+    const VENUE = 'G. Sobers Gymnasium';
+    const MATCHES = [
+      { s: groupA.id, h: 'JAM', a: 'LCA', at: '2026-10-19T16:00:00Z', court: 'Centre Court', status: 'final', hs: 71, as: 33, round: 'Group A · Round 1' },
+      { s: groupA.id, h: 'BRB', a: 'GUY', at: '2026-10-19T18:00:00Z', court: 'Centre Court', status: 'final', hs: 55, as: 48, round: 'Group A · Round 1' },
+      { s: groupB.id, h: 'ARG', a: 'CAN', at: '2026-10-19T20:00:00Z', court: 'Court 2', status: 'final', hs: 60, as: 52, round: 'Group B · Round 1' },
+      { s: groupB.id, h: 'USA', a: 'TTO', at: '2026-10-20T16:00:00Z', court: 'Court 2', status: 'final', hs: 49, as: 58, round: 'Group B · Round 1' },
+      { s: groupA.id, h: 'BRB', a: 'JAM', at: '2026-10-20T17:30:00Z', court: 'Centre Court', status: 'scheduled', hs: null, as: null, round: 'Group A · Round 2' },
+      { s: groupA.id, h: 'LCA', a: 'GUY', at: '2026-10-20T19:30:00Z', court: 'Court 2', status: 'scheduled', hs: null, as: null, round: 'Group A · Round 2' },
+      { s: groupB.id, h: 'ARG', a: 'USA', at: '2026-10-21T17:30:00Z', court: 'Centre Court', status: 'scheduled', hs: null, as: null, round: 'Group B · Round 2' },
+      { s: groupB.id, h: 'CAN', a: 'TTO', at: '2026-10-21T19:30:00Z', court: 'Court 2', status: 'scheduled', hs: null, as: null, round: 'Group B · Round 2' },
+    ] as const;
+    await db.insert(schema.match).values(
+      MATCHES.map((m, i) => ({
+        tournamentId: event.id,
+        stageId: m.s,
+        homeDelegationId: nations[m.h],
+        awayDelegationId: nations[m.a],
+        scheduledAt: new Date(m.at),
+        venue: VENUE,
+        court: m.court,
+        roundLabel: m.round,
+        status: m.status,
+        homeScore: m.hs,
+        awayScore: m.as,
+        sortOrder: i,
+      })),
+    );
+
     console.log('Seed complete.');
+    console.log(`  Module 4: ${Object.keys(nations).length} nations, 2 groups, ${MATCHES.length} fixtures`);
     console.log('  OC admin:        admin@netballamericas.org /', ADMIN_PASSWORD);
     console.log('  Jamaica (approved) manager: manager@jamaicanetball.org /', DEMO_PASSWORD);
     console.log('  T&T / Barbados (pending) managers also use:', DEMO_PASSWORD);

@@ -28,6 +28,9 @@ export const player = pgTable('player', {
   category: personCategory('category').notNull().default('player'),
   role: text('role'),
   jerseyNumber: integer('jersey_number'),
+  // Captaincy shows on the public squad page (Module 4). Set on the teams
+  // surface; defaults false. One of the few roster fields exposed publicly.
+  isCaptain: boolean('is_captain').notNull().default(false),
   dateOfBirth: date('date_of_birth'),
   createdAt: timestamp('created_at', { withTimezone: true })
     .defaultNow()

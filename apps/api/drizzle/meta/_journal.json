@@ -92,6 +92,20 @@
       "when": 1781211314746,
       "tag": "0012_registration_closes",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1781230010382,
+      "tag": "0013_module4_match_centre",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1781230026343,
+      "tag": "0014_public_read_layer",
+      "breakpoints": true
     }
   ]
 }

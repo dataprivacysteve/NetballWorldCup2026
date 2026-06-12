@@ -35,6 +35,18 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
     GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO gameday_app;
   ALTER DEFAULT PRIVILEGES IN SCHEMA public
     GRANT USAGE, SELECT ON SEQUENCES TO gameday_app;
+
+  -- ------------------------------------------------------------------
+  -- gameday_public: the public www surface's read-only role (Module 4).
+  -- SELECT-only, no DML. It is granted SELECT on the public match tables
+  -- and the public-safe VIEWS by the Module 4 migration (0014) — never on
+  -- the tenant base tables. Serving the unauthenticated public site with
+  -- THIS role means a bug there can only ever read public projections,
+  -- not tenant-private data, and never write.
+  -- ------------------------------------------------------------------
+  CREATE ROLE gameday_public WITH LOGIN PASSWORD '${GAMEDAY_PUBLIC_PASSWORD}'
+    NOSUPERUSER NOCREATEDB NOCREATEROLE;
+  GRANT CONNECT ON DATABASE ${POSTGRES_DB} TO gameday_public;
 EOSQL
 
-echo "Role gameday_app created and granted (NOSUPERUSER, RLS-bound)."
+echo "Roles gameday_app + gameday_public created (NOSUPERUSER, RLS-bound)."
