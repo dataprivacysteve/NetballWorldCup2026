@@ -107,6 +107,60 @@ export type ReviewDetail = {
   people: ReviewPerson[];
 };
 
+// ---- Match centre (Module 4 writer) ----
+export type MatchNation = { id: string; countryCode: string; name: string };
+export type StageEntry = {
+  delegationId: string;
+  countryCode: string;
+  name: string;
+  sortOrder: number;
+};
+export type Stage = {
+  id: string;
+  name: string;
+  kind: string;
+  sortOrder: number;
+  entries: StageEntry[];
+};
+export type AdminMatch = {
+  id: string;
+  stageId: string | null;
+  stageName: string | null;
+  scheduledAt: string | null;
+  venue: string | null;
+  court: string | null;
+  roundLabel: string | null;
+  status: "scheduled" | "live" | "final" | "postponed";
+  homeScore: number | null;
+  awayScore: number | null;
+  sortOrder: number;
+  homeId: string;
+  homeCode: string;
+  homeName: string;
+  awayId: string;
+  awayCode: string;
+  awayName: string;
+};
+export type NewMatch = {
+  stageId?: string | null;
+  homeDelegationId: string;
+  awayDelegationId: string;
+  scheduledAt?: string | null;
+  venue?: string | null;
+  court?: string | null;
+  roundLabel?: string | null;
+};
+export type MatchPatch = Partial<{
+  stageId: string | null;
+  scheduledAt: string | null;
+  venue: string | null;
+  court: string | null;
+  roundLabel: string | null;
+  status: AdminMatch["status"];
+  homeScore: number | null;
+  awayScore: number | null;
+}>;
+
 export const api = {
   me: async (): Promise<Me | null> => {
     try {
@@ -159,6 +213,32 @@ export const api = {
       method: "POST",
       body: { note },
     }),
+
+  // Match centre (fixtures / results / standings writer)
+  matchNations: () => req<MatchNation[]>("/admin/match/nations"),
+  stages: () => req<Stage[]>("/admin/match/stages"),
+  createStage: (name: string, kind: "group" | "knockout", sortOrder: number) =>
+    req<Stage>("/admin/match/stages", {
+      method: "POST",
+      body: { name, kind, sortOrder },
+    }),
+  addEntry: (stageId: string, delegationId: string) =>
+    req<{ ok: boolean }>(`/admin/match/stages/${stageId}/entries`, {
+      method: "POST",
+      body: { delegationId },
+    }),
+  removeEntry: (stageId: string, delegationId: string) =>
+    req<{ ok: boolean }>(
+      `/admin/match/stages/${stageId}/entries/${delegationId}`,
+      { method: "DELETE" },
+    ),
+  matches: () => req<AdminMatch[]>("/admin/match/matches"),
+  createMatch: (body: NewMatch) =>
+    req<AdminMatch>("/admin/match/matches", { method: "POST", body }),
+  updateMatch: (id: string, body: MatchPatch) =>
+    req<AdminMatch>(`/admin/match/matches/${id}`, { method: "PATCH", body }),
+  deleteMatch: (id: string) =>
+    req<{ ok: boolean }>(`/admin/match/matches/${id}`, { method: "DELETE" }),
 
   // Media (blob -> object URL; an <img> can't carry the session cookie header)
   blobUrl: async (path: string): Promise<string | null> => {

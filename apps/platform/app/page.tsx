@@ -4,12 +4,15 @@ import { useCallback, useEffect, useState } from "react";
 import {
   api,
   type AccreditedDelegation,
+  type AdminMatch,
+  type MatchNation,
   type Me,
   type PendingDelegation,
   type RegWindow,
   type ReviewDetail,
   type ReviewPerson,
   type ReviewQueueItem,
+  type Stage,
 } from "./lib/api";
 
 const labelCls =
@@ -175,7 +178,7 @@ function NotAuthorised({ onSignOut }: { onSignOut: () => void }) {
   );
 }
 
-type Section = "registrations" | "review" | "badges" | "settings";
+type Section = "registrations" | "review" | "matches" | "badges" | "settings";
 
 function Console({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
   const [section, setSection] = useState<Section>("registrations");
@@ -188,6 +191,7 @@ function Console({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
   const tabs: { id: Section; label: string }[] = [
     { id: "registrations", label: "Registrations" },
     { id: "review", label: "Roster review" },
+    { id: "matches", label: "Matches" },
     { id: "badges", label: "Badges" },
     { id: "settings", label: "Settings" },
   ];
@@ -248,6 +252,8 @@ function Console({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
           <Registrations />
         ) : section === "review" ? (
           <RosterReview />
+        ) : section === "matches" ? (
+          <Matches />
         ) : section === "badges" ? (
           <Badges />
         ) : (
@@ -682,6 +688,436 @@ function NetballWatermark() {
       <path d="M50 4 V96 M4 50 H96" />
       <path d="M14 22 Q50 50 14 78 M86 22 Q50 50 86 78" />
     </svg>
+  );
+}
+
+// ---- Matches (fixtures / results writer — Module 4) --------------------------
+const MATCH_STATUSES: AdminMatch["status"][] = [
+  "scheduled",
+  "live",
+  "final",
+  "postponed",
+];
+
+function whenLabel(iso: string | null) {
+  if (!iso) return "Time TBC";
+  return new Date(iso).toLocaleString(undefined, {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+function Matches() {
+  const [nations, setNations] = useState<MatchNation[] | null>(null);
+  const [stages, setStages] = useState<Stage[] | null>(null);
+  const [matches, setMatches] = useState<AdminMatch[] | null>(null);
+  const [error, setError] = useState<unknown>(null);
+
+  const reload = useCallback(async () => {
+    setError(null);
+    try {
+      const [n, s, m] = await Promise.all([
+        api.matchNations(),
+        api.stages(),
+        api.matches(),
+      ]);
+      setNations(n);
+      setStages(s);
+      setMatches(m);
+    } catch (e) {
+      setError(e);
+    }
+  }, []);
+  useEffect(() => {
+    reload();
+  }, [reload]);
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <p className="font-mono text-[0.66rem] font-semibold uppercase tracking-[0.14em] text-navy">
+          Match centre
+        </p>
+        <h1 className="font-display text-3xl font-bold tracking-tight text-ink">
+          Fixtures &amp; results
+        </h1>
+        <p className="mt-1 text-sm text-ink-muted">
+          Schedule matches and enter scores. Marking a result{" "}
+          <strong>final</strong> publishes it and updates the public standings.
+        </p>
+      </div>
+      <ErrorBanner error={error} />
+
+      <NewMatchForm
+        nations={nations ?? []}
+        stages={stages ?? []}
+        onCreated={reload}
+      />
+
+      <section>
+        <h2 className={labelCls}>Fixtures ({matches?.length ?? 0})</h2>
+        <div className={`${panel} divide-y divide-line`}>
+          {matches === null ? (
+            <p className="p-5 text-sm text-ink-muted">Loading…</p>
+          ) : matches.length === 0 ? (
+            <p className="p-5 text-sm text-ink-muted">
+              No fixtures yet — add one above.
+            </p>
+          ) : (
+            matches.map((m) => (
+              <MatchRow key={m.id} m={m} onChange={reload} />
+            ))
+          )}
+        </div>
+      </section>
+
+      <GroupsManager
+        nations={nations ?? []}
+        stages={stages ?? []}
+        onChange={reload}
+      />
+    </div>
+  );
+}
+
+function NewMatchForm({
+  nations,
+  stages,
+  onCreated,
+}: {
+  nations: MatchNation[];
+  stages: Stage[];
+  onCreated: () => void;
+}) {
+  const [stageId, setStageId] = useState("");
+  const [home, setHome] = useState("");
+  const [away, setAway] = useState("");
+  const [at, setAt] = useState("");
+  const [venue, setVenue] = useState("G. Sobers Gymnasium");
+  const [court, setCourt] = useState("Centre Court");
+  const [round, setRound] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const valid = home && away && home !== away;
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!valid) {
+      setErr("Pick two different nations.");
+      return;
+    }
+    setBusy(true);
+    setErr(null);
+    try {
+      await api.createMatch({
+        stageId: stageId || null,
+        homeDelegationId: home,
+        awayDelegationId: away,
+        scheduledAt: at ? new Date(at).toISOString() : null,
+        venue: venue || null,
+        court: court || null,
+        roundLabel: round || null,
+      });
+      setHome("");
+      setAway("");
+      setAt("");
+      setRound("");
+      onCreated();
+    } catch {
+      setErr("Could not create the fixture.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className={`${panel} space-y-3 p-5`}>
+      <h2 className="font-display text-lg font-bold text-ink">Add a fixture</h2>
+      {err && <p className="text-sm text-bad">{err}</p>}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div>
+          <label className={labelCls}>Home</label>
+          <select
+            className={inputCls}
+            value={home}
+            onChange={(e) => setHome(e.target.value)}
+          >
+            <option value="">Select nation…</option>
+            {nations.map((n) => (
+              <option key={n.id} value={n.id}>
+                {n.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className={labelCls}>Away</label>
+          <select
+            className={inputCls}
+            value={away}
+            onChange={(e) => setAway(e.target.value)}
+          >
+            <option value="">Select nation…</option>
+            {nations.map((n) => (
+              <option key={n.id} value={n.id}>
+                {n.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className={labelCls}>Group / stage</label>
+          <select
+            className={inputCls}
+            value={stageId}
+            onChange={(e) => setStageId(e.target.value)}
+          >
+            <option value="">— none —</option>
+            {stages.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className={labelCls}>Date &amp; time</label>
+          <input
+            type="datetime-local"
+            className={inputCls}
+            value={at}
+            onChange={(e) => setAt(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className={labelCls}>Venue</label>
+          <input
+            className={inputCls}
+            value={venue}
+            onChange={(e) => setVenue(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className={labelCls}>Court</label>
+          <input
+            className={inputCls}
+            value={court}
+            onChange={(e) => setCourt(e.target.value)}
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <label className={labelCls}>Round label (optional)</label>
+          <input
+            className={inputCls}
+            placeholder="Group A · Round 2"
+            value={round}
+            onChange={(e) => setRound(e.target.value)}
+          />
+        </div>
+      </div>
+      <button className={btnGold} disabled={busy || !valid}>
+        {busy ? "Adding…" : "Add fixture"}
+      </button>
+    </form>
+  );
+}
+
+function MatchRow({ m, onChange }: { m: AdminMatch; onChange: () => void }) {
+  const [status, setStatus] = useState<AdminMatch["status"]>(m.status);
+  const [hs, setHs] = useState(m.homeScore?.toString() ?? "");
+  const [as, setAs] = useState(m.awayScore?.toString() ?? "");
+  const [busy, setBusy] = useState(false);
+
+  const dirty =
+    status !== m.status ||
+    hs !== (m.homeScore?.toString() ?? "") ||
+    as !== (m.awayScore?.toString() ?? "");
+
+  async function save() {
+    setBusy(true);
+    try {
+      await api.updateMatch(m.id, {
+        status,
+        homeScore: hs === "" ? null : Number(hs),
+        awayScore: as === "" ? null : Number(as),
+      });
+      onChange();
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function del() {
+    if (!confirm(`Delete ${m.homeName} v ${m.awayName}?`)) return;
+    setBusy(true);
+    try {
+      await api.deleteMatch(m.id);
+      onChange();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 p-4">
+      <div className="min-w-[3rem] font-mono text-[0.6rem] uppercase tracking-[0.06em] text-ink-muted">
+        {m.stageName ?? "—"}
+        <div className="text-ink-faded">{whenLabel(m.scheduledAt)}</div>
+      </div>
+      <div className="flex flex-1 items-center justify-end gap-2 text-right">
+        <span className="font-semibold text-ink">{m.homeName}</span>
+        <span className="rounded bg-bg-soft px-1.5 py-0.5 font-mono text-[0.58rem] font-bold text-navy">
+          {m.homeCode}
+        </span>
+      </div>
+      <input
+        type="number"
+        min={0}
+        value={hs}
+        onChange={(e) => setHs(e.target.value)}
+        className="w-14 rounded-md border border-line-strong bg-white px-2 py-1 text-center text-sm"
+      />
+      <span className="text-ink-faded">–</span>
+      <input
+        type="number"
+        min={0}
+        value={as}
+        onChange={(e) => setAs(e.target.value)}
+        className="w-14 rounded-md border border-line-strong bg-white px-2 py-1 text-center text-sm"
+      />
+      <div className="flex flex-1 items-center gap-2">
+        <span className="rounded bg-bg-soft px-1.5 py-0.5 font-mono text-[0.58rem] font-bold text-navy">
+          {m.awayCode}
+        </span>
+        <span className="font-semibold text-ink">{m.awayName}</span>
+      </div>
+      <select
+        value={status}
+        onChange={(e) => setStatus(e.target.value as AdminMatch["status"])}
+        className="rounded-md border border-line-strong bg-white px-2 py-1 text-xs font-semibold uppercase text-ink"
+      >
+        {MATCH_STATUSES.map((s) => (
+          <option key={s} value={s}>
+            {s}
+          </option>
+        ))}
+      </select>
+      <button
+        onClick={save}
+        disabled={busy || !dirty}
+        className="rounded-md bg-navy px-3 py-1 text-xs font-semibold text-white disabled:opacity-40"
+      >
+        Save
+      </button>
+      <button
+        onClick={del}
+        disabled={busy}
+        className="rounded-md border border-line-strong px-2 py-1 text-xs text-bad hover:bg-bg-soft"
+        title="Delete fixture"
+      >
+        ✕
+      </button>
+    </div>
+  );
+}
+
+function GroupsManager({
+  nations,
+  stages,
+  onChange,
+}: {
+  nations: MatchNation[];
+  stages: Stage[];
+  onChange: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function createStage(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim()) return;
+    setBusy(true);
+    try {
+      await api.createStage(name.trim(), "group", stages.length + 1);
+      setName("");
+      onChange();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="space-y-3">
+      <h2 className={labelCls}>Groups &amp; stages</h2>
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        {stages.map((s) => {
+          const inGroup = new Set(s.entries.map((e) => e.delegationId));
+          const available = nations.filter((n) => !inGroup.has(n.id));
+          return (
+            <div key={s.id} className={`${panel} p-4`}>
+              <div className="mb-2 font-display text-lg font-bold text-ink">
+                {s.name}
+              </div>
+              <div className="mb-3 flex flex-wrap gap-1.5">
+                {s.entries.length === 0 && (
+                  <span className="text-xs text-ink-faded">No nations yet.</span>
+                )}
+                {s.entries.map((e) => (
+                  <span
+                    key={e.delegationId}
+                    className="inline-flex items-center gap-1 rounded-full bg-bg-soft px-2 py-0.5 text-xs font-semibold text-ink"
+                  >
+                    {e.name}
+                    <button
+                      onClick={async () => {
+                        await api.removeEntry(s.id, e.delegationId);
+                        onChange();
+                      }}
+                      className="text-ink-faded hover:text-bad"
+                      title="Remove"
+                    >
+                      ✕
+                    </button>
+                  </span>
+                ))}
+              </div>
+              <select
+                className={inputCls}
+                value=""
+                onChange={async (ev) => {
+                  if (!ev.target.value) return;
+                  await api.addEntry(s.id, ev.target.value);
+                  onChange();
+                }}
+              >
+                <option value="">Add a nation…</option>
+                {available.map((n) => (
+                  <option key={n.id} value={n.id}>
+                    {n.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          );
+        })}
+      </div>
+      <form onSubmit={createStage} className="flex items-end gap-2">
+        <div className="flex-1">
+          <label className={labelCls}>New group / stage</label>
+          <input
+            className={inputCls}
+            placeholder="Group C"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </div>
+        <button className={btnGhost} disabled={busy || !name.trim()}>
+          Add stage
+        </button>
+      </form>
+    </section>
   );
 }
 
