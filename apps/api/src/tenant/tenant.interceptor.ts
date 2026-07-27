@@ -14,6 +14,12 @@ import { PG_POOL } from '../db/db.tokens';
 import { tenantStorage } from './tenant-context';
 import { ALLOW_UNAPPROVED } from '../auth/auth.metadata';
 import * as schema from '../db/schema';
+import type { Request } from 'express';
+import type { SessionUser } from '../auth/auth.service';
+
+interface TenantRequest extends Request {
+  user?: SessionUser;
+}
 
 // Wraps every tenant-scoped request in one DB transaction whose
 // app.current_delegation_id GUC is set, so RLS governs every query. The
@@ -29,25 +35,27 @@ export class TenantInterceptor implements NestInterceptor {
   ) {}
 
   intercept(ctx: ExecutionContext, next: CallHandler): Observable<unknown> {
-    const req = ctx.switchToHttp().getRequest();
-    const delegationId: string | undefined = req.user?.delegationId;
+    const req = ctx.switchToHttp().getRequest<TenantRequest>();
+    const delegationId = req.user?.delegationId ?? undefined;
     if (!delegationId) {
-      throw new ForbiddenException('No delegation is associated with this session');
+      throw new ForbiddenException(
+        'No delegation is associated with this session',
+      );
     }
     const allowUnapproved =
       this.reflector.getAllAndOverride<boolean>(ALLOW_UNAPPROVED, [
         ctx.getHandler(),
         ctx.getClass(),
       ]) ?? false;
-    // Reads stay open after the registration cutoff; mutations are locked.
-    const mutating = !['GET', 'HEAD', 'OPTIONS'].includes(req.method);
-    return from(this.runInTenant(delegationId, allowUnapproved, mutating, next));
+    return from(
+      this.runInTenant(delegationId, req.user!.userId, allowUnapproved, next),
+    );
   }
 
   private async runInTenant(
     delegationId: string,
+    userId: string,
     allowUnapproved: boolean,
-    mutating: boolean,
     next: CallHandler,
   ): Promise<unknown> {
     const client = await this.pool.connect();
@@ -58,25 +66,9 @@ export class TenantInterceptor implements NestInterceptor {
         [delegationId],
       );
 
-      if (mutating) {
-        // Registration cutoff (tournament-level; tournament is not RLS-scoped).
-        const w = await client.query(
-          'SELECT registration_closes_at FROM tournament LIMIT 1',
-        );
-        const closesAt = w.rows[0]?.registration_closes_at as
-          | string
-          | Date
-          | null;
-        if (closesAt && new Date() > new Date(closesAt)) {
-          throw new ForbiddenException(
-            'Registration has closed; the roster is locked.',
-          );
-        }
-      }
-
       if (!allowUnapproved) {
         // Reads the delegation's own row under RLS (context is set above).
-        const r = await client.query(
+        const r = await client.query<{ registration_status: string }>(
           'SELECT registration_status FROM delegation WHERE id = $1',
           [delegationId],
         );
@@ -88,8 +80,9 @@ export class TenantInterceptor implements NestInterceptor {
       }
 
       const db = drizzle(client, { schema });
-      const result = await tenantStorage.run({ delegationId, db }, () =>
-        lastValueFrom(next.handle()),
+      const result: unknown = await tenantStorage.run(
+        { delegationId, userId, db },
+        () => lastValueFrom(next.handle()),
       );
       await client.query('COMMIT');
       return result;

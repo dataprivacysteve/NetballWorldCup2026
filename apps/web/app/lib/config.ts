@@ -19,7 +19,11 @@ export const federation = {
     domain: "www.netballamericas.org",
     // Official logo, served from apps/web/public/brand/. Drop the file there and
     // it replaces the text wordmark in the nav; falls back to text if absent.
-    logoSrc: "/brand/event-logo.svg" as string | null,
+    // Use the styled wordmark until the approved event-logo.svg is supplied.
+    // Pointing at a placeholder path produces a broken-image marker before
+    // hydration, which is not acceptable on the live demo header.
+    logoSrc:
+      "/event-brand/Americas/Landscape/RGB/NWC_SYD2027_Logo_Landscape_Full_Colour_Negative_RGB_Regional_Qualifier_Americas.png" as string | null,
   },
 
   hero: {

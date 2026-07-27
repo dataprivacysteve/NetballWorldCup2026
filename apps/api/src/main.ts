@@ -24,8 +24,14 @@ async function bootstrap() {
   // server these same keys carry the production origins.
   app.enableCors({
     origin: [
-      config.get<string>('TEAMS_BASE_URL', 'https://teams.netballamericas.test'),
-      config.get<string>('PLATFORM_BASE_URL', 'https://platform.netballamericas.test'),
+      config.get<string>(
+        'TEAMS_BASE_URL',
+        'https://teams.netballamericas.test',
+      ),
+      config.get<string>(
+        'PLATFORM_BASE_URL',
+        'https://platform.netballamericas.test',
+      ),
       config.get<string>('PUBLIC_BASE_URL', 'https://www.netballamericas.test'),
     ],
     allowedHeaders: ['content-type', 'x-delegation-id'],
@@ -34,4 +40,4 @@ async function bootstrap() {
 
   await app.listen(process.env.PORT ?? 3000);
 }
-bootstrap();
+void bootstrap();

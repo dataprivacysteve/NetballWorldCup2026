@@ -2,30 +2,49 @@ import {
   pgTable,
   uuid,
   text,
+  varchar,
   integer,
   boolean,
   date,
   timestamp,
 } from 'drizzle-orm/pg-core';
-import { consentType, personCategory, photoStatus } from './enums';
+import {
+  consentType,
+  officialRole,
+  personCategory,
+  photoStatus,
+  playerRosterType,
+} from './enums';
 import { delegation } from './delegation';
 
 // A player on a delegation's roster.
 //
-// NOTE on date_of_birth (Section 11): the brief defers DOB handling under the
-// on-hold identity-verification path. The data-protection lead authorised
-// collecting DOB HERE for roster/eligibility use only — to derive under-18
-// status and drive guardian-consent requirements — treating it as separable
-// from the on-hold identity-verification DOB (passport image + face/ID check),
-// which remains NOT built. Flagged for the DPIA re-scope.
+// Date of birth is collected for players only. It drives age eligibility and
+// guardian-consent requirements and is checked against restricted identity
+// evidence by the authorised LOC reviewer.
 export const player = pgTable('player', {
   id: uuid('id').primaryKey().defaultRandom(),
   delegationId: uuid('delegation_id')
     .notNull()
     .references(() => delegation.id),
   firstName: text('first_name').notNull(),
+  middleNames: text('middle_names'),
   lastName: text('last_name').notNull(),
+  nationality: varchar('nationality', { length: 3 }).notNull().default('UNK'),
+  biography: text('biography').notNull().default(''),
   category: personCategory('category').notNull().default('player'),
+  rosterType: playerRosterType('roster_type'),
+  officialRole: officialRole('official_role'),
+  otherOfficialTitle: text('other_official_title'),
+  isHeadOfDelegation: boolean('is_head_of_delegation').notNull().default(false),
+  benchEligible: boolean('bench_eligible').notNull().default(true),
+  nationalityMatchesTeam: boolean('nationality_matches_team')
+    .notNull()
+    .default(true),
+  eligibilityConfirmed: boolean('eligibility_confirmed')
+    .notNull()
+    .default(false),
+  eligibilityReference: text('eligibility_reference'),
   role: text('role'),
   jerseyNumber: integer('jersey_number'),
   // Captaincy shows on the public squad page (Module 4). Set on the teams

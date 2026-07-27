@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 
-function parts(targetMs: number): [number, number, number, number] {
-  let s = Math.max(0, Math.floor((targetMs - Date.now()) / 1000));
+function parts(targetMs: number, nowMs: number): [number, number, number, number] {
+  let s = Math.max(0, Math.floor((targetMs - nowMs) / 1000));
   const d = Math.floor(s / 86400);
   s %= 86400;
   const h = Math.floor(s / 3600);
@@ -28,9 +28,13 @@ export function Countdown({
 
   useEffect(() => {
     if (!target) return;
-    setNowMs(Date.now());
-    const id = setInterval(() => setNowMs(Date.now()), 1000);
-    return () => clearInterval(id);
+    const update = () => setNowMs(Date.now());
+    const initial = setTimeout(update, 0);
+    const interval = setInterval(update, 1000);
+    return () => {
+      clearTimeout(initial);
+      clearInterval(interval);
+    };
   }, [target]);
 
   if (!target || nowMs === null) {
@@ -41,7 +45,7 @@ export function Countdown({
     );
   }
 
-  const [d, h, m, s] = parts(new Date(target).getTime());
+  const [d, h, m, s] = parts(new Date(target).getTime(), nowMs);
 
   if (mode === "inline") {
     return (

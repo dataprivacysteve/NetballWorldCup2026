@@ -56,7 +56,10 @@ export function NationsExplorer({
                 <div className="num">{p.jerseyNumber ?? "–"}</div>
                 <div
                   className="av"
-                  style={{ background: nationTheme(active).color, color: "#fff" }}
+                  style={{
+                    background: nationTheme(active).color,
+                    color: "#fff",
+                  }}
                 >
                   {p.firstName.charAt(0)}
                   {p.lastName.charAt(0)}
@@ -66,13 +69,18 @@ export function NationsExplorer({
                     {p.firstName.charAt(0)}. {p.lastName}
                     {p.isCaptain && <span className="cap">C</span>}
                   </div>
-                  <div className="pp">{p.role ?? p.category}</div>
+                  <div className="pp">
+                    {p.category === "player" && p.role
+                      ? `Primary: ${p.role}`
+                      : (p.role ?? p.category)}
+                  </div>
                 </div>
               </div>
             ))}
           </div>
           <div className="squad-note">
-            Squads are provisional and subject to accreditation.
+            Listed positions are primary preferences, not fixed match
+            assignments. Squads remain subject to accreditation.
           </div>
         </div>
       )}

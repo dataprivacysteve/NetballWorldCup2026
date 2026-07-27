@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- GameDay live match feed for vMix Data Sources.
+     In production this is served live at: https://platform.netballamericas.org/api/live.xml
+     vMix XPath: /gameday/match   ·   Update interval: 1000 ms (set 100 ms only if showing tenths) -->
+<gameday>
+  <match>
+    <Status>LIVE</Status>
+    <Quarter>Q2</Quarter>
+    <Clock>11:23</Clock>
+    <HomeName>Barbados</HomeName>
+    <HomeAbbr>BRB</HomeAbbr>
+    <HomeScore>34</HomeScore>
+    <HomeFlag>https://platform.netballamericas.org/flags/brb.png</HomeFlag>
+    <AwayName>Jamaica</AwayName>
+    <AwayAbbr>JAM</AwayAbbr>
+    <AwayScore>31</AwayScore>
+    <AwayFlag>https://platform.netballamericas.org/flags/jam.png</AwayFlag>
+    <Venue>Garfield Sobers Gymnasium</Venue>
+  </match>
+</gameday>

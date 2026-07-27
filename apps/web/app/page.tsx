@@ -1,10 +1,11 @@
 import { Fragment } from "react";
 import { federation } from "./lib/config";
-import { publicApi, type Match, type Squad } from "./lib/api";
+import { publicApi, type Match, type Sponsor, type Squad } from "./lib/api";
 import { Header } from "./components/Header";
 import { Countdown } from "./components/Countdown";
 import { Crest } from "./components/Crest";
 import { NationsExplorer } from "./components/NationsExplorer";
+import { LiveScore } from "./components/LiveScore";
 
 export const revalidate = 30;
 
@@ -30,14 +31,25 @@ const timeLabel = (iso: string | null) =>
   iso ? fdate(iso, { hour: "2-digit", minute: "2-digit" }) : "v";
 
 export default async function Home() {
-  const [tournament, nations, fixtures, results, standings, lastNext] =
+  const [
+    tournament,
+    experience,
+    nations,
+    fixtures,
+    results,
+    standings,
+    lastNext,
+    broadcasts,
+  ] =
     await Promise.all([
       publicApi.tournament(),
+      publicApi.experience(),
       publicApi.nations(),
       publicApi.fixtures(),
       publicApi.results(),
       publicApi.standings(),
       publicApi.lastNext(),
+      publicApi.broadcasts(),
     ]);
 
   const squadEntries = await Promise.all(
@@ -64,19 +76,28 @@ export default async function Home() {
           { day: "numeric", month: "short", year: "numeric" },
         )}`
       : "TBC";
+  const ticketsUrl = experience?.ticketsUrl ?? federation.links.tickets;
+  const shopUrl = experience?.merchandiseUrl ?? federation.links.shop;
+  const featuredBroadcast =
+    broadcasts.find((match) => match.broadcast.featured) ?? broadcasts[0] ?? null;
+  const sponsorByTier = (tier: Sponsor["tier"]) =>
+    experience?.sponsors.find((sponsor) => sponsor.tier === tier) ?? null;
 
   return (
     <>
-      <Header />
+      <Header
+        logoSrc={tournament?.brandReverseLogoUrl ?? federation.brand.logoSrc}
+        shopUrl={shopUrl}
+      />
 
       {/* HERO */}
       <section className="hero" id="top">
         <div
           className="hero-photo"
           style={
-            federation.hero.image
+            (experience?.heroImageUrl ?? federation.hero.image)
               ? {
-                  backgroundImage: `url(${federation.hero.image}), radial-gradient(circle at 70% 30%, #1c2b4a, #0a0a12 60%)`,
+                  backgroundImage: `url(${experience?.heroImageUrl ?? federation.hero.image}), radial-gradient(circle at 70% 30%, #1c2b4a, #0a0a12 60%)`,
                 }
               : undefined
           }
@@ -96,11 +117,12 @@ export default async function Home() {
             ))}
           </h1>
           <div className="hero-sub">
-            {nations.length} nations · {federation.hero.subLead}{" "}
-            <span>{federation.hero.subAccent}</span>
+            {experience?.heroStrapline ?? (
+              <>{nations.length} nations · {federation.hero.subLead}{" "}<span>{federation.hero.subAccent}</span></>
+            )}
           </div>
           <div className="hero-cta">
-            <a className="btn btn-gold" href={federation.links.tickets}>
+            <a className="btn btn-gold" href={ticketsUrl}>
               Get tickets
             </a>
             <a className="btn btn-out" href="#watch">
@@ -134,18 +156,14 @@ export default async function Home() {
 
       {/* GOLD PARTNER AD */}
       <div className="adband">
-        <a className="adslot ad-billboard" href={federation.ads.gold.href}>
-          {federation.ads.gold.src ? (
+        <a className="adslot ad-billboard" href={sponsorByTier("gold")?.destinationUrl ?? "#sponsors"}>
+          {sponsorByTier("gold")?.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={federation.ads.gold.src} alt={federation.ads.gold.alt} />
+            <img src={sponsorByTier("gold")?.logoUrl as string} alt={sponsorByTier("gold")?.name ?? "Gold partner"} />
           ) : (
             <>
-              <span className="adtag">Gold Partner · 970×200</span>
-              <span className="adph">
-                Gold sponsorship
-                <br />
-                billboard · 970×200
-              </span>
+              <span className="adtag">Gold Partner</span>
+              <span className="adph">Tournament partner announcement pending</span>
             </>
           )}
         </a>
@@ -192,11 +210,11 @@ export default async function Home() {
           <div className="strip-in">
             {fixtures.map((m) => (
               <div className="fx" key={m.id}>
-                <Crest code={m.home.code} size={38} />
+                <Crest code={m.teamA.code} size={38} />
                 <div>
                   <div className="when">{dayLabel(m.scheduledAt)}</div>
                   <div className="tm">
-                    {m.home.code} v {m.away.code}
+                    {m.teamA.code} v {m.teamB.code}
                   </div>
                   <div className="pl">{m.stage ?? "Fixture"}</div>
                 </div>
@@ -213,7 +231,7 @@ export default async function Home() {
             <h2 className="disp">
               <small>Match Centre</small>Schedule &amp; Results
             </h2>
-            <AdBanner slot="Silver" />
+            <AdBanner slot="Silver" sponsor={sponsorByTier("silver")} />
           </div>
           <div className="sr-2">
             <div>
@@ -302,21 +320,37 @@ export default async function Home() {
             <h2 className="disp">
               <small>Broadcast</small>Watch Live
             </h2>
-            <AdBanner slot="Bronze" />
+            <AdBanner slot="Bronze" sponsor={sponsorByTier("bronze")} />
           </div>
           <div className="watch">
             <div className="watch-stage">
-              <span className="live">● Live soon</span>
-              <div className="play" />
+              <span className="live">● {featuredBroadcast?.broadcast.status === "live" ? "Live" : "Broadcast"}</span>
+              {featuredBroadcast?.broadcast.embedUrl ? (
+                <iframe
+                  src={featuredBroadcast.broadcast.embedUrl}
+                  title={`${featuredBroadcast.teamA.name} versus ${featuredBroadcast.teamB.name}`}
+                  allow="autoplay; fullscreen; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
+                <LiveScore delayedMessage={experience?.delayedUpdatesMessage} />
+              )}
             </div>
             <div className="watch-info">
-              <h3 className="disp">Centre Court</h3>
+              <h3 className="disp">
+                {featuredBroadcast
+                  ? `${featuredBroadcast.teamA.code} v ${featuredBroadcast.teamB.code}`
+                  : "Centre Court"}
+              </h3>
               <p>
                 Every match, live and free across the region — with commentary,
                 replays and live scoring.
               </p>
-              <a className="btn btn-gold" href="#">
-                Set reminder
+              <a
+                className="btn btn-gold"
+                href={featuredBroadcast?.broadcast.watchUrl ?? "#schedule"}
+              >
+                {featuredBroadcast?.broadcast.status === "live" ? "Watch now" : "View schedule"}
               </a>
               <div className="by">Host broadcast · SportsBB</div>
             </div>
@@ -333,42 +367,41 @@ export default async function Home() {
             </h2>
           </div>
           <div className="news">
-            {[
-              "Match-day announcements will appear here",
-              "Squad and team news as it lands",
-              "Broadcast & ticketing updates",
-            ].map((t) => (
-              <div className="nc" key={t}>
-                <div className="img">
+            {(experience?.news ?? []).length === 0 ? (
+              <div className="nc"><div className="body"><h4>Tournament newsroom</h4><div className="date">Official updates will be published here.</div></div></div>
+            ) : experience?.news.map((article) => (
+              <article className="nc" key={article.id}>
+                <div className="img" style={article.imageUrl ? { backgroundImage: `url(${article.imageUrl})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}>
                   <span className="cat">Newsroom</span>
                 </div>
                 <div className="body">
-                  <h4>{t}</h4>
-                  <div className="date">Coming soon</div>
+                  <h4>{article.title}</h4>
+                  <p>{article.summary}</p>
+                  <div className="date">{article.publishedAt ? dayLabel(article.publishedAt) : "Official update"}</div>
                 </div>
-              </div>
+              </article>
             ))}
           </div>
         </div>
       </section>
 
       {/* SPONSORS (logos only) */}
-      <div className="sponsors">
+      <div className="sponsors" id="sponsors">
         <div className="wrap" style={{ padding: "3rem 0", textAlign: "center" }}>
           <span className="lbl" style={{ color: "var(--mute2)" }}>
             Proudly supported by
           </span>
           <div className="sp-row">
-            {federation.sponsorLogos.map((src, i) => (
-              <div className="sp" key={i}>
-                {src ? (
+            {(experience?.sponsors ?? []).length ? experience?.sponsors.map((sponsor) => (
+              <a className="sp" key={sponsor.id} href={sponsor.destinationUrl ?? "#sponsors"}>
+                {sponsor.logoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={src} alt="Sponsor" />
+                  <img src={sponsor.logoUrl} alt={sponsor.name} />
                 ) : (
-                  <span className="sp-ph">Logo</span>
+                  <span className="sp-ph">{sponsor.name}</span>
                 )}
-              </div>
-            ))}
+              </a>
+            )) : <span className="sp-ph">Official partners will be announced here.</span>}
           </div>
         </div>
       </div>
@@ -376,15 +409,15 @@ export default async function Home() {
       {/* MERCH -> SHOPIFY */}
       <section className="sec">
         <div className="wrap">
-          <a className="merch" id="shop" href={federation.merch.href}>
-            {federation.merch.src ? (
+          <a className="merch" id="shop" href={shopUrl}>
+            {experience?.merchandiseImageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={federation.merch.src} alt="Shop official merchandise" />
+              <img src={experience.merchandiseImageUrl} alt="Shop official merchandise" />
             ) : (
               <span className="adph">
-                Merch graphic → Shopify
+                Official tournament merchandise
                 <br />
-                <small>artist-supplied artwork · clickable</small>
+                <small>Store announcement pending</small>
               </span>
             )}
           </a>
@@ -400,9 +433,7 @@ export default async function Home() {
             </h2>
           </div>
           <p>
-            The Americas Netball Regional Qualifier 2026 brings the region&apos;s
-            top nations together to compete for a place at the 2027 Netball World
-            Cup in Sydney. Operated by {federation.brand.org}.
+            {experience?.aboutText ?? `The Americas Netball Regional Qualifier 2026 brings the region's top nations together to compete for a place at the 2027 Netball World Cup in Sydney. Operated by ${federation.brand.org}.`}
           </p>
           <p>A dedicated About page follows.</p>
         </div>
@@ -432,14 +463,14 @@ export default async function Home() {
             </div>
             <div>
               <h5>Attend</h5>
-              <a href={federation.links.tickets}>Tickets</a>
-              <a href={federation.links.shop}>Shop</a>
+              <a href={ticketsUrl}>Tickets</a>
+              <a href={shopUrl}>Shop</a>
               <a href="#">Venue &amp; travel</a>
             </div>
             <div>
               <h5>Connect</h5>
               <a href="#">Media accreditation</a>
-              <a href={`mailto:${federation.brand.contactEmail}`}>Contact</a>
+              <a href={`mailto:${experience?.contactEmail ?? federation.brand.contactEmail}`}>Contact</a>
               <a href="#">Privacy notice</a>
             </div>
           </div>
@@ -474,21 +505,17 @@ function EmptyRow({ label }: { label: string }) {
   );
 }
 
-function AdBanner({ slot }: { slot: "Silver" | "Bronze" }) {
+function AdBanner({ slot, sponsor }: { slot: "Silver" | "Bronze"; sponsor: Sponsor | null }) {
   const ad = slot === "Silver" ? federation.ads.silver : federation.ads.bronze;
   return (
-    <a className="adslot ad-banner" href={ad.href}>
-      {ad.src ? (
+    <a className="adslot ad-banner" href={sponsor?.destinationUrl ?? ad.href}>
+      {sponsor?.logoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={ad.src} alt={ad.alt} />
+        <img src={sponsor.logoUrl} alt={sponsor.name} />
       ) : (
         <>
-          <span className="adtag">{slot} Partner · 600×100</span>
-          <span className="adph">
-            {slot} sponsorship
-            <br />
-            600×100
-          </span>
+          <span className="adtag">{slot} Partner</span>
+          <span className="adph">Partner announcement pending</span>
         </>
       )}
     </a>
@@ -502,17 +529,17 @@ function LastGame({ match }: { match: Match | null }) {
       <div className="ln-date">{dayLabel(match.scheduledAt)}</div>
       <div className="ln-match">
         <div className="ln-side">
-          <Crest code={match.home.code} size={62} />
-          <div className="nm">{match.home.name}</div>
+          <Crest code={match.teamA.code} size={62} />
+          <div className="nm">{match.teamA.name}</div>
         </div>
         <div className="ln-score">
-          <b>{match.home.score ?? "–"}</b>
+          <b>{match.teamA.score ?? "–"}</b>
           <span className="dash">–</span>
-          <b>{match.away.score ?? "–"}</b>
+          <b>{match.teamB.score ?? "–"}</b>
         </div>
         <div className="ln-side">
-          <Crest code={match.away.code} size={62} />
-          <div className="nm">{match.away.name}</div>
+          <Crest code={match.teamB.code} size={62} />
+          <div className="nm">{match.teamB.name}</div>
         </div>
       </div>
     </>
@@ -526,15 +553,15 @@ function NextGame({ match }: { match: Match | null }) {
       <div className="ln-date">{dateTimeLabel(match.scheduledAt)}</div>
       <div className="ln-match">
         <div className="ln-side">
-          <Crest code={match.home.code} size={62} />
-          <div className="nm">{match.home.name}</div>
+          <Crest code={match.teamA.code} size={62} />
+          <div className="nm">{match.teamA.name}</div>
         </div>
         <div style={{ fontFamily: "var(--disp)", fontSize: "1.6rem", color: "var(--mute2)" }}>
           v
         </div>
         <div className="ln-side">
-          <Crest code={match.away.code} size={62} />
-          <div className="nm">{match.away.name}</div>
+          <Crest code={match.teamB.code} size={62} />
+          <div className="nm">{match.teamB.name}</div>
         </div>
       </div>
       <div className="ln-cap">{match.stage ?? match.round ?? "Coming up"}</div>
@@ -546,15 +573,15 @@ function ScheduleItem({ match }: { match: Match }) {
   return (
     <div className="sr-item">
       <div className="sr-top">
-        <Crest code={match.home.code} size={46} />
+        <Crest code={match.teamA.code} size={46} />
         <div className="sr-mid">
           <div className="d">{dateTimeLabel(match.scheduledAt)}</div>
           <span className="sr-chip">{timeLabel(match.scheduledAt)}</span>
         </div>
-        <Crest code={match.away.code} size={46} />
+        <Crest code={match.teamB.code} size={46} />
       </div>
       <div className="sr-cap">
-        {match.home.name} v {match.away.name}
+        {match.teamA.name} v {match.teamB.name}
       </div>
     </div>
   );
@@ -564,17 +591,17 @@ function ResultItem({ match }: { match: Match }) {
   return (
     <div className="sr-item">
       <div className="sr-top">
-        <Crest code={match.home.code} size={46} />
+        <Crest code={match.teamA.code} size={46} />
         <div className="sr-mid">
           <div className="d">{dayLabel(match.scheduledAt)}</div>
           <span className="sr-chip score">
-            {match.home.score ?? "–"} – {match.away.score ?? "–"}
+            {match.teamA.score ?? "–"} – {match.teamB.score ?? "–"}
           </span>
         </div>
-        <Crest code={match.away.code} size={46} />
+        <Crest code={match.teamB.code} size={46} />
       </div>
       <div className="sr-cap">
-        {match.home.name} v {match.away.name}
+        {match.teamA.name} v {match.teamB.name}
       </div>
     </div>
   );

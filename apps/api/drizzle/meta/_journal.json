@@ -106,6 +106,97 @@
       "when": 1781230026343,
       "tag": "0014_public_read_layer",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1781230030000,
+      "tag": "0015_registration_identity_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1781230031000,
+      "tag": "0016_identity_event_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1781230032000,
+      "tag": "0017_credential_uniqueness",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1781230033000,
+      "tag": "0018_eligibility_and_publication_boundary",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1781230034000,
+      "tag": "0019_loc_audit_history",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1781230035000,
+      "tag": "0020_publication_stages",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1784116800000,
+      "tag": "0021_launch_configuration_control_plane",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1784139900000,
+      "tag": "0022_split_platform_admin_roles",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1784141400000,
+      "tag": "0023_post_deadline_roster_amendments",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1784142000000,
+      "tag": "0024_identity_replacement_versioning",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1784232000000,
+      "tag": "0025_neutral_gameday_core",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1784235600000,
+      "tag": "0026_team_fixture_public_names",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1784239200000,
+      "tag": "0027_edge_public_broadcast",
+      "breakpoints": true
     }
   ]
 }

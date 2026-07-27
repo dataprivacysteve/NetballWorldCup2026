@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GameDay Production Pre-installation — Core Requirements</title>
+  <link rel="stylesheet" href="manual.css">
+  <style>
+    /* Portable fallback theme: keeps this document fully formatted even when
+       it is copied away from the manuals folder and manual.css is unavailable. */
+    :root { --navy:#111943; --navy-2:#1c2867; --ink:#15182b; --muted:#5f6579; --paper:#f7f5ef; --gold:#f4c430; --line:#dfe2ea; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; color:var(--ink); background:var(--paper); font-family:Arial,Helvetica,sans-serif; font-size:16px; line-height:1.6; }
+    h1,h2,h3,h4 { margin:0 0 .55em; color:#101535; font-family:Georgia,"Times New Roman",serif; line-height:1.05; }
+    p { margin:.45em 0 1em; }
+    a { color:#1b2a6b; }
+    code { padding:.15em .35em; border-radius:4px; background:#eceef5; }
+    .cover { min-height:76vh; display:flex; align-items:center; padding:70px clamp(28px,7vw,110px); color:#fff; background:radial-gradient(circle at 82% 20%,#293579 0,transparent 32%),linear-gradient(135deg,#0d1438,#18215e); }
+    .cover-inner { width:min(980px,100%); }
+    .cover h1 { max-width:900px; color:#fff; font-size:clamp(3rem,7vw,6.4rem); letter-spacing:-.045em; }
+    .cover .kicker,.eyebrow { color:var(--gold); font-size:.72rem; font-weight:800; letter-spacing:.18em; text-transform:uppercase; }
+    .cover .subtitle { max-width:760px; color:#e1e4f2; font-size:1.25rem; }
+    .meta { display:flex; flex-wrap:wrap; gap:10px; margin-top:28px; }
+    .meta span { padding:7px 13px; border:1px solid rgba(255,255,255,.18); border-radius:999px; background:rgba(255,255,255,.05); font-size:.8rem; }
+    .layout { display:grid; grid-template-columns:285px minmax(0,1fr); max-width:1500px; margin:auto; background:#fff; }
+    .toc { position:sticky; top:88px; align-self:start; display:flex; flex-direction:column; gap:8px; max-height:calc(100vh - 100px); padding:34px 26px; overflow:auto; background:#f1efe9; border-right:1px solid var(--line); }
+    .toc strong { margin-bottom:7px; font-family:Georgia,"Times New Roman",serif; font-size:1.2rem; }
+    .toc a { color:#454b60; text-decoration:none; }
+    .content { min-width:0; }
+    .chapter { padding:58px clamp(28px,6vw,82px); border-bottom:1px solid var(--line); }
+    .chapter h2 { font-size:clamp(2.2rem,4vw,4rem); }
+    .chapter h3 { margin-top:1.2em; font-size:1.6rem; }
+    .lead { color:#41475d; font-size:1.16rem; }
+    .callout,.card { margin:20px 0; padding:20px 22px; border:1px solid var(--line); border-left:4px solid var(--navy-2); border-radius:10px; background:#f1f3fb; }
+    .callout.danger { border-left-color:#bd3747; background:#fff0f0; }
+    .callout strong { display:block; margin-bottom:4px; }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:15px; }
+    .table-wrap { margin:18px 0; overflow-x:auto; border:1px solid var(--line); border-radius:10px; }
+    table { width:100%; border-collapse:collapse; background:#fff; }
+    th,td { padding:13px 14px; text-align:left; vertical-align:top; border-bottom:1px solid var(--line); }
+    th { color:#fff; background:var(--navy); font-size:.78rem; letter-spacing:.05em; text-transform:uppercase; }
+    .checklist { padding:0; list-style:none; }
+    .checklist li { position:relative; margin:10px 0; padding-left:28px; }
+    .checklist li::before { content:"□"; position:absolute; left:0; color:var(--navy-2); font-weight:800; }
+    .intake { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin:16px 0; }
+    .field { min-height:72px; padding:12px 14px; border:1px solid #d8dce7; border-radius:10px; background:#fff; }
+    .field strong { display:block; margin-bottom:13px; color:#1b2a6b; font-size:.78rem; letter-spacing:.04em; text-transform:uppercase; }
+    .line { display:block; min-height:22px; border-bottom:1px solid #9ba2b5; }
+    .form-control { width:100%; min-height:42px; padding:9px 11px; border:1px solid #aeb5c5; border-radius:7px; background:#fff; color:#12172b; font:inherit; box-sizing:border-box; }
+    textarea.form-control { min-height:76px; resize:vertical; }
+    .form-control:focus { outline:3px solid rgba(244,196,48,.38); border-color:#1b2a6b; }
+    .full { grid-column:1/-1; }
+    .choice { display:flex; flex-wrap:wrap; gap:18px; margin-top:8px; }
+    .choice label, .check-option { display:inline-flex; align-items:flex-start; gap:7px; cursor:pointer; }
+    .checklist li.interactive::before { display:none !important; content:none !important; }
+    input[type="checkbox"], input[type="radio"] { width:18px; height:18px; margin:1px 0 0; accent-color:#1b2a6b; flex:0 0 auto; }
+    .actionbar { position:sticky; top:0; z-index:20; display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:12px 18px; background:#10183d; color:#fff; box-shadow:0 8px 24px rgba(14,18,48,.2); }
+    .actionbar strong { margin-right:auto; }
+    .actionbar button { min-height:38px; padding:8px 13px; border:1px solid rgba(255,255,255,.3); border-radius:7px; color:#fff; background:#25346f; font:inherit; font-weight:700; cursor:pointer; }
+    .actionbar button.primary { color:#12172b; background:#f4c430; border-color:#f4c430; }
+    .actionbar output { width:100%; color:#d8dded; font-size:.78rem; }
+    .minimum { border-left:4px solid #b8d52f; }
+    .handoff { border-left:4px solid #e8557a; }
+    .signoff { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:28px; margin-top:32px; }
+    .signature { padding-top:30px; border-bottom:1px solid #555d70; }
+    @media (max-width:760px) { .cover { min-height:auto; padding:55px 24px; } .cover h1 { font-size:3.2rem; } .layout { display:block; } .toc { position:static; max-height:none; border-right:0; border-bottom:1px solid var(--line); } .chapter { padding:42px 22px; } .grid,.intake,.signoff { grid-template-columns:1fr; } .full { grid-column:auto; } }
+    @media print { .actionbar,.toc { display:none; } .layout { display:block; } .chapter { break-inside:avoid; } .form-control { border:0; border-bottom:1px solid #666; border-radius:0; } }
+  </style>
+</head>
+<body>
+  <div class="actionbar" data-form-actions>
+    <strong>Fillable production intake</strong>
+    <button type="button" class="primary" id="save-progress">Save progress</button>
+    <button type="button" id="download-form">Download completed form</button>
+    <button type="button" id="print-form">Print / Save PDF</button>
+    <button type="button" id="clear-form">Clear form</button>
+    <output id="form-status" aria-live="polite">Your entries are saved only in this browser when you choose “Save progress”.</output>
+  </div>
+  <header class="cover">
+    <div class="cover-inner">
+      <p class="kicker">GameDay · Production deployment intake</p>
+      <h1>Production Pre-installation Core Requirements</h1>
+      <p class="subtitle">The minimum information and access SportsBB requires before installing GameDay on the live server.</p>
+      <div class="meta"><span>Audience: Server owner / hosting administrator</span><span>Version 1.0</span><span>Prepared 24 July 2026</span><span>Core requirements only</span></div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Document contents">
+      <strong>Contents</strong>
+      <a href="#instructions">1. How to complete</a>
+      <a href="#contacts">2. Technical contacts</a>
+      <a href="#server">3. Live server</a>
+      <a href="#domains">4. Domains and DNS</a>
+      <a href="#email">5. Transactional email</a>
+      <a href="#backup">6. Backup and recovery</a>
+      <a href="#accounts">7. Initial accounts</a>
+      <a href="#window">8. Installation window</a>
+      <a href="#checklist">9. Ready-to-install check</a>
+    </nav>
+
+    <main class="content">
+      <section class="chapter" id="instructions">
+        <p class="eyebrow">Purpose</p><h2>How to complete this document</h2>
+        <p class="lead">Complete only the fields below and return the document to SportsBB before the agreed installation date.</p>
+        <div class="callout danger"><strong>Do not type passwords or private keys into this document.</strong> Record who will provide access and use an agreed secure channel for credentials. Email and ordinary messaging should not be used for server passwords, database passwords, API secrets or SSH private keys.</div>
+        <div class="callout"><strong>Scope</strong>This form gathers infrastructure information only. Tournament configuration, team registration policy, logos, website content and GameDay staffing are handled separately.</div>
+      </section>
+
+      <section class="chapter" id="contacts">
+        <p class="eyebrow">Core requirement 1</p><h2>Technical contacts and authority</h2>
+        <div class="intake">
+          <div class="field"><strong>Server / hosting owner</strong><span class="line"></span></div>
+          <div class="field"><strong>Organisation</strong><span class="line"></span></div>
+          <div class="field"><strong>Technical contact email</strong><span class="line"></span></div>
+          <div class="field"><strong>Technical contact telephone</strong><span class="line"></span></div>
+          <div class="field full"><strong>Person authorised to approve DNS, firewall and production changes</strong><span class="line"></span></div>
+        </div>
+      </section>
+
+      <section class="chapter" id="server">
+        <p class="eyebrow">Core requirement 2</p><h2>Live server</h2>
+        <div class="card minimum"><h3>Minimum production baseline</h3><ul class="checklist"><li>Dedicated Linux server or virtual machine with a currently supported 64-bit distribution.</li><li>4 vCPU, 8 GB RAM and 100 GB SSD storage available to GameDay.</li><li>Docker Engine and Docker Compose permitted.</li><li>Public static IPv4 address.</li><li>Inbound TCP ports 80 and 443 permitted; SSH restricted to authorised administrators.</li><li>Outbound HTTPS and transactional-email-provider access permitted.</li><li>Server clock synchronised by NTP; production timezone recorded below.</li></ul></div>
+        <div class="intake">
+          <div class="field"><strong>Hosting provider</strong><span class="line"></span></div>
+          <div class="field"><strong>Public IPv4 address</strong><span class="line"></span></div>
+          <div class="field"><strong>Linux distribution and version</strong><span class="line"></span></div>
+          <div class="field"><strong>CPU / RAM / available disk</strong><span class="line"></span></div>
+          <div class="field"><strong>SSH hostname or address</strong><span class="line"></span></div>
+          <div class="field"><strong>SSH port and authorised username</strong><span class="line"></span></div>
+          <div class="field"><strong>Server timezone</strong><span class="line"></span></div>
+          <div class="field"><strong>Docker already installed?</strong><div class="choice"><span>Yes</span><span>No</span></div></div>
+          <div class="field full handoff"><strong>Secure method for providing SSH access</strong><span class="line"></span></div>
+        </div>
+      </section>
+
+      <section class="chapter" id="domains">
+        <p class="eyebrow">Core requirement 3</p><h2>Domains, DNS and HTTPS</h2>
+        <p>Confirm the approved production hostnames. All selected records must point to the live server before certificate activation.</p>
+        <div class="table-wrap"><table><thead><tr><th>Required surface</th><th>Proposed hostname</th><th>Use now?</th></tr></thead><tbody>
+          <tr><td>Team registration portal</td><td><code>teams.netballamericas.org</code></td><td><label class="check-option"><input type="radio" name="use-teams" value="Yes">Yes</label> <label class="check-option"><input type="radio" name="use-teams" value="No">No</label></td></tr>
+          <tr><td>LOC / operations platform</td><td><code>platform.netballamericas.org</code></td><td><label class="check-option"><input type="radio" name="use-platform" value="Yes">Yes</label> <label class="check-option"><input type="radio" name="use-platform" value="No">No</label></td></tr>
+          <tr><td>Application API</td><td><code>api.netballamericas.org</code></td><td><label class="check-option"><input type="radio" name="use-api" value="Yes">Yes</label> <label class="check-option"><input type="radio" name="use-api" value="No">No</label></td></tr>
+          <tr><td>Public website</td><td><code>www.netballamericas.org</code></td><td><label class="check-option"><input type="radio" name="use-public" value="Now">Now</label> <label class="check-option"><input type="radio" name="use-public" value="Later">Later</label></td></tr>
+        </tbody></table></div>
+        <div class="intake">
+          <div class="field"><strong>DNS provider</strong><span class="line"></span></div>
+          <div class="field"><strong>Person who will create DNS records</strong><span class="line"></span></div>
+          <div class="field full"><strong>Will ports 80 and 443 reach the server directly?</strong><div class="choice"><span>Yes</span><span>No — provide proxy/firewall details</span></div><span class="line"></span></div>
+        </div>
+      </section>
+
+      <section class="chapter" id="email">
+        <p class="eyebrow">Core requirement 4</p><h2>Transactional email</h2>
+        <p>Production registration requires an approved mail service for account approval, password reset and operational notifications.</p>
+        <div class="intake">
+          <div class="field"><strong>Email provider</strong><span class="line"></span></div>
+          <div class="field"><strong>Approved sender address</strong><span class="line"></span></div>
+          <div class="field"><strong>Approved sender name</strong><span class="line"></span></div>
+          <div class="field"><strong>Reply-to / support address</strong><span class="line"></span></div>
+          <div class="field full handoff"><strong>Person providing the email API/webhook credential securely</strong><span class="line"></span></div>
+        </div>
+      </section>
+
+      <section class="chapter" id="backup">
+        <p class="eyebrow">Core requirement 5</p><h2>Backup and recovery</h2>
+        <div class="intake">
+          <div class="field"><strong>Backup destination/provider</strong><span class="line"></span></div>
+          <div class="field"><strong>Backup owner/contact</strong><span class="line"></span></div>
+          <div class="field"><strong>Required retention period</strong><span class="line"></span></div>
+          <div class="field"><strong>Database backup frequency</strong><div class="choice"><span>Daily minimum</span><span>Other</span></div></div>
+          <div class="field full"><strong>Are encrypted off-server backups available?</strong><div class="choice"><span>Yes</span><span>No</span></div></div>
+        </div>
+      </section>
+
+      <section class="chapter" id="accounts">
+        <p class="eyebrow">Core requirement 6</p><h2>Initial production accounts</h2>
+        <p>Enter named users only. SportsBB will issue activation instructions separately; demo passwords must never be reused in production.</p>
+        <div class="intake">
+          <div class="field"><strong>SportsBB administrator name</strong><span class="line"></span></div>
+          <div class="field"><strong>SportsBB administrator email</strong><span class="line"></span></div>
+          <div class="field"><strong>Single authorised LOC officer name</strong><span class="line"></span></div>
+          <div class="field"><strong>Single authorised LOC officer email</strong><span class="line"></span></div>
+        </div>
+      </section>
+
+      <section class="chapter" id="window">
+        <p class="eyebrow">Core requirement 7</p><h2>Installation and launch window</h2>
+        <div class="intake">
+          <div class="field"><strong>Approved installation date and time</strong><span class="line"></span></div>
+          <div class="field"><strong>Timezone</strong><span class="line"></span></div>
+          <div class="field"><strong>Technical contact available during installation</strong><span class="line"></span></div>
+          <div class="field"><strong>Production acceptance owner</strong><span class="line"></span></div>
+          <div class="field full"><strong>Earliest approved public launch date and time</strong><span class="line"></span></div>
+        </div>
+      </section>
+
+      <section class="chapter" id="checklist">
+        <p class="eyebrow">Handoff gate</p><h2>Ready-to-install confirmation</h2>
+        <ul class="checklist">
+          <li>Live Linux server meets the minimum baseline and is reachable by SSH.</li>
+          <li>SportsBB has approved, time-limited administrative access through a secure channel.</li>
+          <li>Production hostnames are confirmed and DNS changes are authorised.</li>
+          <li>Ports 80 and 443 are available for HTTPS.</li>
+          <li>Transactional email provider and sender identity are approved.</li>
+          <li>Encrypted off-server backup destination and owner are confirmed.</li>
+          <li>Named SportsBB administrator and single LOC officer are confirmed.</li>
+          <li>Installation window and acceptance owner are confirmed.</li>
+        </ul>
+        <div class="callout danger"><strong>Installation must not begin</strong>if server access, DNS authority, HTTPS reachability, production secrets handoff or backup ownership is unresolved.</div>
+        <div class="signoff">
+          <div><div class="signature"></div><p>Hosting / server owner · name, signature, date</p></div>
+          <div><div class="signature"></div><p>SportsBB deployment lead · name, signature, date</p></div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script>
+    (() => {
+      const storageKey = "gameday-production-preinstall-v1";
+      const status = document.getElementById("form-status");
+      let fieldNumber = 0;
+
+      document.querySelectorAll(".field .line").forEach((line) => {
+        const field = line.closest(".field");
+        const label = field?.querySelector("strong")?.textContent?.trim() || `Field ${fieldNumber + 1}`;
+        const control = document.createElement(field?.classList.contains("full") ? "textarea" : "input");
+        fieldNumber += 1;
+        control.className = "form-control";
+        control.name = `field-${fieldNumber}`;
+        control.setAttribute("aria-label", label);
+        if (control.tagName === "INPUT") control.type = /email/i.test(label) ? "email" : "text";
+        line.replaceWith(control);
+      });
+
+      document.querySelectorAll(".choice span").forEach((span, index) => {
+        const group = span.closest(".choice");
+        if (!group.dataset.group) group.dataset.group = `choice-${index}`;
+        const label = document.createElement("label");
+        const input = document.createElement("input");
+        input.type = "radio";
+        input.name = group.dataset.group;
+        input.value = span.textContent.trim();
+        label.append(input, document.createTextNode(span.textContent.trim()));
+        span.replaceWith(label);
+      });
+
+      document.querySelectorAll("#checklist .checklist li").forEach((item, index) => {
+        item.classList.add("interactive");
+        const label = document.createElement("label");
+        label.className = "check-option";
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.name = `ready-${index + 1}`;
+        label.append(input, document.createTextNode(item.textContent.trim()));
+        item.replaceChildren(label);
+      });
+
+      const controls = () => [...document.querySelectorAll("input, textarea")];
+      const collect = () => controls().reduce((data, control) => {
+        if (control.type === "radio") {
+          if (!(control.name in data)) data[control.name] = null;
+          if (control.checked) data[control.name] = control.value;
+        } else if (control.type === "checkbox") data[control.name] = control.checked;
+        else data[control.name] = control.value;
+        return data;
+      }, {});
+      const restore = (data) => controls().forEach((control) => {
+        if (!(control.name in data)) return;
+        if (control.type === "radio") control.checked = data[control.name] === control.value;
+        else if (control.type === "checkbox") control.checked = Boolean(data[control.name]);
+        else control.value = data[control.name] || "";
+      });
+      const announce = (message) => { status.textContent = message; };
+
+      try {
+        const saved = localStorage.getItem(storageKey);
+        if (saved) { restore(JSON.parse(saved)); announce("Saved progress restored on this device."); }
+      } catch { announce("Browser storage is unavailable; use “Download completed form” to retain your entries."); }
+
+      document.getElementById("save-progress").addEventListener("click", () => {
+        try { localStorage.setItem(storageKey, JSON.stringify(collect())); announce(`Progress saved on this device at ${new Date().toLocaleTimeString()}.`); }
+        catch { announce("Progress could not be stored. Download the completed form instead."); }
+      });
+
+      document.getElementById("download-form").addEventListener("click", async () => {
+        const clone = document.documentElement.cloneNode(true);
+        clone.querySelector("[data-form-actions]")?.remove();
+        clone.querySelectorAll("script").forEach((script) => script.remove());
+        const linkedManualCss = [...document.styleSheets].find((sheet) => sheet.href?.endsWith("/manual.css"));
+        const clonedCssLink = clone.querySelector('link[href="manual.css"]');
+        if (linkedManualCss && clonedCssLink) {
+          try {
+            const embeddedStyle = document.createElement("style");
+            embeddedStyle.setAttribute("data-embedded-manual-styles", "");
+            embeddedStyle.textContent = [...linkedManualCss.cssRules].map((rule) => rule.cssText).join("\n");
+            clonedCssLink.replaceWith(embeddedStyle);
+          } catch {
+            announce("The stylesheet could not be embedded. Use Print / Save PDF for a portable copy.");
+            return;
+          }
+        }
+        const live = controls();
+        const savedControls = clone.querySelectorAll("input, textarea");
+        savedControls.forEach((control, index) => {
+          const source = live[index];
+          if (!source) return;
+          if (control.tagName === "TEXTAREA") control.textContent = source.value;
+          else if (source.type === "checkbox" || source.type === "radio") source.checked ? control.setAttribute("checked", "") : control.removeAttribute("checked");
+          else control.setAttribute("value", source.value);
+        });
+        const blob = new Blob(["<!doctype html>\n" + clone.outerHTML], { type: "text/html;charset=utf-8" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "GameDay_Production_Preinstallation_Completed.html";
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+        announce("A completed HTML copy has been downloaded.");
+      });
+
+      document.getElementById("print-form").addEventListener("click", () => window.print());
+      document.getElementById("clear-form").addEventListener("click", () => {
+        if (!confirm("Clear every response in this form?")) return;
+        controls().forEach((control) => { if (control.type === "checkbox" || control.type === "radio") control.checked = false; else control.value = ""; });
+        try { localStorage.removeItem(storageKey); } catch {}
+        announce("The form has been cleared.");
+      });
+    })();
+  </script>
+</body>
+</html>

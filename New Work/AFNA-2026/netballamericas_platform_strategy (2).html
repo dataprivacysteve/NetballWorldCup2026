@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NetballAmericas Platform · Strategy and Solution · SportsBB</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="NetballAmericas.org Live Event Platform for the Americas Netball Regional Qualifier 2026. Strategy and Solution Document, Version 1.0, June 2026. Prepared by Sports Beyond Borders (SportsBB).">
+<meta name="author" content="Sports Beyond Borders (SportsBB)">
+
+<!-- ===========================================================
+     NETBALLAMERICAS PLATFORM — STRATEGY & SOLUTION (HTML edition)
+     ===========================================================
+     Single-file HTML. Self-contained. Web fonts from Google with
+     system fallbacks. Mirrors the SportsBB strategy-brief house
+     style: editorial paper, IBM Plex Condensed heads, Aptos body.
+     Each H1/section starts a new page on print; TOC hides on print.
+     ============================================================ -->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ====== DESIGN TOKENS ====== */
+:root{
+  --navy:#1B2A6B; --navy-2:#0F1A4A;
+  --gold:#B8860B; --gold-soft:#F4C430; --coral:#E8553D;
+  --paper:#FAF7F0; --paper-edge:#F2EDDF;
+  --ink:#11162E; --ink-soft:#3D4163; --ink-mute:#6E7191;
+  --rule:#dcd6c8; --rule-soft:#ece7db; --highlight:#FEF6E0;
+  --link:#1B2A6B; --link-hover:#B8860B;
+  --body:"Aptos","Aptos Display",-apple-system,"Segoe UI Variable","Segoe UI",system-ui,"Helvetica Neue",sans-serif;
+  --head:"IBM Plex Sans Condensed","Aptos Display","Segoe UI",sans-serif;
+  --ui:"IBM Plex Sans",-apple-system,"Segoe UI",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.65;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
+.skip{position:absolute;left:-10000px;top:8px;padding:8px 16px;background:var(--navy);color:#fff;font-family:var(--ui);font-size:13px;text-decoration:none;border-radius:3px;z-index:1000}
+.skip:focus{left:8px}
+
+/* ====== LAYOUT ====== */
+.layout{display:grid;grid-template-columns:288px minmax(0,1fr);min-height:100vh;max-width:1340px;margin:0 auto}
+.main{min-width:0}
+
+/* ====== TOC ====== */
+.toc{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;padding:40px 26px 40px 34px;border-right:1px solid var(--rule);background:linear-gradient(180deg,var(--paper) 0%,var(--paper-edge) 100%)}
+.toc-brand{font-family:var(--head);font-weight:700;font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:var(--navy);display:flex;align-items:center;gap:9px;margin-bottom:3px}
+.toc-brand-mark{width:26px;height:26px;border-radius:6px;background:var(--navy);color:var(--gold-soft);display:inline-flex;align-items:center;justify-content:center;font-family:var(--head);font-weight:700;font-size:13px;letter-spacing:0}
+.toc-subtitle{font-family:var(--ui);font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-mute);margin:0 0 26px 35px}
+.toc-heading{font-family:var(--ui);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-mute);margin:24px 0 10px}
+.toc-list{list-style:none;margin:0;padding:0}
+.toc-list li{margin:0}
+.toc-link{display:flex;gap:11px;padding:5px 0;font-family:var(--ui);font-size:13.5px;line-height:1.35;color:var(--ink-soft);text-decoration:none;border-left:2px solid transparent;padding-left:11px;margin-left:-11px;transition:color .15s,border-color .15s}
+.toc-link:hover{color:var(--navy)}
+.toc-link.active{color:var(--navy);border-left-color:var(--gold-soft);font-weight:600}
+.toc-num{font-family:var(--mono);font-size:11px;color:var(--gold);flex-shrink:0;padding-top:1px}
+.toc-foot{margin-top:34px;padding-top:18px;border-top:1px solid var(--rule);font-family:var(--ui);font-size:11.5px;line-height:1.55;color:var(--ink-mute)}
+.toc-foot b{color:var(--ink-soft);font-weight:600}
+
+/* ====== COVER ====== */
+.cover{min-height:100vh;padding:84px 60px 56px;display:flex;flex-direction:column;justify-content:space-between;border-bottom:1px solid var(--rule);position:relative;background:radial-gradient(ellipse 80% 50% at 100% 0%,rgba(244,196,48,.07) 0%,transparent 70%)}
+.cover-top{display:flex;align-items:center;gap:13px}
+.cover-top-rule{flex:1;height:1px;background:var(--rule)}
+.cover-eyebrow{font-family:var(--ui);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);font-weight:600}
+.cover-mid{margin:auto 0}
+.cover-title{font-family:var(--head);font-weight:600;font-size:15px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:20px}
+.cover-h1{font-family:var(--head);font-weight:700;font-size:clamp(40px,6vw,68px);line-height:1.0;letter-spacing:-.018em;color:var(--navy);margin:0 0 22px}
+.cover-h1 .accent{color:var(--gold)}
+.cover-subtitle{font-family:var(--head);font-weight:500;font-size:clamp(19px,2.4vw,26px);line-height:1.25;color:var(--ink-soft);max-width:30ch;margin-bottom:26px}
+.cover-lede{font-size:17px;line-height:1.6;color:var(--ink);max-width:60ch}
+.cover-meta{display:grid;grid-template-columns:repeat(4,auto);gap:34px;margin-top:40px;padding-top:26px;border-top:1px solid var(--rule)}
+.cover-meta dt{font-family:var(--ui);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:5px}
+.cover-meta dd{margin:0;font-family:var(--ui);font-size:14px;color:var(--ink);font-weight:500}
+.cover-bottom{margin-top:46px;display:flex;justify-content:space-between;align-items:flex-end;gap:30px;flex-wrap:wrap}
+.cover-prepared-label{font-family:var(--ui);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:6px}
+.cover-prepared-name{font-family:var(--head);font-weight:700;font-size:16px;color:var(--navy)}
+.cover-prepared-contact{font-family:var(--ui);font-size:12.5px;color:var(--ink-soft);line-height:1.6;margin-top:3px}
+.cover-disclosure{max-width:46ch;font-family:var(--ui);font-size:11px;line-height:1.55;color:var(--ink-mute);border-left:2px solid var(--rule);padding-left:12px}
+
+/* ====== CONTENT ====== */
+.content{max-width:730px;margin:0 auto;padding:64px 56px 96px}
+.sec{padding-top:18px}
+.sec-head{margin:0 0 8px}
+.sec-num{font-family:var(--mono);font-size:13px;color:var(--gold);letter-spacing:.06em;display:block;margin-bottom:6px}
+h1{font-family:var(--head);font-weight:700;font-size:33px;line-height:1.08;letter-spacing:-.015em;color:var(--navy);margin:0 0 18px}
+h2{font-family:var(--head);font-weight:600;font-size:22px;line-height:1.25;letter-spacing:-.005em;color:var(--navy);margin:44px 0 12px}
+h3{font-family:var(--head);font-weight:600;font-size:17px;line-height:1.3;color:var(--navy-2);margin:30px 0 9px;letter-spacing:.005em}
+p{margin:0 0 16px}
+a{color:var(--link);text-decoration:none;border-bottom:1px solid rgba(27,42,107,.25)}
+a:hover{color:var(--link-hover);border-bottom-color:var(--gold)}
+.lede{font-size:18.5px;line-height:1.55;color:var(--ink);margin-bottom:22px}
+strong{font-weight:600;color:var(--navy-2)}
+.mono{font-family:var(--mono);font-size:.92em;color:var(--navy-2);background:rgba(27,42,107,.05);padding:1px 6px;border-radius:4px}
+.accent{color:var(--gold)}
+
+/* callout */
+.callout{margin:24px 0;padding:18px 22px;background:rgba(27,42,107,.03);border-left:3px solid var(--navy);font-size:15px;line-height:1.62}
+.callout-label{font-family:var(--ui);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:7px}
+.callout.coral{border-left-color:var(--coral);background:rgba(232,85,61,.045)}
+.callout.coral .callout-label{color:var(--coral)}
+.callout p:last-child{margin-bottom:0}
+
+/* phase / surface blocks */
+.block{margin:26px 0;padding:22px 24px 18px;border:1px solid var(--rule);background:rgba(255,255,255,.55);border-radius:3px}
+.block-tag{font-family:var(--mono);font-size:11px;letter-spacing:.05em;color:var(--gold);text-transform:uppercase;margin-bottom:7px}
+.block h3{margin-top:0;margin-bottom:8px}
+.block p:last-child{margin-bottom:0}
+.block.surface{border-left:4px solid var(--navy)}
+.block.surface.teams{border-left-color:var(--gold-soft)}
+.block.surface.ops{border-left-color:var(--coral)}
+.block.surface.www{border-left-color:var(--navy)}
+
+/* enum list (genuine enumerations) */
+.enum{margin:18px 0;padding:0;list-style:none;counter-reset:e}
+.enum>li{position:relative;padding:0 0 14px 38px;counter-increment:e}
+.enum>li::before{content:counter(e,decimal-leading-zero);position:absolute;left:0;top:1px;font-family:var(--mono);font-size:12px;color:var(--gold);font-weight:500}
+.enum>li b{color:var(--navy-2)}
+
+/* simple table for the surfaces matrix */
+.tbl{width:100%;border-collapse:collapse;margin:22px 0;font-size:14px}
+.tbl th{text-align:left;font-family:var(--ui);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-mute);font-weight:600;padding:8px 12px;border-bottom:1.5px solid var(--rule)}
+.tbl td{padding:9px 12px;border-bottom:1px solid var(--rule-soft);vertical-align:top;line-height:1.45}
+.tbl td .mono{font-size:.85em}
+.tbl tr:last-child td{border-bottom:none}
+
+.end-rule{height:1px;background:var(--rule);margin:54px 0 22px}
+.doc-end{font-family:var(--ui);font-size:12px;color:var(--ink-mute);text-align:center;letter-spacing:.04em}
+
+/* ====== RESPONSIVE ====== */
+@media(max-width:880px){
+  .layout{grid-template-columns:1fr}
+  .toc{display:none}
+  .cover{padding:56px 24px 40px;min-height:auto}
+  .cover-meta{grid-template-columns:repeat(2,auto);gap:20px}
+  .content{padding:40px 22px 64px}
+  .cover-h1{font-size:40px}
+  h1{font-size:27px}
+}
+
+/* ====== PRINT ====== */
+@media print{
+  :root{--paper:#fff}
+  .toc,.skip{display:none}
+  .layout{display:block;max-width:none}
+  .cover{min-height:auto;padding:0 0 24px;border-bottom:none;page-break-after:always;background:#fff}
+  .content{max-width:none;padding:0}
+  .sec{page-break-before:always;padding-top:0}
+  .sec:first-of-type{page-break-before:avoid}
+  h1,h2,h3{page-break-after:avoid}
+  .callout,.block{page-break-inside:avoid;border:1px solid #aaa;background:#f8f7f3}
+  a{color:var(--ink);border:none}
+  @page{margin:18mm 16mm}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="layout">
+
+  <!-- ============ TOC ============ -->
+  <nav class="toc" aria-label="Contents">
+    <div class="toc-brand"><span class="toc-brand-mark">SB</span>SportsBB</div>
+    <p class="toc-subtitle">GameDay · Tournament Edition</p>
+
+    <div class="toc-heading">Strategy &amp; Solution</div>
+    <ul class="toc-list">
+      <li><a class="toc-link" href="#s1"><span class="toc-num">01</span>Executive Summary</a></li>
+      <li><a class="toc-link" href="#s2"><span class="toc-num">02</span>Context — The Mandate</a></li>
+      <li><a class="toc-link" href="#s3"><span class="toc-num">03</span>The Reframed Opportunity</a></li>
+      <li><a class="toc-link" href="#s4"><span class="toc-num">04</span>Scope &amp; Compliance Boundaries</a></li>
+      <li><a class="toc-link" href="#s5"><span class="toc-num">05</span>Solution Architecture</a></li>
+      <li><a class="toc-link" href="#s6"><span class="toc-num">06</span>The Three Surfaces</a></li>
+      <li><a class="toc-link" href="#s7"><span class="toc-num">07</span>Commercial &amp; Sponsor Layer</a></li>
+      <li><a class="toc-link" href="#s8"><span class="toc-num">08</span>Privacy, Rights &amp; Regulatory Posture</a></li>
+      <li><a class="toc-link" href="#s9"><span class="toc-num">09</span>Build Phases &amp; Sequencing</a></li>
+      <li><a class="toc-link" href="#s10"><span class="toc-num">10</span>Open Questions for the Committee</a></li>
+      <li><a class="toc-link" href="#s11"><span class="toc-num">11</span>Strategic Implication for SportsBB</a></li>
+    </ul>
+
+    <div class="toc-foot">
+      <b>NetballAmericas.org</b><br>
+      Americas Netball Regional Qualifier<br>
+      19–26 October 2026 · Garfield Sobers Gymnasium, Barbados<br><br>
+      <b>Version 1.0</b> · June 2026 · For Discussion
+    </div>
+  </nav>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main" id="main">
+
+    <!-- COVER -->
+    <header class="cover">
+      <div class="cover-top">
+        <span class="cover-eyebrow">Strategy &amp; Solution Document</span>
+        <span class="cover-top-rule"></span>
+        <span class="cover-eyebrow">v1.0</span>
+      </div>
+
+      <div class="cover-mid">
+        <div class="cover-title">NetballAmericas.org · Live Event Platform</div>
+        <h1 class="cover-h1">The operating layer for the <span class="accent">Americas Qualifier</span>.</h1>
+        <p class="cover-subtitle">From a streaming-and-accreditation contract to owned tournament infrastructure.</p>
+        <p class="cover-lede">The first tournament-grade deployment of GameDay by SportsBB — one configured platform standing up registration, accreditation, credentialing, scoring, publishing and the public face of a World&nbsp;Netball-sanctioned regional qualifier, on a domain SportsBB operates rather than rents.</p>
+
+        <dl class="cover-meta">
+          <div><dt>Version</dt><dd>1.0</dd></div>
+          <div><dt>Date</dt><dd>June 2026</dd></div>
+          <div><dt>Audience</dt><dd>OC · BNA · Sponsors · Counsel · SportsBB</dd></div>
+          <div><dt>Status</dt><dd>For Discussion</dd></div>
+        </dl>
+      </div>
+
+      <div class="cover-bottom">
+        <div>
+          <div class="cover-prepared-label">Prepared by</div>
+          <div class="cover-prepared-name">Sports Beyond Borders (SportsBB)</div>
+          <div class="cover-prepared-contact">#14 Bannatyne Gardens, Christ Church, Barbados<br>steven@sports.bb &nbsp;·&nbsp; 246.233.0090</div>
+        </div>
+        <p class="cover-disclosure"><strong>AI-assisted disclosure.</strong> This document was prepared with the assistance of an AI system in dialogue with the author. The author is responsible for all factual content, strategic positioning and operational decisions herein.</p>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- §1 -->
+      <section class="sec" id="s1">
+        <div class="sec-head"><span class="sec-num">§ 01</span><h1>Executive Summary</h1></div>
+        <p class="lede">SportsBB holds the live-streaming and accreditation contract for the Americas Netball Regional Qualifier — the regional pathway to the 2027 Netball World Cup in Sydney. With that contract comes the integrated event website. This document maps that mandate into a single owned platform, <span class="mono">netballamericas.org</span>, and sets the strategy for delivering it.</p>
+
+        <p>Barbados is hosting because the originally designated host could not proceed; the Barbados Netball Association stepped in, and the tournament now runs <strong>19–26 October 2026 at the Garfield Sobers Gymnasium</strong>, with approximately ten delegations from across the Americas competing for places in Sydney. SportsBB is not a vendor brought in to build a one-off site for that week. It is the party holding the operational spine of the event — who gets accredited, who appears on the broadcast, and what the world sees at <span class="mono">netballamericas.org</span>.</p>
+
+        <p>The central decision in this document is to treat the engagement as the <strong>first tournament-grade instance of GameDay</strong>, SportsBB's modular event platform, rather than as a bespoke build. One configured chassis serves the qualifier; the same chassis then ports to the BNA domestic season and the wider federation programme without being rebuilt. The architecture follows from that: three public front doors — a delegation surface, an organising-committee surface, and a public surface — sitting over a single data model and a single role-governed platform, with the public surface deliberately held apart for performance and data-protection reasons.</p>
+
+        <p>A working prototype of the accreditation spine already exists end-to-end: a delegation registers, builds a roster, uploads player photographs, submits for review, and on approval the system issues a QR credential that prints to a laminated badge and verifies at the gymnasium door. That prototype is the proof that the configured-not-custom approach is real, not aspirational. What remains is to harden it, extend it to the public and scoring surfaces, and sequence the build against an October deadline that is now roughly four months out.</p>
+      </section>
+
+      <!-- §2 -->
+      <section class="sec" id="s2">
+        <div class="sec-head"><span class="sec-num">§ 02</span><h1>Context — The Mandate and What It Demands</h1></div>
+        <p>The surface description of the contract — "live streaming, accreditation, and the website" — understates what is actually being asked. Each of those words carries an obligation that only becomes visible when the tournament arrives.</p>
+
+        <p><strong>Accreditation</strong> is not a sign-up form. It is the controlled issuance of who may stand where, for a World&nbsp;Netball-sanctioned event, with delegations arriving from multiple countries who have never set foot in the venue. It must produce credentials that survive both a compliance review and a volunteer's glance at a gate. It is the part of the mandate that is hardest to retrofit and least forgiving if it fails on the day.</p>
+
+        <p><strong>The website</strong> is the public memory of the tournament — fixtures before, scores during, results and standings after — and the surface sponsors and the diaspora actually see. It carries no personal data and should never be coupled to the systems that do.</p>
+
+        <p><strong>Streaming</strong> is the capability SportsBB already owns; the platform's job is to wrap it — to give it fixtures to attach to, scores to overlay, and a public home to live on — not to reinvent it.</p>
+
+        <p>Beneath all three sits a constraint the contract does not name: <strong>time</strong>. From the present, the gymnasium doors open in roughly four months, and visiting delegations must be invited, must register, and must be accredited well before that. The long pole is not the website; it is getting ten delegations through registration and credentialing in good order. Sequencing has to respect that.</p>
+
+        <div class="callout">
+          <div class="callout-label">The mandate, restated</div>
+          <p>Stand up an owned, compliant operating layer for a multi-nation World&nbsp;Netball qualifier — accrediting people who arrive from abroad, publishing the event to the public, and carrying the broadcast — on a timeline measured in weeks, not the months a custom build would assume.</p>
+        </div>
+      </section>
+
+      <!-- §3 -->
+      <section class="sec" id="s3">
+        <div class="sec-head"><span class="sec-num">§ 03</span><h1>The Reframed Opportunity</h1></div>
+        <p class="lede">A one-tournament website is a cost. A configured instance of an owned platform is an asset that happens to be funded by a tournament.</p>
+
+        <p>The temptation with an event like this is to build exactly what the week requires and no more — a microsite, a registration form, a results page — and to throw it away afterwards. That approach is faster to imagine and far more expensive over time, because the next federation, and the BNA's own domestic season, will need the same things again, and a discarded build teaches nothing forward.</p>
+
+        <p>The reframe is to recognise that the qualifier needs precisely the pieces GameDay is designed to provide — a draw and schedule, a roster and accreditation engine, a scoring companion, a public publishing layer — and to deliver them as a <strong>configuration of one chassis</strong> rather than a fresh system. Netball becomes the reference build. The access categories, the credential design, the public layout are set up for this event; the engine beneath them is the same one that will run rugby, basketball, or volleyball when their turn comes.</p>
+
+        <p>This is the difference between renting infrastructure for a week and owning it. A platform like a generic registration tool or a third-party event site would do the job and then take its data, its audience relationship, and its commercial surface away with it when the tournament ends. <span class="mono">netballamericas.org</span>, built on GameDay, leaves SportsBB holding the data model, the audience, and the sponsor inventory — and a reference deployment it can point every future federation toward.</p>
+
+        <div class="callout coral">
+          <div class="callout-label">Governing principle</div>
+          <p><strong>Configured, not custom.</strong> Every architectural decision in this document is made to keep one shared chassis with swap-in modules, never a bespoke system per event. The qualifier is the first tenant, not a one-off.</p>
+        </div>
+      </section>
+
+      <!-- §4 -->
+      <section class="sec" id="s4">
+        <div class="sec-head"><span class="sec-num">§ 04</span><h1>Scope and Compliance Boundaries</h1></div>
+        <p>A World&nbsp;Netball-sanctioned qualifier runs on established, paper-backed processes — official scoring, official accreditation policy, official results. The fastest way to lose a sanctioning body's confidence is to appear to replace those processes with software. SportsBB's posture is the opposite, and it is both honest and strategically sound.</p>
+
+        <h2>GameDay as the digital companion, not the system of record</h2>
+        <p>For every sanctioned process, the official paper record remains authoritative. GameDay runs alongside it as the digital companion: it speeds the work, surfaces it to the public, and produces the physical artefacts, but it does not claim to be the official record of a match result or the final word on a credential's validity. The technical officials' scoresheet remains the result; GameDay publishes and accelerates. This framing lets the platform add value at a sanctioned event without asking the sanctioning body to trust software with authority it has not granted.</p>
+
+        <h2>What is in scope</h2>
+        <p>Delegation registration and roster management; photograph capture; accreditation review against the agreed category matrix; QR credential issuance, physical badge printing, and gate verification; fixture and result publishing; standings; livestream embedding; fan engagement on the public surface; and sponsor placement and reporting. These are the surfaces SportsBB is contracted to deliver and can deliver on its own infrastructure.</p>
+
+        <h2>What is out of scope</h2>
+        <p>The platform does not arrogate the authority of the official match record, the official accreditation policy, or any World&nbsp;Netball governance function. Where the platform records a score or a credential, it does so as a companion to — and reconcilable against — the official process. This boundary is stated plainly so that the organising committee and the sanctioning body can see exactly where software stops and governance begins.</p>
+      </section>
+
+      <!-- §5 -->
+      <section class="sec" id="s5">
+        <div class="sec-head"><span class="sec-num">§ 05</span><h1>Solution Architecture</h1></div>
+        <p class="lede">Three front doors over two systems. The public surface stands apart; the two authenticated surfaces are one platform wearing two faces.</p>
+
+        <h2>The decision behind the subdomains</h2>
+        <p>The organising committee has chosen <span class="mono">netballamericas.org</span>. The question that follows — one platform for everyone, or three separate sites — is really two questions in one coat. Subdomains are front doors; they need not imply separate applications. The architecture resolves it as follows.</p>
+
+        <p>The <strong>public site stands genuinely apart</strong>. It is read-only, login-free, holds no personal data, and wants to be fast, cacheable, and good to share. Different audience, different security posture, different uptime profile. It runs as its own lightweight surface behind a content delivery network.</p>
+
+        <p>The <strong>delegation surface and the committee surface are the same platform</strong>, role-gated. A coach uploading a roster and an officer printing badges operate on the same records, the same accreditation data, the same access model. Building them as separate applications would duplicate the data model and the authentication for no benefit and double the maintenance. They remain one system.</p>
+
+        <p>They are nonetheless given <strong>separate subdomains</strong>, because the split buys real protection beyond tidiness: the committee door can be hardened harder than the coaches' door — enforced multi-factor authentication, and an option to restrict the operations console to known networks — without imposing that friction on a coach in Argentina. Per-subdomain session scoping means a compromised coach session cannot reach the operations surface. And the instruction to ten visiting delegations becomes a clean, friendly sentence: <em>register at <span class="mono">teams.netballamericas.org</span></em>.</p>
+
+        <table class="tbl">
+          <thead><tr><th>Surface</th><th>Audience</th><th>Data &amp; posture</th></tr></thead>
+          <tbody>
+            <tr><td><span class="mono">www.</span>netballamericas.org</td><td>Public, press, diaspora, sponsors</td><td>No login, no PII. Cacheable, CDN-fronted.</td></tr>
+            <tr><td><span class="mono">teams.</span>netballamericas.org</td><td>Coaches &amp; team managers</td><td>Tenant-scoped. Sees only its own delegation.</td></tr>
+            <tr><td><span class="mono">platform.</span>netballamericas.org</td><td>Organising committee &amp; SportsBB ops</td><td>Cross-team. Elevated roles, hardened access.</td></tr>
+          </tbody>
+        </table>
+        <p style="font-size:13.5px;color:var(--ink-mute)">Gate scanning lives as a focused mobile route inside the committee surface — e.g. <span class="mono">platform.netballamericas.org/scan</span> — not a fourth subdomain, since volunteers will be on personal phones over patchy gymnasium wifi and the screen wants to be dead simple while reading the same records the committee already controls. "<span class="mono">platform.</span>" is fine as an internal name; "<span class="mono">ops.</span>" reads more plainly if a self-explanatory name is ever wanted.</p>
+
+        <h2>One data model</h2>
+        <p>Underneath all three surfaces is a single hierarchy: SportsBB at the top, the NetballAmericas tournament as the organisation, and each delegation as a tenant beneath it. People — players, team officials, technical officials, media, broadcast, and organising staff — belong to a delegation and carry a credential with a category and an access matrix. Roles, not subdomains, decide what a given user sees. Row-level security keeps one delegation's data invisible to another even though they share the same tables.</p>
+
+        <h2>Technology and the configurability principle</h2>
+        <p>The authenticated platform runs on the established SportsBB stack — NestJS and TypeScript, PostgreSQL with row-level security, Redis, S3-compatible storage, and Next.js front-ends. The public surface is deliberately simpler and CDN-fronted. A wildcard certificate covers all three subdomains on one cert, and host-based routing inside one application handles the rest, so the cost of three front doors is genuinely low. Theming is mixed by design: the public and fan-facing screens carry a cinematic dark treatment, while the delegation and committee consoles use a clean light theme suited to operational work. Throughout, the accreditation categories, the credential design, and the public layout are configuration — set for this tournament, swapped for the next — not code rewritten per event.</p>
+      </section>
+
+      <!-- §6 -->
+      <section class="sec" id="s6">
+        <div class="sec-head"><span class="sec-num">§ 06</span><h1>The Three Surfaces</h1></div>
+        <p>Each surface is described by the one person it serves and the single job they come to do.</p>
+
+        <div class="block surface teams">
+          <div class="block-tag">Surface 1 · teams.netballamericas.org</div>
+          <h3>Delegation self-service</h3>
+          <p>The user is a team manager or coach from a visiting delegation, often completing the work from abroad on a phone. The job is to get the squad registered and credential-ready without a phone call to Barbados. They register the delegation, build the roster, upload each person's headshot, and submit for accreditation — and they see only their own delegation, never another's. The trust-destroying failure here is a submitted roster that silently disappears; the surface is built so submission is unambiguous and recoverable. This is the prototyped flow, tenant-scoped.</p>
+        </div>
+
+        <div class="block surface ops">
+          <div class="block-tag">Surface 2 · platform.netballamericas.org</div>
+          <h3>The organising-committee console</h3>
+          <p>The user is an accreditation officer at a desk in the weeks before the tournament, and a scoring official and a gate volunteer during it. The jobs are to review and approve submitted people against the World&nbsp;Netball category matrix, issue credentials, print and laminate physical badges four to a US-Letter sheet, run the scoring companion, and verify credentials at the door by camera scan. This surface has cross-team visibility and the hardest access controls. The credentials it issues are country-dominant by design — each badge carries its nation's flag colours as a header and a colour spine, so delegations are distinguishable at a glance in a stack, with the access category as a second, separate colour band.</p>
+        </div>
+
+        <div class="block surface www">
+          <div class="block-tag">Surface 3 · www.netballamericas.org</div>
+          <h3>The public event surface</h3>
+          <p>The user is anyone — a fan in Bridgetown, a parent in Toronto, a journalist, a prospective sponsor. The job is to find the fixtures, follow the scores, watch the stream, and read the results. It is read-only and carries no personal data. It is the surface that lives longest, travels furthest on social platforms, and does the commercial work; for those reasons it is held apart from the systems that hold people's data.</p>
+        </div>
+
+        <p>A fourth concern — the gate scan — is not a fourth surface but a focused route inside the committee console, sized for a volunteer's phone: open camera, read QR, see <em>granted</em> or <em>not valid</em> with the holder's photo, delegation, and permitted zones, and nothing else.</p>
+      </section>
+
+      <!-- §7 -->
+      <section class="sec" id="s7">
+        <div class="sec-head"><span class="sec-num">§ 07</span><h1>Commercial and Sponsor Layer</h1></div>
+        <p class="lede">The public surface and the livestream are not just outputs; they are the commercial inventory that funds the platform beyond the tournament.</p>
+
+        <p>A World&nbsp;Netball qualifier on home soil is a sponsor proposition: a week of regional competition, a national team in contention, and an audience that extends well past the island. The platform is where that proposition is packaged and proven. Branded placements on the public surface, stream pre-roll and lower-thirds, fixture and result sponsorship, and hospitality and accreditation tiers all sit as inventory that can be sold against a Bronze / Silver / Gold structure, with a master proposal and industry-specific one-pagers as the established SportsBB pattern.</p>
+
+        <p>The argument that distinguishes an owned platform from a social feed is the <strong>structural one</strong>. Caribbean sports content carries a built-in algorithmic disadvantage on the global platforms, where advertiser rates for the region are low and the feed is tuned for someone else's market. An owned surface and a direct audience relationship through <span class="mono">netballamericas.org</span> are the hedge against that disadvantage — and the diaspora dimension is the upside. Netball-following audiences in the United Kingdom, the United States, and Canada are higher-value targeting opportunities than the home market alone, and they are exactly the people who will come to a tournament site to follow a regional qualifier. That is a sponsor conversation worth having explicitly.</p>
+
+        <p>Proof of value closes the loop: because the placements live on a platform SportsBB controls, the platform can report on them — impressions, reach, engagement — rather than asking a sponsor to take the exposure on faith. That reporting is itself a reason to own the surface.</p>
+      </section>
+
+      <!-- §8 -->
+      <section class="sec" id="s8">
+        <div class="sec-head"><span class="sec-num">§ 08</span><h1>Privacy, Rights, and Regulatory Posture</h1></div>
+        <p class="lede">An accreditation platform is, in data-protection terms, a system that collects identifying information and photographs of people — several of whom may be minors — arriving from multiple countries. The posture has to be deliberate, and it anchors to the Barbados Data Protection Act 2019-29.</p>
+
+        <h2>Data Protection Act 2019-29</h2>
+        <p>The first task is to settle the roles. Who is the data controller for the accreditation data — the organising committee, the BNA, or SportsBB — and who is the processor? The answer determines the obligations and belongs in a written processing agreement before personal data is collected, not after. The architecture is built to support whichever answer the parties reach: the subdomain isolation described in §05 is data-protection-by-design in practice — the public surface carries no personal information, and the surfaces that do are segmented by role and by host, so the attack surface for personal data is deliberately small.</p>
+
+        <p>Three substantive points under the Act. First, <strong>minors</strong>: youth players, and any under-18 officials or participants, require careful handling of consent and of their photographs; the platform should treat under-18 records with heightened restriction and the engagement should confirm where parental or association consent sits. Second, <strong>cross-border transfer</strong>: delegations from across the Americas mean personal data is collected from data subjects outside Barbados and processed on infrastructure that may sit outside their home jurisdictions — an international-transfer consideration the processing agreement must address. Third, <strong>data minimisation and retention</strong>: the platform should collect only what accreditation requires, and a retention and destruction schedule for personal data and photographs after the tournament should be agreed up front. These are stated as the Act's requirements; GDPR and CCPA are relevant only as comparators, not as the governing instrument.</p>
+
+        <h2>World Netball accreditation policy</h2>
+        <p>The accreditation category matrix and access zones built into the platform are sensible netball defaults; they must be reconciled against the actual World&nbsp;Netball accreditation policy for this qualifier, including any official credential design or colour requirements, before credentials are issued for real. This is named here and again in the open questions.</p>
+
+        <h2>Production rights, copyright, and AI disclosure</h2>
+        <p>Broadcast and production rights boundaries — what SportsBB may stream, clip, and publish, and where editorial control sits relative to the sanctioning body and any rights-holders — should be confirmed in writing. Third-party content used on the public surface must be properly licensed, with original SportsBB production preferred. Consistent with SportsBB practice, AI-assisted disclosure is applied to editorial and design work where appropriate, including this document.</p>
+      </section>
+
+      <!-- §9 -->
+      <section class="sec" id="s9">
+        <div class="sec-head"><span class="sec-num">§ 09</span><h1>Build Phases and Sequencing</h1></div>
+        <p class="lede">Phase discipline is the difference between shipping on time and shipping everything at once and on nothing. The accreditation spine leads, because it is the contracted obligation and the long pole.</p>
+
+        <div class="block">
+          <div class="block-tag">Phase 1 · The accreditation spine — now</div>
+          <h3>Delegation registration through verifiable credential</h3>
+          <p>Harden the prototyped flow into the live delegation and committee surfaces: register, roster, photo capture, review against the agreed matrix, QR credential, physical badge print, gate scan. This is the obligation with the hard deadline and the least tolerance for slippage. It must be ready well before the first delegation arrives, with photo intake shifted to the delegations themselves rather than an officer entering them one by one.</p>
+        </div>
+
+        <div class="block">
+          <div class="block-tag">Phase 2 · The public surface &amp; live companion</div>
+          <h3>Fixtures, results, stream, scoring</h3>
+          <p>Stand up <span class="mono">www.netballamericas.org</span> with fixtures, team profiles, the livestream home, and sponsor placements, and the scoring companion that feeds live scores and standings to the public surface. This phase is more familiar territory and has no compliance deadline, so it follows the spine rather than competing with it for the scarce early weeks.</p>
+        </div>
+
+        <div class="block">
+          <div class="block-tag">Phase 3 · Tournament week &amp; after</div>
+          <h3>Operate, then archive</h3>
+          <p>Run the platform live during the week — credential verification, live scores, stream — then convert the public surface into the event's record: final results, standings, highlights, and sponsor proof-of-value reporting. The post-event archive is what makes the platform an asset rather than a disposable site, and it is the artefact every future federation will be shown.</p>
+        </div>
+
+        <h2>Documentation discipline</h2>
+        <p>Phase 1 is built tightly, with Phase 2 and 3 features held as stubbed structure rather than active scope. A tight MVP produces cleaner architecture and unlocks the commercial revenue that funds later phases. Operator-facing documentation — how to run accreditation, how to scan at the gate, how to publish results — is produced alongside the build, not after it, because the people running the desk on the day will not be the people who built it.</p>
+      </section>
+
+      <!-- §10 -->
+      <section class="sec" id="s10">
+        <div class="sec-head"><span class="sec-num">§ 10</span><h1>Open Questions for the Organising Committee</h1></div>
+        <p>These are the inputs only the committee, the BNA, or World&nbsp;Netball can supply. Each one is a decision the build is currently making a sensible assumption about, and each can be closed in a line.</p>
+
+        <ol class="enum">
+          <li><b>Qualifying places.</b> How many regional places at the 2027 World Cup are contested here? Public reporting confirms the dates and host but not the exact number — the platform does not hard-code it, and it should be confirmed.</li>
+          <li><b>Final delegation list and arrival dates.</b> The confirmed teams, replacing the illustrative placeholders, and when each arrives, which drives the accreditation deadline.</li>
+          <li><b>Accreditation category matrix.</b> Sign-off on the access categories and zones against the official World&nbsp;Netball accreditation policy, including any required credential design or colours.</li>
+          <li><b>Data controller and processor roles.</b> Who is the controller for accreditation data, and where does SportsBB sit — to be settled in a processing agreement under the DPA 2019-29 before data is collected.</li>
+          <li><b>Minors and consent.</b> Confirmation of how parental or association consent for under-18 participants and their photographs is obtained and held.</li>
+          <li><b>Paper-process integration points.</b> Where the official paper accreditation and scoring processes meet the platform, so the companion reconciles cleanly with the system of record.</li>
+          <li><b>Ticketing.</b> Whether public ticketing runs through an existing channel such as TicketLinkz and whether it links from the public surface.</li>
+          <li><b>Brand and visual identity.</b> The visual identity for <span class="mono">netballamericas.org</span> — the tournament's own marks, or a SportsBB-led treatment — and any sanctioning-body brand requirements.</li>
+          <li><b>Broadcast and production rights.</b> Written confirmation of what SportsBB may stream, clip, and publish, and where editorial control sits.</li>
+        </ol>
+      </section>
+
+      <!-- §11 -->
+      <section class="sec" id="s11">
+        <div class="sec-head"><span class="sec-num">§ 11</span><h1>Strategic Implication for SportsBB</h1></div>
+        <p class="lede">This is not a tournament website. It is the reference deployment that turns GameDay from a thesis into a thing federations can be shown.</p>
+
+        <p>The qualifier gives SportsBB something no internal demo can: a real, World&nbsp;Netball-sanctioned, multi-nation event running on its platform, on its infrastructure, on a domain it operates. Once netball is the proven reference build, the same chassis ports to the BNA's domestic season immediately, and to the next tier of federations — basketball, volleyball, football, rugby — with the access engine and the publishing layer already built. The argument to each of them stops being "we could build this" and becomes "this is running now; here is the link."</p>
+
+        <p>There is a longer game in the domain itself. The Americas region rotates its hosts; <span class="mono">netballamericas.org</span> is a regional asset that need not retire when the Barbados qualifier ends. Owning the platform and the audience relationship for a regional competition — rather than rebuilding a site each cycle for whoever hosts next — is the kind of position that compounds. It is the same logic that argues for owned infrastructure over rented platforms, applied one level up: not just owning the tournament's surface, but owning the competition's continuity.</p>
+
+        <p>The near-term task is narrow and clear — deliver the accreditation spine, then the public surface, against an October deadline. The strategic prize is wider: that this engagement establishes SportsBB as the operating layer for Caribbean sport, with the first federation already aboard and the chassis proven in front of the bodies whose confidence matters most.</p>
+
+        <div class="end-rule"></div>
+        <p class="doc-end">NetballAmericas.org · Strategy &amp; Solution · v1.0 · June 2026 · Sports Beyond Borders (SportsBB) · For Discussion</p>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script>
+/* TOC scroll-spy — inline, no dependencies */
+(function(){
+  var links=[].slice.call(document.querySelectorAll('.toc-link'));
+  var map={};
+  links.forEach(function(l){var id=l.getAttribute('href').slice(1);map[id]=l;});
+  var secs=[].slice.call(document.querySelectorAll('.sec'));
+  var obs=new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        links.forEach(function(l){l.classList.remove('active');});
+        if(map[e.target.id])map[e.target.id].classList.add('active');
+      }
+    });
+  },{rootMargin:'-20% 0px -70% 0px',threshold:0});
+  secs.forEach(function(s){obs.observe(s);});
+})();
+</script>
+</body>
+</html>

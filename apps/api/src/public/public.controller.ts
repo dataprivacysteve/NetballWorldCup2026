@@ -29,6 +29,12 @@ export class PublicController {
     return this.svc.nations();
   }
 
+  @Get('experience')
+  @Header('Cache-Control', CACHE)
+  experience() {
+    return this.svc.experience();
+  }
+
   @Get('nations/:code/squad')
   @Header('Cache-Control', CACHE)
   async squad(@Param('code') code: string) {
@@ -59,5 +65,11 @@ export class PublicController {
   @Header('Cache-Control', CACHE)
   lastNext() {
     return this.svc.lastNext();
+  }
+
+  @Get('broadcasts')
+  @Header('Cache-Control', CACHE)
+  broadcasts() {
+    return this.svc.broadcasts();
   }
 }

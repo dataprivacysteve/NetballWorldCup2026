@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
+  DeleteObjectCommand,
   GetObjectCommand,
   PutObjectCommand,
   S3Client,
@@ -9,6 +10,8 @@ import {
 import { desc, eq } from 'drizzle-orm';
 import { getTenant } from '../tenant/tenant-context';
 import * as schema from '../db/schema';
+import { normalizeProfilePhoto } from './file-validation';
+import { assertRosterEditable } from './roster-editability';
 
 // Photo bytes are streamed THROUGH the API into MinIO (gameday-photos), not
 // uploaded direct from the browser: the teams page is HTTPS and MinIO is
@@ -37,7 +40,9 @@ export class PhotoService {
   }
 
   async upload(playerId: string, file: Express.Multer.File) {
-    const { db, delegationId } = getTenant();
+    const normalized = await normalizeProfilePhoto(file);
+    await assertRosterEditable();
+    const { db, delegationId, userId } = getTenant();
 
     const [player] = await db
       .select()
@@ -45,28 +50,82 @@ export class PhotoService {
       .where(eq(schema.player.id, playerId));
     if (!player) throw new NotFoundException('Player not found');
 
+    const previous = await db
+      .select()
+      .from(schema.playerPhoto)
+      .where(eq(schema.playerPhoto.playerId, playerId));
     const objectKey = `${delegationId}/${playerId}/${randomUUID()}`;
     await this.s3.send(
       new PutObjectCommand({
         Bucket: this.bucket,
         Key: objectKey,
-        Body: file.buffer,
-        ContentType: file.mimetype,
+        Body: normalized.buffer,
+        ContentType: normalized.contentType,
       }),
     );
 
-    const [row] = await db
-      .insert(schema.playerPhoto)
-      .values({
-        playerId,
+    try {
+      const [row] = await db
+        .insert(schema.playerPhoto)
+        .values({
+          playerId,
+          delegationId,
+          objectKey,
+          contentType: normalized.contentType,
+          status: 'uploaded',
+          uploadedAt: new Date(),
+        })
+        .returning();
+      for (const photo of previous) {
+        await db
+          .delete(schema.playerPhoto)
+          .where(eq(schema.playerPhoto.id, photo.id));
+        // Do not suppress replacement deletion failures. Throwing rolls the
+        // tenant transaction back to the prior metadata; the catch below also
+        // removes the newly uploaded object.
+        await this.s3.send(
+          new DeleteObjectCommand({
+            Bucket: this.bucket,
+            Key: photo.objectKey,
+          }),
+        );
+      }
+      await db.insert(schema.teamAuditEvent).values({
         delegationId,
-        objectKey,
-        contentType: file.mimetype,
-        status: 'uploaded',
-        uploadedAt: new Date(),
-      })
-      .returning();
-    return row;
+        actorUserId: userId,
+        action: previous.length
+          ? 'roster.photo.replaced'
+          : 'roster.photo.uploaded',
+        targetType: 'person',
+        targetId: playerId,
+        details: { photoId: row.id },
+      });
+      return row;
+    } catch (error) {
+      await this.s3
+        .send(new DeleteObjectCommand({ Bucket: this.bucket, Key: objectKey }))
+        .catch(() => undefined);
+      throw error;
+    }
+  }
+
+  async deleteForPlayer(playerId: string) {
+    await assertRosterEditable();
+    const { db } = getTenant();
+    const photos = await db
+      .select()
+      .from(schema.playerPhoto)
+      .where(eq(schema.playerPhoto.playerId, playerId));
+    for (const photo of photos) {
+      await this.s3
+        .send(
+          new DeleteObjectCommand({
+            Bucket: this.bucket,
+            Key: photo.objectKey,
+          }),
+        )
+        .catch(() => undefined);
+    }
   }
 
   // Streams the player's most recent photo bytes back from MinIO. Tenant-scoped

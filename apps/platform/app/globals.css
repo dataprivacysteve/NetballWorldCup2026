@@ -27,6 +27,13 @@
   --color-ok: #1e9e5a;
   --color-warn: #c9911a;
   --color-bad: #d8442c;
+  --color-ok-soft: #e7f7ee;
+  --color-ok-line: #bfe6ce;
+  --color-warn-soft: #fef6e0;
+  --color-warn-line: #ead49a;
+  --color-bad-soft: #fbe6e2;
+  --color-bad-line: #f2c9c1;
+  --color-navy-tint: #eef0f8;
 }
 
 @theme inline {
@@ -39,6 +46,103 @@ body {
   background: var(--color-bg);
   color: var(--color-ink);
   font-family: var(--font-body);
+  line-height: 1.5;
+  min-width: 320px;
+  background-image:
+    radial-gradient(circle at 92% 4%, rgba(244, 196, 48, 0.1), transparent 24rem),
+    radial-gradient(circle at 8% 28%, rgba(27, 42, 107, 0.05), transparent 30rem);
+  background-attachment: fixed;
+}
+
+::selection {
+  background: rgba(244, 196, 48, 0.42);
+  color: var(--color-navy-deep);
+}
+
+:focus-visible {
+  outline: 3px solid rgba(244, 196, 48, 0.75);
+  outline-offset: 3px;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+button:not(:disabled),
+a[href] {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+.enterprise-panel {
+  border: 1px solid var(--color-line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 1px 2px rgba(14, 18, 48, 0.03);
+}
+
+.enterprise-panel-interactive:hover {
+  border-color: var(--color-line-strong);
+  box-shadow: 0 14px 34px rgba(14, 18, 48, 0.09);
+  transform: translateY(-2px);
+}
+
+.enterprise-input {
+  min-height: 44px;
+}
+
+.enterprise-button {
+  min-height: 40px;
+  box-shadow: 0 1px 2px rgba(14, 18, 48, 0.08);
+}
+
+.enterprise-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(14, 18, 48, 0.13);
+}
+
+.enterprise-table-scroll {
+  scrollbar-color: var(--color-bg-sand) transparent;
+  scrollbar-width: thin;
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-bg-soft) 25%,
+    var(--color-bg-sand) 50%,
+    var(--color-bg-soft) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.45s infinite linear;
+}
+
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }
 
 /* Four-up badge printing: hide app chrome, lay out 2x2 per US-Letter page at a

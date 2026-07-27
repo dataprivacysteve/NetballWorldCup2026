@@ -33,6 +33,7 @@ async function req<T>(
     headers,
     body,
     credentials: "include",
+    signal: AbortSignal.timeout(12_000),
   });
   const text = await res.text();
   const data = text ? JSON.parse(text) : null;
@@ -42,6 +43,29 @@ async function req<T>(
 
 // ---- Types ----------------------------------------------------------------
 export type Country = { code: string; name: string };
+export type RegistrationWindow = {
+  opensAt: string | null;
+  closesAt: string | null;
+  open: boolean;
+  phase: "configuration" | "scheduled" | "open" | "closed";
+  tournament: {
+    name: string;
+    shortName: string | null;
+    timezone: string;
+    brandPrimaryLogoUrl: string | null;
+  } | null;
+  policy: {
+    activePlayerMinimum: number;
+    activePlayerMaximum: number;
+    reserveMaximum: number;
+    benchMaximum: number;
+    biographyMinimumCharacters: number;
+    requiredOfficialRoles: string[];
+    identityRequiredCategories: string[];
+    consentRequiredCategories: string[];
+    eligibilityRegulationReference: string | null;
+  } | null;
+};
 export type RegistrationStatus =
   | "draft"
   | "submitted"
@@ -56,8 +80,10 @@ export type Delegation = {
   associationName: string | null;
   headOfDelegation: string | null;
   headCoach: string | null;
+  contactName: string | null;
   contactEmail: string | null;
   contactPhone: string | null;
+  contactRoleTitle: string | null;
   expectedSquadSize: number | null;
   travellingParty: number | null;
   arrivalDate: string | null;
@@ -65,6 +91,7 @@ export type Delegation = {
   notes: string | null;
   submittedAt: string | null;
   approvedAt: string | null;
+  registrationReviewNote: string | null;
 };
 export type Me = {
   user: { email: string; displayName: string; isAdmin: boolean } | null;
@@ -85,11 +112,26 @@ export type Category =
 export type Person = {
   id: string;
   firstName: string;
+  middleNames: string | null;
   lastName: string;
+  nationality: string;
+  biography: string;
   category: Category;
   role: string | null;
   dateOfBirth: string | null;
   jerseyNumber: number | null;
+  rosterType: "active" | "reserve" | null;
+  officialRole: "team_manager" | "coach" | "primary_care" | "other" | null;
+  otherOfficialTitle: string | null;
+  isHeadOfDelegation: boolean;
+  benchEligible: boolean;
+  nationalityMatchesTeam: boolean;
+  eligibilityConfirmed: boolean;
+  eligibilityReference: string | null;
+  identityStatus: "pending" | "verified" | "rejected" | null;
+  identityRequired: boolean;
+  consentRequired: boolean;
+  dobRequired: boolean;
   isMinor: boolean;
   hasPhoto: boolean;
   ready: boolean;
@@ -101,6 +143,75 @@ export type Consent = {
   consentingPartyName: string;
   relationship: string | null;
   consentingPartyPhone: string | null;
+};
+export type IdentityStatus = {
+  id: string;
+  documentType: "passport" | "national_id";
+  issuingCountry: string;
+  nationality: string;
+  expiresOn: string | null;
+  status: "pending" | "verified" | "rejected";
+  reviewNote: string | null;
+  uploadedAt: string;
+  verifiedAt: string | null;
+};
+
+export type TeamMatch = {
+  id: string;
+  scheduledAt: string | null;
+  roundLabel: string | null;
+  status: string;
+  teamADelegationId: string;
+  teamBDelegationId: string;
+  teamACode: string;
+  teamAName: string;
+  teamBCode: string;
+  teamBName: string;
+  venue: string | null;
+  court: string | null;
+};
+export type TeamSheetDetail = {
+  match: TeamMatch;
+  side: "A" | "B";
+  sheet: {
+    status: "draft" | "submitted" | "locked";
+    version: number;
+    submittedAt: string | null;
+  };
+  roster: Array<{
+    id: string;
+    firstName: string;
+    lastName: string;
+    jerseyNumber: number | null;
+    primaryPosition: string | null;
+    rosterType: "active" | "reserve" | null;
+    accredited: "issued" | "revoked" | null;
+  }>;
+  players: Array<{
+    playerId: string;
+    startingPosition: string | null;
+    captain: boolean;
+  }>;
+};
+
+export type PersonPayload = {
+  firstName: string;
+  middleNames?: string;
+  lastName: string;
+  nationality: string;
+  biography: string;
+  dateOfBirth?: string;
+  category: Category;
+  role?: string;
+  jerseyNumber?: number;
+  rosterType?: "active" | "reserve";
+  officialRole?: "team_manager" | "coach" | "primary_care" | "other";
+  otherOfficialTitle?: string;
+  isHeadOfDelegation?: boolean;
+  benchEligible?: boolean;
+  nationalityMatchesTeam: boolean;
+  eligibilityConfirmed: boolean;
+  eligibilityReference?: string;
 };
 
 // ---- Static reference (matches the API) -----------------------------------
@@ -134,35 +245,82 @@ export const api = {
   login: (email: string, password: string) =>
     req<Me>("/login", { method: "POST", body: { email, password } }),
   logout: () => req<{ ok: boolean }>("/logout", { method: "POST" }),
+  requestPasswordReset: (email: string) =>
+    req<{ accepted: boolean; devResetToken?: string }>("/password-reset/request", {
+      method: "POST",
+      body: { email },
+    }),
+  completePasswordReset: (token: string, password: string) =>
+    req<{ reset: boolean }>("/password-reset/complete", {
+      method: "POST",
+      body: { token, password },
+    }),
 
   eligibleCountries: () => req<Country[]>("/eligible-countries"),
   registrationWindow: () =>
-    req<{ closesAt: string | null; open: boolean }>("/registration-window"),
+    req<RegistrationWindow>("/registration-window"),
   register: (b: {
     countryCode: string;
+    teamName: string;
     associationName: string;
     headOfDelegation: string;
     headCoach?: string;
+    contactName: string;
     contactEmail: string;
     password: string;
     contactPhone: string;
-    expectedSquadSize?: number;
+    contactRoleTitle: string;
+    expectedSquadSize: number;
     dpaConsent: boolean;
   }) => req<Me>("/register", { method: "POST", body: b }),
 
   getDelegation: () => req<Delegation>("/delegation"),
+  updateRegistration: (body: Partial<{
+    name: string;
+    countryCode: string;
+    associationName: string;
+    headOfDelegation: string;
+    headCoach: string;
+    contactName: string;
+    contactPhone: string;
+    contactRoleTitle: string;
+    expectedSquadSize: number;
+    travellingParty: number;
+    arrivalDate: string;
+    departureDate: string;
+    notes: string;
+  }>) => req<Delegation>("/delegation", { method: "PATCH", body }),
+  resubmitRegistration: () =>
+    req<Delegation>("/delegation/registration/submit", { method: "POST" }),
   submitRoster: () =>
     req<Delegation>("/delegation/submit", { method: "POST" }),
 
   listPlayers: () => req<Person[]>("/players"),
-  createPerson: (b: {
-    firstName: string;
-    lastName: string;
-    dateOfBirth: string;
-    category: Category;
-    role?: string;
-    jerseyNumber?: number;
-  }) => req<Person>("/players", { method: "POST", body: b }),
+  teamMatches: () => req<TeamMatch[]>("/team-matches"),
+  teamSheet: (matchId: string) =>
+    req<TeamSheetDetail>(`/team-matches/${matchId}/team-sheet`),
+  saveTeamSheet: (
+    matchId: string,
+    expectedVersion: number,
+    players: Array<{
+      playerId: string;
+      startingPosition?: string | null;
+      captain?: boolean;
+    }>,
+  ) =>
+    req<TeamSheetDetail>(`/team-matches/${matchId}/team-sheet`, {
+      method: "PUT",
+      body: { expectedVersion, players },
+    }),
+  submitTeamSheet: (matchId: string, expectedVersion: number) =>
+    req<TeamSheetDetail>(`/team-matches/${matchId}/team-sheet/submit`, {
+      method: "POST",
+      body: { expectedVersion },
+    }),
+  createPerson: (b: PersonPayload) =>
+    req<Person>("/players", { method: "POST", body: b }),
+  updatePerson: (id: string, b: Partial<PersonPayload>) =>
+    req<Person>(`/players/${id}`, { method: "PATCH", body: b }),
   deletePerson: (id: string) =>
     req<{ deleted: boolean }>(`/players/${id}`, { method: "DELETE" }),
 
@@ -187,6 +345,28 @@ export const api = {
     const form = new FormData();
     form.append("file", file);
     return req<unknown>(`/players/${id}/photo`, { method: "POST", form });
+  },
+  identityStatus: (id: string) =>
+    req<IdentityStatus | null>(`/players/${id}/identity`),
+  uploadIdentity: (
+    id: string,
+    fields: {
+      documentType: "passport" | "national_id";
+      issuingCountry: string;
+      nationality: string;
+      expiresOn?: string;
+    },
+    file: File,
+  ) => {
+    const form = new FormData();
+    form.append("file", file);
+    Object.entries(fields).forEach(([key, value]) => {
+      if (value) form.append(key, value);
+    });
+    return req<IdentityStatus>(`/players/${id}/identity`, {
+      method: "POST",
+      form,
+    });
   },
   photoImageUrl: async (id: string): Promise<string | null> => {
     const res = await fetch(`${BASE}/players/${id}/photo/image`, {

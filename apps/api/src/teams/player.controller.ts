@@ -8,6 +8,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Req,
   Res,
   StreamableFile,
   UploadedFile,
@@ -16,11 +17,18 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
+import type { Request } from 'express';
 import { TenantInterceptor } from '../tenant/tenant.interceptor';
 import { AuthGuard } from '../auth/auth.guard';
 import { PlayerService } from './player.service';
 import { PhotoService } from './photo.service';
-import { CreateConsentDto, CreatePlayerDto, UpdatePlayerDto } from './dto';
+import { IdentityService } from './identity.service';
+import {
+  CreateConsentDto,
+  CreatePlayerDto,
+  IdentityUploadDto,
+  UpdatePlayerDto,
+} from './dto';
 
 // Tenant-scoped roster, consent, and photo intake. TenantInterceptor wraps
 // every route in the RLS transaction; FileInterceptor (for photo) composes
@@ -32,6 +40,7 @@ export class PlayerController {
   constructor(
     private readonly players: PlayerService,
     private readonly photos: PhotoService,
+    private readonly identity: IdentityService,
   ) {}
 
   @Get()
@@ -40,21 +49,30 @@ export class PlayerController {
   }
 
   @Post()
-  create(@Body() dto: CreatePlayerDto) {
-    return this.players.create(dto);
+  create(
+    @Body() dto: CreatePlayerDto,
+    @Req() req: Request & { user: { userId: string } },
+  ) {
+    return this.players.create(dto, req.user.userId);
   }
 
   @Patch(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdatePlayerDto,
+    @Req() req: Request & { user: { userId: string } },
   ) {
-    return this.players.update(id, dto);
+    return this.players.update(id, dto, req.user.userId);
   }
 
   @Delete(':id')
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.players.remove(id);
+  async remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req: Request & { user: { userId: string } },
+  ) {
+    await this.photos.deleteForPlayer(id);
+    await this.identity.deleteObjectForPlayer(id);
+    return this.players.remove(id, req.user.userId);
   }
 
   @Get(':id/consents')
@@ -96,12 +114,29 @@ export class PlayerController {
   }
 
   @Post(':id/photo')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 5_000_000 } }))
   uploadPhoto(
     @Param('id', ParseUUIDPipe) id: string,
     @UploadedFile() file: Express.Multer.File,
   ) {
     return this.photos.upload(id, file);
+  }
+
+  @Get(':id/identity')
+  identityStatus(@Param('id', ParseUUIDPipe) id: string) {
+    return this.identity.status(id);
+  }
+
+  @Post(':id/identity')
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: 10_000_000 } }),
+  )
+  uploadIdentity(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: IdentityUploadDto,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.identity.upload(id, dto, file);
   }
 
   // View-only credential QR for the delegation's own person (a read — stays

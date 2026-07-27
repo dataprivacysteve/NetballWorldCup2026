@@ -4,9 +4,11 @@ import {
   Get,
   Patch,
   Post,
+  Req,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { TenantInterceptor } from '../tenant/tenant.interceptor';
 import { AuthGuard } from '../auth/auth.guard';
 import { AllowUnapproved } from '../auth/auth.metadata';
@@ -29,12 +31,22 @@ export class DelegationController {
   }
 
   @Patch()
-  update(@Body() dto: UpdateDelegationDto) {
-    return this.delegation.update(dto);
+  @AllowUnapproved()
+  update(
+    @Body() dto: UpdateDelegationDto,
+    @Req() req: Request & { user: { userId: string } },
+  ) {
+    return this.delegation.update(dto, req.user.userId);
+  }
+
+  @Post('registration/submit')
+  @AllowUnapproved()
+  submitRegistration(@Req() req: Request & { user: { userId: string } }) {
+    return this.delegation.submitRegistration(req.user.userId);
   }
 
   @Post('submit')
-  submit() {
-    return this.delegation.submit();
+  submit(@Req() req: Request & { user: { userId: string } }) {
+    return this.delegation.submit(req.user.userId);
   }
 }

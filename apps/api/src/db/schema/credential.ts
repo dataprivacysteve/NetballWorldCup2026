@@ -1,4 +1,11 @@
-import { pgTable, uuid, text, timestamp } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  uuid,
+  text,
+  timestamp,
+  uniqueIndex,
+} from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { credentialStatus, personCategory } from './enums';
 import { delegation } from './delegation';
 import { player } from './roster';
@@ -8,18 +15,26 @@ import { player } from './roster';
 // delegation reads only its own credentials. `token` is a signed JWT the QR
 // encodes; the Module 3 /scan gate verifies it. `category` is snapshotted so
 // the credential is self-describing even if the roster later changes.
-export const credential = pgTable('credential', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  delegationId: uuid('delegation_id')
-    .notNull()
-    .references(() => delegation.id),
-  playerId: uuid('player_id')
-    .notNull()
-    .references(() => player.id),
-  category: personCategory('category').notNull(),
-  token: text('token').notNull(),
-  status: credentialStatus('status').notNull().default('issued'),
-  issuedAt: timestamp('issued_at', { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-});
+export const credential = pgTable(
+  'credential',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    delegationId: uuid('delegation_id')
+      .notNull()
+      .references(() => delegation.id),
+    playerId: uuid('player_id')
+      .notNull()
+      .references(() => player.id, { onDelete: 'cascade' }),
+    category: personCategory('category').notNull(),
+    token: text('token').notNull(),
+    status: credentialStatus('status').notNull().default('issued'),
+    issuedAt: timestamp('issued_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex('credential_player_issued_unique')
+      .on(table.playerId)
+      .where(sql`${table.status} = 'issued'`),
+  ],
+);

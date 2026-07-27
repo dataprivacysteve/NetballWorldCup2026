@@ -3,7 +3,14 @@ import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
-import { AuthGuard, AdminGuard } from './auth.guard';
+import {
+  AuthGuard,
+  AdminGuard,
+  GameDayOfficialGuard,
+  LocOfficerGuard,
+  SportsbbAdminGuard,
+} from './auth.guard';
+import { AuthRateLimitService } from './auth-rate-limit.service';
 
 // Global so AuthGuard / AdminGuard can be applied by controllers in other
 // modules (teams, admin) without re-importing.
@@ -19,9 +26,25 @@ import { AuthGuard, AdminGuard } from './auth.guard';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, AuthGuard, AdminGuard],
+  providers: [
+    AuthService,
+    AuthGuard,
+    AdminGuard,
+    GameDayOfficialGuard,
+    LocOfficerGuard,
+    SportsbbAdminGuard,
+    AuthRateLimitService,
+  ],
   // Export JwtModule too so other modules (admin credential issuance) can sign
   // tokens with the same configured secret.
-  exports: [AuthService, AuthGuard, AdminGuard, JwtModule],
+  exports: [
+    AuthService,
+    AuthGuard,
+    AdminGuard,
+    GameDayOfficialGuard,
+    LocOfficerGuard,
+    SportsbbAdminGuard,
+    JwtModule,
+  ],
 })
 export class AuthModule {}

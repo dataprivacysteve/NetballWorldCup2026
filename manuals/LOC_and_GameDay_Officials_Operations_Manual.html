@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LOC &amp; GameDay Officials Operations Manual</title>
+  <link rel="stylesheet" href="manual.css">
+</head>
+<body>
+  <header class="cover">
+    <div class="cover-inner">
+      <p class="kicker">GameDay · Tournament operations</p>
+      <h1>LOC &amp; GameDay Officials Operations Manual</h1>
+      <p class="subtitle">A step-by-step operational guide from team registration and manual document verification through accreditation, venue access, live scoring and final result approval.</p>
+      <div class="meta"><span>Audience: LOC officer</span><span>GameDay match officials</span><span>Gate and broadcast operators</span><span>Version 1.0 · 16 July 2026</span></div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Manual contents">
+      <strong>Contents</strong>
+      <a href="#purpose">1. Purpose and operating rules</a>
+      <a href="#roles">2. Roles and authority</a>
+      <a href="#signin">3. Sign-in and security</a>
+      <a href="#day">4. Operational day sequence</a>
+      <a href="#registration">5. Registration decisions</a>
+      <a href="#roster">6. Roster review</a>
+      <a href="#identity">7. Identity verification</a>
+      <a href="#accreditation">8. Accreditation and badges</a>
+      <a href="#gate">9. Gate scanning and offline mode</a>
+      <a href="#competition">10. Competition setup</a>
+      <a href="#staffing">11. GameDay accounts and assignments</a>
+      <a href="#teamsheets">12. Match team sheets</a>
+      <a href="#pre-match">13. Pre-match readiness</a>
+      <a href="#supervisor">14. Match supervisor</a>
+      <a href="#timekeeper">15. Timekeeper</a>
+      <a href="#scorer">16. Scorer</a>
+      <a href="#stats">17. Statistics &amp; lineup</a>
+      <a href="#result">18. Result approver</a>
+      <a href="#broadcast">19. Broadcast operations</a>
+      <a href="#resilience">20. Internet loss and venue standby</a>
+      <a href="#incidents">21. Exceptions and incidents</a>
+      <a href="#close">22. Match/day closeout</a>
+      <a href="#troubleshooting">23. Troubleshooting</a>
+      <a href="#checklists">24. Printable checklists</a>
+    </nav>
+
+    <main class="content">
+      <section class="chapter" id="purpose">
+        <p class="eyebrow">Chapter 1</p><h2>Purpose and operating rules</h2>
+        <p class="lead">This manual governs the human workflow of the tournament. The system provides controls and audit evidence; the LOC and assigned officials remain responsible for accurate decisions, paper fallbacks and timely escalation.</p>
+        <div class="callout danger"><strong>One LOC officer account</strong>Only one named LOC officer is authorized to access the LOC platform. Do not share the login. Scorers, timekeepers, statistics/lineup staff, supervisors and result approvers use separate role-specific accounts.</div>
+        <h3>Non-negotiable rules</h3>
+        <ul>
+          <li>Use neutral <strong>Team A</strong> and <strong>Team B</strong>; never interpret them as home and away.</li>
+          <li>A player’s roster position is a primary preference, not a permanent position. Match positions may change through the coach’s team sheet and substitutions.</li>
+          <li>Manual identity verification is performed by the LOC. The system does not make the authenticity decision.</li>
+          <li>Confirm a result only after reconciling the paper record and electronic ledger.</li>
+          <li>Keep the paper match record as the official operational fallback.</li>
+          <li>Never send passports, national IDs or credentials through casual messaging channels.</li>
+        </ul>
+      </section>
+
+      <section class="chapter" id="roles">
+        <p class="eyebrow">Chapter 2</p><h2>Roles and authority</h2>
+        <div class="table-wrap"><table><thead><tr><th>Role</th><th>May do</th><th>Must not do</th></tr></thead><tbody>
+          <tr><td>LOC officer</td><td>Registration/roster/identity decisions, credentials, competition setup, GameDay staffing, venue and broadcast configuration.</td><td>Change SportsBB event policy or commercial/public content.</td></tr>
+          <tr><td>Authorized team officer</td><td>Maintain its delegation, players, officials, evidence and match team sheets.</td><td>Access another team, LOC decisions or scoring.</td></tr>
+          <tr><td>Match supervisor</td><td>Check readiness, release match, record operational incidents.</td><td>Score goals, operate clock or confirm final result unless separately assigned.</td></tr>
+          <tr><td>Scorer</td><td>Record player-attributed goals, centre pass and immutable corrections.</td><td>Operate match clock or approve final result.</td></tr>
+          <tr><td>Timekeeper</td><td>Start/end periods, start/stop clock, suspend/resume match.</td><td>Record goals or alter lineups.</td></tr>
+          <tr><td>Statistics &amp; lineup</td><td>Capture statistics, lineup/position changes and substitutions.</td><td>Score, time or confirm results.</td></tr>
+          <tr><td>Result approver</td><td>Reconcile paper/electronic record and confirm official result.</td><td>Confirm before the match and reconciliation gates are complete.</td></tr>
+          <tr><td>Gate operator</td><td>Scan credentials and apply displayed access decision.</td><td>Override credential status or LOC accreditation decisions.</td></tr>
+        </tbody></table></div>
+        <div class="callout"><strong>Least privilege is intentional</strong>If a button is unavailable, first confirm the user has the correct role and is assigned to that specific match. Do not solve access problems by sharing a more powerful account.</div>
+      </section>
+
+      <section class="chapter" id="signin">
+        <p class="eyebrow">Chapter 3</p><h2>Sign-in and security</h2>
+        <h3>LOC officer</h3><ol class="steps"><li>Open <code>https://platform.netballamericas.org</code>.</li><li>Confirm the correct hostname and TLS padlock.</li><li>Enter the named LOC officer email and password.</li><li>Confirm the header identifies the LOC operational console.</li><li>Sign out whenever the workstation is left unattended.</li></ol>
+        <figure class="shot"><img src="assets/loc-operations-dashboard.png" alt="LOC operations dashboard"><figcaption>The LOC dashboard centralizes registration, accreditation, credentials, fixtures and staffing.</figcaption></figure>
+        <h3>GameDay official</h3><ol class="steps"><li>Open <code>https://platform.netballamericas.org/gameday</code> or the approved venue-local equivalent.</li><li>Enter the personal role-account credentials supplied by the LOC.</li><li>Confirm the screen names the expected role.</li><li>Confirm only assigned fixtures are shown.</li><li>If a wrong role or fixture appears, stop and notify the LOC before entering data.</li></ol>
+        <figure class="shot"><img src="assets/gameday-official-sign-in.png" alt="GameDay official sign-in"><figcaption>Every GameDay official signs in with a separate role-specific account.</figcaption></figure>
+        <div class="callout warning"><strong>Credential handling</strong>Do not write production passwords on score sheets or display them near the court. Use secure distribution and require a change/reset if exposure is suspected.</div>
+      </section>
+
+      <section class="chapter" id="day">
+        <p class="eyebrow">Chapter 4</p><h2>Operational day sequence</h2>
+        <div class="table-wrap"><table><thead><tr><th>Time</th><th>LOC action</th><th>Role action</th><th>Exit condition</th></tr></thead><tbody>
+          <tr><td>Start of day</td><td>Check Platform, fixtures, credentials, gate pack, venue node and broadcast records.</td><td>Officials confirm device and login.</td><td>No unresolved blocking alert.</td></tr>
+          <tr><td>90–60 min before match</td><td>Confirm fixture, court, crew assignments and team-sheet status.</td><td>Supervisor confirms crew presence.</td><td>Five roles assigned; both team officers can submit sheets.</td></tr>
+          <tr><td>45–20 min</td><td>Resolve accreditation/team-sheet exceptions.</td><td>Stats/lineup reviews the submitted sheets; scorer/timekeeper verify consoles.</td><td>Both sheets locked and valid.</td></tr>
+          <tr><td>10 min</td><td>Stand by for escalation.</td><td>Supervisor runs readiness; paper record positioned.</td><td>Match status Ready.</td></tr>
+          <tr><td>Live match</td><td>Monitor, do not operate another role’s controls.</td><td>Each official performs only assigned commands.</td><td>Four periods complete with synchronized ledger.</td></tr>
+          <tr><td>Post-match</td><td>Support exception resolution and publication.</td><td>Result approver reconciles and confirms.</td><td>Final status, paper record secured, feeds updated.</td></tr>
+          <tr><td>End of day</td><td>Review audit/scan activity, unresolved incidents and tomorrow’s schedule.</td><td>Sign out and return equipment.</td><td>Daily closeout recorded.</td></tr>
+        </tbody></table></div>
+      </section>
+
+      <section class="chapter" id="registration">
+        <p class="eyebrow">Chapter 5</p><h2>Registration decisions</h2>
+        <h3>Review a submitted team registration</h3>
+        <ol class="steps">
+          <li>Open <strong>Delegation approvals</strong>.</li>
+          <li>Select a submitted delegation.</li>
+          <li>Confirm team name, association, country, contact name, contact email, phone, contact role/title and expected squad/travelling party.</li>
+          <li>Confirm consent acknowledgement is recorded.</li>
+          <li>Compare the represented country with the published eligible-country list.</li>
+          <li>If the record is complete and eligible, select <strong>Approve</strong>.</li>
+          <li>If it can be corrected, select <strong>Return</strong> and enter a specific, actionable note.</li>
+          <li>If it is ineligible or should not proceed, select <strong>Reject</strong> and enter the reason.</li>
+          <li>Confirm the resulting status and audit entry.</li>
+        </ol>
+        <h3>Decision-writing standard</h3><div class="grid"><div class="card"><h4>Good return note</h4><p>“Contact role/title is missing. Please add the authorized officer’s role and resubmit.”</p></div><div class="card"><h4>Poor return note</h4><p>“Incorrect.” This does not tell the team what must change.</p></div></div>
+        <div class="callout warning"><strong>Registration close</strong>After the close, no new team can register. Existing approved teams may still sign in and make roster changes. Material changes automatically reopen LOC review and can revoke affected credentials.</div>
+      </section>
+
+      <section class="chapter" id="roster">
+        <p class="eyebrow">Chapter 6</p><h2>Roster review</h2>
+        <h3>Validate roster composition</h3>
+        <ul class="checklist"><li>10–15 active players.</li><li>No more than three reserves.</li><li>Required Team Manager, Coach and Primary Care roles present.</li><li>No more than two additional officials with named designations.</li><li>Head of Delegation/delegate declaration present; the person may also be a team official.</li><li>Bench allocation does not exceed 17.</li></ul>
+        <h3>Review each player</h3>
+        <ol class="steps"><li>Confirm first, middle and surname fields.</li><li>Confirm nationality and date of birth.</li><li>Read the biography and confirm the configured minimum length.</li><li>Check profile photo quality and identity.</li><li>Confirm required passport or national-ID evidence has been submitted.</li><li>If nationality differs from the represented team, confirm the eligibility declaration states that criteria have been met and proof will be available to organizers by the required deadline.</li><li>Treat listed playing position as a primary preference only.</li></ol>
+        <h3>Review each official</h3><ol class="steps"><li>Confirm Christian/first name, middle initials and surname.</li><li>Confirm role and country.</li><li>Check profile photo.</li><li>Read the short role biography.</li><li>Confirm any “Other” role has a clear designation.</li><li>Confirm Head of Delegation/delegate status.</li></ol>
+        <h3>Decide</h3><ol class="steps"><li>Open the roster detail.</li><li>Review all outstanding evidence/validation indicators.</li><li>Select <strong>Return for correction</strong> with a precise note if incomplete.</li><li>Select <strong>Approve/accredit</strong> only after every required person and document has passed.</li><li>Confirm credentials are issued only for approved/accredited persons.</li></ol>
+      </section>
+
+      <section class="chapter" id="identity">
+        <p class="eyebrow">Chapter 7</p><h2>Manual identity verification</h2>
+        <div class="callout danger"><strong>Sensitive evidence</strong>Identity files are restricted to the LOC decision workflow. View only when required, never download casually, never copy to personal storage and never photograph the screen.</div>
+        <ol class="steps">
+          <li>Open the person in <strong>Roster review</strong>.</li>
+          <li>Select <strong>View identity</strong>.</li>
+          <li>Confirm the evidence type is an accepted passport information page or national ID.</li>
+          <li>Check that the image is legible and appears complete.</li>
+          <li>Compare names, nationality and date of birth against the roster record.</li>
+          <li>Assess validity/authenticity according to the LOC’s approved manual-verification procedure.</li>
+          <li>If acceptable, select <strong>Verified</strong>. If not, select <strong>Rejected</strong> and record a useful note.</li>
+          <li>Confirm the decision is bound to the current document identifier.</li>
+          <li>After decision, the source object is deleted; only the outcome/audit evidence remains.</li>
+        </ol>
+        <div class="callout"><strong>Replacement protection</strong>If the team replaces a document while review is underway, the previous decision must not silently apply to the replacement. Reopen and verify the new document.</div>
+      </section>
+
+      <section class="chapter" id="accreditation">
+        <p class="eyebrow">Chapter 8</p><h2>Accreditation and badges</h2>
+        <h3>Issue credentials</h3><ol class="steps"><li>Confirm delegation and roster are approved.</li><li>Confirm the person’s required identity status is verified.</li><li>Open <strong>Badge production</strong>.</li><li>Select the accredited delegation/person.</li><li>Review name, photo, category and configured access zones.</li><li>Issue or print the credential.</li><li>Inspect print alignment and QR clarity.</li><li>Record physical handover using the LOC’s distribution log.</li></ol>
+        <h3>Revoke or reissue</h3><ol class="steps"><li>Locate the current credential.</li><li>Select revoke and enter a reason of at least three meaningful characters.</li><li>Confirm gates show the credential as revoked.</li><li>Correct/reapprove the underlying person if required.</li><li>Issue the replacement and destroy/retain the former badge according to policy.</li></ol>
+        <div class="callout warning"><strong>Roster amendments</strong>Personnel, identity, eligibility, classification or accreditation changes can reopen review and revoke the affected credential. Position preference, shirt number and biography changes do not automatically invalidate accreditation.</div>
+      </section>
+
+      <section class="chapter" id="gate">
+        <p class="eyebrow">Chapter 9</p><h2>Gate scanning and offline mode</h2>
+        <figure class="shot"><img src="assets/loc-gate-scanner.png" alt="Accreditation gate scanner"><figcaption>The installable scanner shows connectivity, offline-pack status, queue state and recent gate activity.</figcaption></figure>
+        <h3>Before opening the gate</h3><ol class="steps"><li>Open <code>/scan</code> on the approved device.</li><li>Sign in as authorized accreditation/gate staff.</li><li>Allow camera access.</li><li>Install the PWA if the device policy permits it.</li><li>Select refresh/download of the offline credential pack.</li><li>Confirm the pack is current and contains issued/revoked status.</li><li>Perform one issued and one revoked test scan.</li><li>Confirm recent activity records both decisions correctly.</li></ol>
+        <h3>Scan a person</h3><ol class="steps"><li>Ask the person to present the credential.</li><li>Scan the QR code; avoid typing tokens unless camera operation is impossible.</li><li>Read the displayed result and identity details.</li><li>Apply the displayed access-zone decision.</li><li>For a rejection, do not override; refer the person to the LOC resolution point.</li><li>Select next scan only after the current decision is understood.</li></ol>
+        <h3>Offline operation</h3><ol class="steps"><li>When connectivity drops, confirm the scanner indicates offline mode.</li><li>Continue scanning against the most recent 24-hour pack.</li><li>Understand that the device stores hashed credential references, not raw tokens, in the pack.</li><li>Observe the queued scan count.</li><li>When service returns, keep the application open so queued scans synchronize automatically.</li><li>Confirm the queue returns to zero and the server audit shows one event per scan.</li><li>If the pack is expired, stop relying on offline decisions and contact the LOC/technical lead.</li></ol>
+      </section>
+
+      <section class="chapter" id="competition">
+        <p class="eyebrow">Chapter 10</p><h2>Competition setup</h2>
+        <h3>Create venues and courts</h3><ol class="steps"><li>Open <strong>Fixtures and results</strong>.</li><li>Under Venues &amp; courts, enter the venue name, address/timezone where required.</li><li>Select <strong>Add venue</strong>.</li><li>Select the venue, enter the court name and select <strong>Add court</strong>.</li><li>Verify every playable court is active before adding fixtures.</li></ol>
+        <h3>Create stages and groups</h3><ol class="steps"><li>Create the stage with an approved name.</li><li>Select group or knockout.</li><li>Add eligible delegations to the stage/group.</li><li>Confirm the displayed order and membership.</li></ol>
+        <h3>Add a fixture</h3><ol class="steps"><li>Select stage/group if applicable.</li><li>Select <strong>Team A</strong> and <strong>Team B</strong>.</li><li>Set scheduled date/time, court, round label and sort order.</li><li>Select <strong>Add fixture</strong>.</li><li>Resolve any team/court collision; the server blocks overlapping 90-minute allocations.</li><li>Use postponed or cancelled status when required; do not delete historical fixtures casually.</li></ol>
+        <div class="callout"><strong>Neutral fixtures</strong>Team A and Team B are operational sides only. They do not designate host, visitor, home or away.</div>
+      </section>
+
+      <section class="chapter" id="staffing">
+        <p class="eyebrow">Chapter 11</p><h2>GameDay accounts and assignments</h2>
+        <h3>Create a role account</h3><ol class="steps"><li>Open <strong>GameDay staffing &amp; access</strong>.</li><li>Enter the official’s named email and display name.</li><li>Create a strong temporary password of at least 12 characters.</li><li>Select exactly one role: Match Supervisor, Scorer, Timekeeper, Statistics &amp; Lineup, or Result Approver.</li><li>Select <strong>Create account</strong>.</li><li>Deliver credentials securely and require the official to confirm access before match day.</li></ol>
+        <h3>Assign a match crew</h3><ol class="steps"><li>Select the fixture.</li><li>For each of the five roles, select the correct role account.</li><li>Save each assignment.</li><li>Confirm all five roles are present exactly once.</li><li>Ask every official to sign in and verify that only the assigned fixture appears.</li></ol>
+        <div class="callout danger"><strong>Do not combine accounts</strong>Limited staffing led to combining Statistics and Lineup as one role. Do not combine any additional operational roles on one login or ask the LOC officer to score/time the match.</div>
+      </section>
+
+      <section class="chapter" id="teamsheets">
+        <p class="eyebrow">Chapter 12</p><h2>Match team sheets</h2>
+        <p>The authorized team officer selects the match squad. The LOC resolves eligibility/accreditation issues but should not choose players or positions for the coach.</p>
+        <ol class="steps"><li>Team officer opens the relevant fixture in Team Portal.</li><li>Select 7–15 accredited players.</li><li>Assign exactly seven unique starting positions: GS, GA, WA, C, WD, GD and GK.</li><li>Place up to eight additional selected players on the bench.</li><li>Mark captain where applicable.</li><li>Review and submit the sheet.</li><li>After submission, the sheet locks for the match readiness process.</li></ol>
+        <div class="callout"><strong>Positions are match-specific</strong>The coach may assign a player to any permitted position regardless of the primary position shown on the registration roster. Position changes during the match are recorded by Statistics &amp; Lineup with a reason.</div>
+      </section>
+
+      <section class="chapter" id="pre-match">
+        <p class="eyebrow">Chapter 13</p><h2>Pre-match readiness</h2>
+        <ul class="checklist"><li>Correct fixture, court and start time displayed.</li><li>Both team sheets submitted and locked.</li><li>Each selected player is accredited.</li><li>Exactly seven starting positions per team.</li><li>All five GameDay role assignments present.</li><li>All officials signed in on approved devices.</li><li>Scorer confirms player lists and Team A/Team B orientation.</li><li>Timekeeper confirms period duration and clock controls.</li><li>Statistics/lineup confirms starting positions.</li><li>Paper score sheet, pens and incident record ready.</li><li>Broadcast preview and public feed checked if applicable.</li><li>Venue/local mode indicator understood by crew.</li></ul>
+        <div class="decision"><div><strong>All checks pass</strong><br>Supervisor releases the match to Ready.</div><div class="arrow">→</div><div><strong>Any check fails</strong><br>Do not start. Resolve with LOC/team/technical lead.</div></div>
+      </section>
+
+      <section class="chapter" id="supervisor">
+        <p class="eyebrow">Chapter 14</p><h2>Match supervisor workflow</h2>
+        <ol class="steps"><li>Sign in and select the assigned fixture.</li><li>Open <strong>Match readiness</strong>.</li><li>Confirm both submitted team sheets and all five assigned roles.</li><li>Confirm the paper fallback is present.</li><li>Select the readiness/release action only when every check passes.</li><li>During the match, monitor role coordination and system/venue status.</li><li>Use the incident log for injury, warning, suspension, technical or other incidents; enter a meaningful note and Team A/B when applicable.</li><li>Coordinate a formal suspend/resume decision with the timekeeper when needed.</li><li>After the fourth period, ensure the electronic ledger is stable and available to the result approver.</li></ol>
+        <div class="callout warning"><strong>Supervisor is not a universal operator</strong>Do not enter goals or manipulate the clock using another person’s account. Separation makes corrections attributable and protects the official record.</div>
+      </section>
+
+      <section class="chapter" id="timekeeper">
+        <p class="eyebrow">Chapter 15</p><h2>Timekeeper workflow</h2>
+        <ol class="steps"><li>Sign in and select the assigned match.</li><li>Confirm status is Ready before starting.</li><li>Select <strong>Start next period</strong> for Quarter 1.</li><li>Select <strong>Start clock</strong> at the official signal.</li><li>Use <strong>Stop clock</strong> only under the applicable match rules.</li><li>Restart with <strong>Start clock</strong>.</li><li>At period completion, select <strong>End period</strong>.</li><li>Repeat for all four periods.</li><li>For an exceptional stoppage, select <strong>Suspend match</strong> and enter the reason. Resume only after authorization.</li><li>Confirm the clock is stopped and fourth period ended before result reconciliation.</li></ol>
+        <div class="callout"><strong>Server-anchored clock</strong>Refreshing the browser or changing devices does not reset elapsed time. If display and official time appear inconsistent, stop the clock safely and escalate rather than inventing a correction.</div>
+      </section>
+
+      <section class="chapter" id="scorer">
+        <p class="eyebrow">Chapter 16</p><h2>Scorer workflow</h2>
+        <ol class="steps"><li>Sign in and select the assigned match.</li><li>Confirm Team A/Team B names and starting players.</li><li>Set/confirm the next centre pass when instructed.</li><li>For each goal, select Team A or Team B and the scoring player where available.</li><li>Confirm the visible score and recent-goals entry after every command.</li><li>If a goal was entered incorrectly, use <strong>Correct</strong> on that event and enter a clear reason.</li><li>Never silently overwrite or mentally offset an error; corrections are immutable ledger events.</li><li>At each interval, compare electronic totals with the paper record.</li><li>After the fourth period, stop entering data unless resolving a documented discrepancy with the supervisor/result approver.</li></ol>
+        <h3>Correction examples</h3><div class="grid"><div class="card"><h4>Acceptable</h4><p>“Goal attributed to Team A in error; paper sheet confirms Team B GA.”</p></div><div class="card"><h4>Not acceptable</h4><p>“Mistake.” State what changed and the evidence used.</p></div></div>
+      </section>
+
+      <section class="chapter" id="stats">
+        <p class="eyebrow">Chapter 17</p><h2>Statistics &amp; lineup workflow</h2>
+        <ol class="steps"><li>Sign in and select the match.</li><li>Confirm the displayed starting lineup matches both submitted team sheets.</li><li>Record supported statistics against the correct player: goal attempt, intercept, gain, turnover, deflection, rebound or penalty.</li><li>For a substitution/position change, select the player and new position or bench state.</li><li>Enter a meaningful reason of at least three characters.</li><li>Confirm no two on-court players occupy the same position.</li><li>Continue reflecting coaching changes throughout the match.</li><li>At intervals, compare court positions with the electronic lineup.</li><li>At match end, verify the final lineup/history before result approval.</li></ol>
+        <div class="callout success"><strong>Combined role</strong>Statistics and lineup are deliberately combined because staffing is limited. This operator must prioritize accurate live lineup state before optional statistical detail if workload peaks.</div>
+      </section>
+
+      <section class="chapter" id="result">
+        <p class="eyebrow">Chapter 18</p><h2>Result approver workflow</h2>
+        <ol class="steps"><li>Sign in and select the assigned match.</li><li>Wait until four periods are complete and the clock is stopped.</li><li>Collect the signed paper match record.</li><li>Compare Team A score, Team B score, period completion and all recorded corrections.</li><li>Review unresolved incidents or ledger conflicts with the supervisor.</li><li>If the electronic record is wrong, require the appropriate role to enter an attributed correction; never confirm first and “fix later.”</li><li>Enter a confirmation note describing reconciliation, for example “Paper record reconciled; totals and corrections agree.”</li><li>Select <strong>Confirm official result</strong>.</li><li>Verify status becomes Final and the public/broadcast projections update.</li><li>Secure the paper record under the event retention procedure.</li></ol>
+        <div class="callout danger"><strong>Final means official</strong>Confirmation freezes the operational result and feeds standings/publication. Treat it as a formal approval, not an end-screen button.</div>
+      </section>
+
+      <section class="chapter" id="broadcast">
+        <p class="eyebrow">Chapter 19</p><h2>Broadcast operations</h2>
+        <figure class="shot"><img src="assets/loc-broadcast-console.png" alt="LOC broadcast console"><figcaption>Per-fixture stream configuration, live neutral feed preview and vMix pull sources.</figcaption></figure>
+        <ol class="steps"><li>Open <strong>Stream &amp; data feeds</strong>.</li><li>Select the fixture using the neutral Team A v Team B label.</li><li>Enter provider and external stream ID.</li><li>Enter the approved public watch URL and safe embed URL.</li><li>Set lifecycle: Unassigned, Scheduled, Live, Ended or Archived.</li><li>Select <strong>Feature on public site</strong> only for the intended featured stream.</li><li>Select <strong>Save broadcast</strong>.</li><li>Confirm the live preview shows correct Team A/Team B abbreviations, score, quarter and clock.</li><li>Configure vMix to pull the displayed XML or JSON URL every 1000 ms. XML XPath is <code>/gameday/match</code>.</li><li>After the stream ends, set Ended, add replay URL when available, then set Archived at the approved time.</li></ol>
+        <div class="callout"><strong>Feed fields</strong>Use <code>TeamA*</code> and <code>TeamB*</code>. There are deliberately no Home/Away fields.</div>
+      </section>
+
+      <section class="chapter" id="resilience">
+        <p class="eyebrow">Chapter 20</p><h2>Internet loss and venue standby</h2>
+        <p>Venue resilience is optional. When provisioned, the online platform remains primary and the local GameDay node is a standby or venue-operating surface.</p>
+        <figure class="shot"><img src="assets/loc-venue-resilience.png" alt="Venue edge synchronization status"><figcaption>The LOC can register and monitor venue nodes; server provisioning and secrets remain a SportsBB/technical responsibility.</figcaption></figure>
+        <h3>LOC preparation</h3><ol class="steps"><li>Open <strong>Venue resilience</strong>.</li><li>Register a node name and bind it to the correct venue.</li><li>Give the displayed node ID to the authorized technical lead; it is not the secret.</li><li>Confirm the node shows recent Last seen, Last pull and Last push timestamps after provisioning.</li><li>Do not handle or display the synchronization secret.</li><li>Complete a disconnect/reconnect rehearsal before competition.</li></ol>
+        <h3>During connectivity loss</h3><ol class="steps"><li>Supervisor announces the operating mode and records the incident time.</li><li>Officials continue on the approved local GameDay surface if it was provisioned.</li><li>Keep paper records running continuously.</li><li>Do not operate the same match independently in cloud and local surfaces.</li><li>Technical lead restores connectivity; synchronization retries the same deterministic batch without duplicating accepted events.</li><li>Before result confirmation, compare venue and cloud sequence/version, scores and event ledger.</li><li>If no local edge was provisioned, suspend electronic operation and follow the paper continuity plan until service returns.</li></ol>
+        <div class="callout danger"><strong>Avoid split-brain operation</strong>Never let one official continue in cloud while another enters the same match locally without an agreed authority. One ledger must be operationally authoritative during the outage.</div>
+      </section>
+
+      <section class="chapter" id="incidents">
+        <p class="eyebrow">Chapter 21</p><h2>Exceptions and incidents</h2>
+        <div class="table-wrap"><table><thead><tr><th>Situation</th><th>Immediate action</th><th>Owner/escalation</th></tr></thead><tbody>
+          <tr><td>Team changes player after accreditation</td><td>Team edits roster; system reopens affected review and revokes applicable credentials.</td><td>LOC reviews; SportsBB only if system issue.</td></tr>
+          <tr><td>Sick/injured player replacement after close</td><td>Existing team account makes amendment; no new team registration is created.</td><td>LOC verifies eligibility/identity and reissues credential if approved.</td></tr>
+          <tr><td>Credential rejected at gate</td><td>Do not override; direct person to LOC resolution desk.</td><td>LOC checks status and underlying accreditation.</td></tr>
+          <tr><td>Wrong score entered</td><td>Scorer records immutable correction with reason.</td><td>Scorer; supervisor monitors.</td></tr>
+          <tr><td>Clock discrepancy</td><td>Stop safely, compare official record and incident-log the decision.</td><td>Timekeeper and supervisor.</td></tr>
+          <tr><td>Wrong role/fixture visible</td><td>Stop entry and sign out.</td><td>LOC corrects assignment; SportsBB if authorization defect.</td></tr>
+          <tr><td>Internet loss</td><td>Declare mode, continue approved local/paper procedure, prevent dual entry.</td><td>Supervisor and technical lead.</td></tr>
+          <tr><td>Suspected data/privacy exposure</td><td>Stop access, preserve evidence and do not circulate the material.</td><td>Immediate SportsBB/privacy escalation.</td></tr>
+        </tbody></table></div>
+        <h3>Incident record minimum</h3><ul class="checklist"><li>Date/time and timezone.</li><li>Fixture/person/system affected.</li><li>Observed facts, not assumptions.</li><li>Operational impact.</li><li>Actions taken and by whom.</li><li>Paper/electronic evidence references.</li><li>Resolution and remaining follow-up.</li></ul>
+      </section>
+
+      <section class="chapter" id="close">
+        <p class="eyebrow">Chapter 22</p><h2>Match and day closeout</h2>
+        <h3>Match closeout</h3><ul class="checklist"><li>Four periods ended and clock stopped.</li><li>Goals/corrections agree with paper.</li><li>Lineup and incident records complete.</li><li>Venue/cloud ledger reconciled if edge mode was used.</li><li>Result approver entered a confirmation note.</li><li>Match status Final.</li><li>Public and broadcast projections correct.</li><li>Paper record signed and secured.</li></ul>
+        <h3>End-of-day LOC closeout</h3><ul class="checklist"><li>All completed matches final.</li><li>Postponed/suspended/cancelled matches correctly labelled.</li><li>Outstanding registrations/rosters documented.</li><li>Credential revocations/reissues accounted for.</li><li>Offline gate queue is zero.</li><li>Venue node shows no unresolved synchronization error.</li><li>Tomorrow’s courts, fixtures and assignments verified.</li><li>Incidents handed to SportsBB where required.</li><li>LOC signed out and equipment secured.</li></ul>
+      </section>
+
+      <section class="chapter" id="troubleshooting">
+        <p class="eyebrow">Chapter 23</p><h2>Troubleshooting</h2>
+        <div class="table-wrap"><table><thead><tr><th>Symptom</th><th>Likely check</th><th>Safe response</th></tr></thead><tbody>
+          <tr><td>Page remains on preparation screen</td><td>API/domain/certificate and browser console.</td><td>Confirm service health, hard refresh once, then escalate; do not repeatedly enter data.</td></tr>
+          <tr><td>LOC cannot approve</td><td>Registration/roster state and missing fields.</td><td>Resolve validation or return with actionable note.</td></tr>
+          <tr><td>Identity decision unavailable</td><td>Current document ID and required category.</td><td>Reopen the latest document; never reuse a prior decision.</td></tr>
+          <tr><td>Badge QR will not scan</td><td>Print contrast, camera permission and credential status.</td><td>Reprint/reissue through LOC controls; do not copy raw token.</td></tr>
+          <tr><td>Match cannot become Ready</td><td>Both sheets, seven positions and all five assignments.</td><td>Complete the missing gate; do not bypass it.</td></tr>
+          <tr><td>Button disabled for official</td><td>Role, match assignment, match status and latest version.</td><td>Refresh state; if assignment is wrong, LOC corrects it.</td></tr>
+          <tr><td>Version conflict</td><td>Another official entered a newer event.</td><td>Refresh the match ledger and repeat only if the intended command is still required.</td></tr>
+          <tr><td>Offline scans not uploading</td><td>Connectivity, queue count and session.</td><td>Keep PWA open, restore network, refresh pack after queue clears; escalate if persistent.</td></tr>
+          <tr><td>vMix data stale</td><td>Feed URL, 1000-ms interval, match state and API.</td><td>Verify the browser feed preview, then correct vMix source or escalate API issue.</td></tr>
+        </tbody></table></div>
+      </section>
+
+      <section class="chapter" id="checklists">
+        <p class="eyebrow">Chapter 24</p><h2>Printable checklists</h2>
+        <h3>LOC launch checklist</h3><ul class="checklist"><li>Named LOC account works and SportsBB control is denied.</li><li>Registration/roster/identity decision workflow rehearsed.</li><li>Badge printer and QR scanner tested.</li><li>Offline gate pack and replay tested.</li><li>Venues, courts, stages and fixtures verified.</li><li>Five GameDay role accounts per crew prepared.</li><li>Full four-quarter rehearsal passed.</li><li>Broadcast preview/vMix source tested.</li><li>Paper continuity kit ready.</li><li>Escalation contacts distributed.</li></ul>
+        <h3>Per-match crew checklist</h3><ul class="checklist"><li>Correct match and Team A/Team B.</li><li>Both team sheets submitted.</li><li>All five officials assigned and signed in.</li><li>Starting positions verified.</li><li>Clock/score/stat consoles ready.</li><li>Paper record open.</li><li>Broadcast/public preview correct.</li><li>Operating mode confirmed.</li><li>Supervisor releases Ready.</li><li>Final paper/electronic reconciliation completed.</li></ul>
+        <h3>Gate checklist</h3><ul class="checklist"><li>Approved device charged and camera allowed.</li><li>Current 24-hour offline pack loaded.</li><li>Issued and revoked test credentials scanned.</li><li>Queue count zero at opening.</li><li>Rejected persons referred, not overridden.</li><li>Queue zero after reconnection and close.</li></ul>
+      </section>
+    </main>
+  </div>
+  <footer class="footer">GameDay · LOC &amp; GameDay Officials Operations Manual · Use named accounts and preserve the paper official record</footer>
+</body>
+</html>

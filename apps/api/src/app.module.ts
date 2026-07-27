@@ -8,6 +8,9 @@ import { AuthModule } from './auth/auth.module';
 import { AdminModule } from './admin/admin.module';
 import { TeamsModule } from './teams/teams.module';
 import { PublicModule } from './public/public.module';
+import { ControlModule } from './control/control.module';
+import { GameDayModule } from './gameday/gameday.module';
+import { EdgeModule } from './edge/edge.module';
 
 @Module({
   imports: [
@@ -22,6 +25,9 @@ import { PublicModule } from './public/public.module';
     AdminModule,
     TeamsModule,
     PublicModule,
+    ControlModule,
+    GameDayModule,
+    EdgeModule,
   ],
   controllers: [AppController],
   providers: [AppService],

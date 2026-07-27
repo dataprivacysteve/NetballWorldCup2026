@@ -4,7 +4,13 @@ import { useEffect, useState } from "react";
 import { federation } from "../lib/config";
 
 // Fixed top nav. Transparent over the hero, gains a blurred backdrop on scroll.
-export function Header() {
+export function Header({
+  logoSrc,
+  shopUrl,
+}: {
+  logoSrc?: string | null;
+  shopUrl?: string | null;
+}) {
   const [scrolled, setScrolled] = useState(false);
   const [logoFailed, setLogoFailed] = useState(false);
   useEffect(() => {
@@ -14,7 +20,8 @@ export function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const showLogo = federation.brand.logoSrc && !logoFailed;
+  const resolvedLogo = logoSrc ?? federation.brand.logoSrc;
+  const showLogo = resolvedLogo && !logoFailed;
 
   return (
     <header className={scrolled ? "scrolled" : ""}>
@@ -23,7 +30,7 @@ export function Header() {
           {showLogo ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={federation.brand.logoSrc as string}
+              src={resolvedLogo as string}
               alt={federation.brand.wordmark}
               style={{ height: 40, width: "auto", display: "block" }}
               onError={() => setLogoFailed(true)}
@@ -41,7 +48,7 @@ export function Header() {
             </a>
           ))}
         </nav>
-        <a className="nav-cta" href={federation.links.shop}>
+        <a className="nav-cta" href={shopUrl ?? federation.links.shop}>
           Shop now
         </a>
       </div>

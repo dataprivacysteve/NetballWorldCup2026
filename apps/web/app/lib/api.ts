@@ -23,6 +23,38 @@ export type Tournament = {
   startsOn: string | null;
   endsOn: string | null;
   venue: string | null;
+  shortName: string | null;
+  timezone: string;
+  brandPrimaryLogoUrl: string | null;
+  brandReverseLogoUrl: string | null;
+};
+export type Sponsor = {
+  id: string;
+  name: string;
+  tier: "gold" | "silver" | "bronze" | "supporter";
+  logoUrl: string | null;
+  destinationUrl: string | null;
+};
+export type NewsArticle = {
+  id: string;
+  slug: string;
+  title: string;
+  summary: string;
+  body: string | null;
+  imageUrl: string | null;
+  publishedAt: string | null;
+};
+export type PublicExperience = {
+  heroImageUrl: string | null;
+  heroStrapline: string | null;
+  ticketsUrl: string | null;
+  merchandiseUrl: string | null;
+  merchandiseImageUrl: string | null;
+  aboutText: string | null;
+  contactEmail: string | null;
+  delayedUpdatesMessage: string | null;
+  sponsors: Sponsor[];
+  news: NewsArticle[];
 };
 export type Nation = { countryCode: string; name: string; group: string | null };
 export type Side = { code: string; name: string; score: number | null };
@@ -32,10 +64,26 @@ export type Match = {
   venue: string | null;
   court: string | null;
   round: string | null;
-  status: "scheduled" | "live" | "final" | "postponed";
+  status:
+    | "scheduled"
+    | "ready"
+    | "live"
+    | "suspended"
+    | "awaiting_confirmation"
+    | "final"
+    | "postponed"
+    | "cancelled";
   stage: string | null;
-  home: Side;
-  away: Side;
+  teamA: Side;
+  teamB: Side;
+  broadcast: {
+    provider: string | null;
+    watchUrl: string | null;
+    embedUrl: string | null;
+    replayUrl: string | null;
+    status: string;
+    featured: boolean;
+  };
 };
 export type StandingRow = {
   countryCode: string;
@@ -70,6 +118,7 @@ export type Squad = {
 
 export const publicApi = {
   tournament: () => get<Tournament | null>("/tournament", null),
+  experience: () => get<PublicExperience | null>("/experience", null),
   nations: () => get<Nation[]>("/nations", []),
   fixtures: () => get<Match[]>("/fixtures", []),
   results: () => get<Match[]>("/results", []),
@@ -80,4 +129,5 @@ export const publicApi = {
       next: null,
     }),
   squad: (code: string) => get<Squad | null>(`/nations/${code}/squad`, null),
+  broadcasts: () => get<Match[]>("/broadcasts", []),
 };

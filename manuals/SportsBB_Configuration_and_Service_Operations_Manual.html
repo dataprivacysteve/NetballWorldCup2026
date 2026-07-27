@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SportsBB Configuration &amp; Service Operations Manual</title>
+  <link rel="stylesheet" href="manual.css">
+</head>
+<body>
+  <header class="cover">
+    <div class="cover-inner">
+      <p class="kicker">GameDay · Controlled operations</p>
+      <h1>SportsBB Configuration &amp; Service Operations Manual</h1>
+      <p class="subtitle">Step-by-step instructions for creating, governing, publishing and supporting a Netball World Cup Regional Qualifier tournament instance.</p>
+      <div class="meta"><span>Audience: SportsBB Platform Administrator</span><span>Version 1.0</span><span>Prepared 16 July 2026</span><span>Production-ready operating model</span></div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Manual contents">
+      <strong>Contents</strong>
+      <a href="#purpose">1. Purpose and authority</a>
+      <a href="#architecture">2. Platform and service map</a>
+      <a href="#prerequisites">3. Before configuration</a>
+      <a href="#signin">4. Sign in securely</a>
+      <a href="#event">5. Configure the event contract</a>
+      <a href="#countries">6. Eligible countries</a>
+      <a href="#brand">7. Brand and accreditation</a>
+      <a href="#publish">8. Version, publish and lock</a>
+      <a href="#public">9. Public website content</a>
+      <a href="#commercial">10. Partners and advertising</a>
+      <a href="#news">11. Newsroom</a>
+      <a href="#registration">12. Registration readiness</a>
+      <a href="#accounts">13. Accounts and security</a>
+      <a href="#uat">14. UAT and launch approval</a>
+      <a href="#service">15. Daily service operations</a>
+      <a href="#change">16. Change and incident control</a>
+      <a href="#handoff">17. LOC handoff</a>
+      <a href="#deployment">18. Production configuration</a>
+      <a href="#troubleshooting">19. Troubleshooting</a>
+      <a href="#checklists">20. Master checklists</a>
+    </nav>
+
+    <main class="content">
+      <section class="chapter" id="purpose">
+        <p class="eyebrow">Chapter 1</p><h2>Purpose and authority</h2>
+        <p class="lead">SportsBB owns the reusable GameDay chassis and the event-level contract consumed by registration, accreditation, competition operations, the public website and broadcast feeds.</p>
+        <div class="callout danger"><strong>Authority boundary</strong>Only the <code>sportsbb_admin</code> account may enter the SportsBB control plane. LOC credentials are deliberately denied. Never share this account with the LOC, teams, gate staff or GameDay officials.</div>
+        <h3>SportsBB is accountable for</h3>
+        <div class="grid">
+          <div class="card"><h4>Event governance</h4><p>Tournament identity, dates, timezone, registration window, eligibility date, countries, roster policy, document policy, official roles and accreditation zones.</p></div>
+          <div class="card"><h4>Digital service</h4><p>Production domains, certificates, databases, object storage, email integration, backups, monitoring, incident response and support escalation.</p></div>
+          <div class="card"><h4>Public and commercial content</h4><p>Official logos, hero content, tickets, merchandise, partners, advertisements, newsroom entries and public recovery messaging.</p></div>
+          <div class="card"><h4>Controlled handoff</h4><p>Publish a validated configuration, give the LOC the operational boundaries it needs, and retain control of policy and commercial content.</p></div>
+        </div>
+        <h3>SportsBB does not perform</h3>
+        <ul><li>Manual review of team passports or national IDs.</li><li>Delegation approval, roster accreditation or badge decisions.</li><li>Routine fixture entry, GameDay staffing or match scoring.</li><li>Coaching decisions or assignment of players to match positions.</li></ul>
+      </section>
+
+      <section class="chapter" id="architecture">
+        <p class="eyebrow">Chapter 2</p><h2>Platform and service map</h2>
+        <div class="table-wrap"><table><thead><tr><th>Surface</th><th>Production address</th><th>Primary users</th><th>Purpose</th></tr></thead><tbody>
+          <tr><td>Platform</td><td><code>platform.netballamericas.org</code></td><td>SportsBB, LOC, GameDay roles</td><td>Control, operations, accreditation and match consoles.</td></tr>
+          <tr><td>Team Portal</td><td><code>teams.netballamericas.org</code></td><td>One authorized team officer per delegation</td><td>Registration, roster, officials, identity evidence and match sheets.</td></tr>
+          <tr><td>Public website</td><td><code>www.netballamericas.org</code></td><td>Public, media, supporters</td><td>Event information, approved rosters, fixtures, results, live scores and streams.</td></tr>
+          <tr><td>API</td><td><code>api.netballamericas.org</code></td><td>Applications, vMix, venue edge</td><td>Authenticated operations and approved public JSON/XML projections.</td></tr>
+          <tr><td>Venue GameDay</td><td>Venue LAN hostname</td><td>Assigned GameDay officials</td><td>Optional online-first standby for scoring continuity during internet loss.</td></tr>
+        </tbody></table></div>
+        <div class="callout"><strong>Online-first operating choice</strong>Venue resilience is optional. The platform can remain fully online when connectivity is dependable. Register and provision a local edge only when the event’s risk plan calls for continuity during an outage.</div>
+      </section>
+
+      <section class="chapter" id="prerequisites">
+        <p class="eyebrow">Chapter 3</p><h2>Before configuration</h2>
+        <h3>Collect the approved source material</h3>
+        <ul class="checklist">
+          <li>Signed tournament name, short name, dates, timezone and eligibility date.</li>
+          <li>Registration opening and closing date-times, including timezone.</li>
+          <li>Eligible country list and official country codes.</li>
+          <li>Approved roster limits and minimum biography length.</li>
+          <li>Required team-official roles and maximum bench allocation.</li>
+          <li>Identity-document and guardian-consent policy by person category.</li>
+          <li>Eligibility regulation wording approved by the governing body.</li>
+          <li>Accreditation categories and access-zone matrix.</li>
+          <li>Official positive and negative NWC qualifier logo files.</li>
+          <li>Public-site copy, links, commercial artwork and publication approvals.</li>
+        </ul>
+        <h3>Establish change ownership</h3>
+        <div class="table-wrap"><table><thead><tr><th>Decision</th><th>Approver</th><th>Operator</th><th>Evidence retained</th></tr></thead><tbody>
+          <tr><td>Tournament policy</td><td>Event/governing authority</td><td>SportsBB</td><td>Approved brief and published configuration version.</td></tr>
+          <tr><td>Public/commercial content</td><td>Commercial/content owner</td><td>SportsBB</td><td>Artwork approval, destination verification and publication record.</td></tr>
+          <tr><td>Delegation/identity decision</td><td>LOC</td><td>Single LOC officer</td><td>Attributed platform audit event.</td></tr>
+          <tr><td>Match result</td><td>Result approver</td><td>Assigned GameDay account</td><td>Paper record plus immutable match ledger.</td></tr>
+        </tbody></table></div>
+      </section>
+
+      <section class="chapter" id="signin">
+        <p class="eyebrow">Chapter 4</p><h2>Sign in securely</h2>
+        <ol class="steps">
+          <li>Open <code>https://platform.netballamericas.org/control</code>. Use the <code>.test</code> equivalent only for local UAT.</li>
+          <li>Confirm the browser displays a valid TLS padlock and the exact production hostname.</li>
+          <li>Enter the SportsBB administrator email and password supplied through the approved secure channel.</li>
+          <li>Select <strong>Enter control plane</strong>. Confirm the header identifies you as <strong>Platform Administrator</strong>.</li>
+          <li>If the screen says “SportsBB administrator only,” sign out; the wrong account is active.</li>
+        </ol>
+        <div class="callout warning"><strong>Never document production passwords here</strong>Store them in the approved secret/password manager. Rotate local/UAT credentials before any external user is admitted.</div>
+        <figure class="shot"><img src="assets/sportsbb-control-plane.png" alt="SportsBB tournament configuration screen"><figcaption>SportsBB control plane showing publication status, event identity and roster policy.</figcaption></figure>
+      </section>
+
+      <section class="chapter" id="event">
+        <p class="eyebrow">Chapter 5</p><h2>Configure the event contract</h2>
+        <p>The control plane saves changes as a new draft version. Treat the form as a governed contract: one incorrect value can affect several downstream modules.</p>
+        <h3>5.1 Event identity</h3>
+        <ol class="steps">
+          <li>Enter the formal <strong>Tournament name</strong> exactly as approved.</li>
+          <li>Enter the <strong>Short name</strong> used on compact screens and public components.</li>
+          <li>Set an IANA timezone such as <code>America/Barbados</code>. Do not use a fixed UTC offset.</li>
+          <li>Set tournament <strong>Starts</strong> and <strong>Ends</strong> dates.</li>
+          <li>Set the fixed <strong>Eligibility date</strong>. Confirm it against the relevant regulations before publishing.</li>
+          <li>Set <strong>Registration opens</strong> and <strong>Registration closes</strong>. Recheck the displayed local time and the corresponding UTC value.</li>
+        </ol>
+        <h3>5.2 Roster policy</h3>
+        <div class="table-wrap"><table><thead><tr><th>Field</th><th>Qualifier baseline</th><th>Effect</th></tr></thead><tbody>
+          <tr><td>Active minimum</td><td>10</td><td>Roster cannot be submitted below this number.</td></tr>
+          <tr><td>Active maximum</td><td>15</td><td>Maximum active players.</td></tr>
+          <tr><td>Reserve maximum</td><td>3</td><td>Up to three travelling reserves.</td></tr>
+          <tr><td>Bench maximum</td><td>17</td><td>Match bench allocation across players and officials.</td></tr>
+          <tr><td>Biography minimum</td><td>Configured value</td><td>Minimum player biography characters enforced at submission.</td></tr>
+        </tbody></table></div>
+        <h3>5.3 Team officials and evidence policy</h3>
+        <ol class="steps">
+          <li>Select required official roles: normally Team Manager, Coach and Primary Care.</li>
+          <li>Use “Other” only if event policy requires an additional named role. The roster supports up to two additional officials.</li>
+          <li>Select the person categories requiring identity evidence. For the agreed qualifier policy, players require passport or national ID; officials do not automatically inherit that requirement.</li>
+          <li>Select categories subject to guardian consent. The server applies age/category rules; do not substitute an informal checkbox.</li>
+          <li>Enter the full eligibility-regulation reference. This text supports the declaration where a player’s nationality differs from the represented team.</li>
+        </ol>
+        <div class="callout warning"><strong>Closing date behavior</strong>After registration closes, no new team may register. Existing approved team accounts retain roster amendment access. A material personnel, identity, eligibility, classification or accreditation change returns the roster to LOC review and revokes affected live credentials.</div>
+      </section>
+
+      <section class="chapter" id="countries">
+        <p class="eyebrow">Chapter 6</p><h2>Maintain eligible countries</h2>
+        <ol class="steps">
+          <li>In the control plane, scroll to the eligible-country manager.</li>
+          <li>Compare the displayed list with the signed eligibility list.</li>
+          <li>Add each country using its approved three-letter code and public name.</li>
+          <li>Use the active/inactive control rather than changing a country code after teams have registered.</li>
+          <li>Before publishing, verify there are no duplicates and that every invited country is selectable in registration.</li>
+        </ol>
+        <div class="callout"><strong>Data relationship</strong>Country configuration governs new delegation intake. It does not itself approve a delegation; the LOC still performs the operational registration decision.</div>
+      </section>
+
+      <section class="chapter" id="brand">
+        <p class="eyebrow">Chapter 7</p><h2>Brand and accreditation</h2>
+        <h3>7.1 Official event graphics</h3>
+        <ol class="steps">
+          <li>Use the official <strong>NWC Sydney 2027 Regional Qualifier Americas</strong> artwork. Never substitute the former generic Netball Americas image.</li>
+          <li>Set the <strong>Primary logo asset path</strong> to the approved positive artwork for light backgrounds.</li>
+          <li>Set the <strong>Reverse logo asset path</strong> to the approved negative artwork for dark backgrounds.</li>
+          <li>Confirm the primary preview is sharp, undistorted and complete.</li>
+          <li>Open the Platform, Team Portal and public site at desktop and mobile widths to confirm the official artwork appears correctly.</li>
+        </ol>
+        <h3>7.2 Access-zone matrix</h3>
+        <ol class="steps">
+          <li>Prepare valid JSON mapping each accreditation category to its allowed zones.</li>
+          <li>Use exact zone names approved for signage and access control.</li>
+          <li>Paste the JSON into <strong>Access-zone matrix</strong>.</li>
+          <li>Save the draft. If parsing fails, correct commas, quotation marks and array brackets.</li>
+          <li>Generate sample badges after publication and confirm the expected zones appear.</li>
+        </ol>
+        <div class="callout danger"><strong>Do not casually change zones after credentials are issued</strong>Assess whether badges must be revoked and reissued. Record the approved change and inform the LOC before applying it.</div>
+      </section>
+
+      <section class="chapter" id="publish">
+        <p class="eyebrow">Chapter 8</p><h2>Version, publish and lock</h2>
+        <h3>Save a draft</h3>
+        <ol class="steps"><li>Complete the configuration form.</li><li>Select <strong>Save as new draft version</strong>.</li><li>Resolve any validation error; do not refresh until the save succeeds.</li><li>Review the <strong>Publish readiness</strong> panel.</li></ol>
+        <h3>Publish</h3>
+        <ol class="steps"><li>Run the pre-publication checklist with a second reviewer.</li><li>Select <strong>Publish version</strong>.</li><li>Confirm the status chip displays <strong>Published</strong> with the expected version.</li><li>Test Team Portal registration rules and the public surfaces.</li></ol>
+        <h3>Lock</h3>
+        <ol class="steps"><li>Lock only after policy sign-off and successful UAT.</li><li>Select <strong>Lock configuration</strong>.</li><li>Confirm the form becomes read-only and the button indicates <strong>Configuration locked</strong>.</li><li>Record the locked version in the launch sign-off.</li></ol>
+        <div class="callout danger"><strong>Lock is a governance action</strong>Do not use it as a casual save button. If a post-lock policy correction is required, follow formal change and incident control.</div>
+      </section>
+
+      <section class="chapter" id="public">
+        <p class="eyebrow">Chapter 9</p><h2>Configure the public website</h2>
+        <p>Open <code>/control/public</code> or select <strong>Public experience</strong> from the SportsBB header.</p>
+        <figure class="shot"><img src="assets/sportsbb-public-experience.png" alt="SportsBB public experience management screen"><figcaption>Public experience, partner and newsroom configuration—all restricted to SportsBB.</figcaption></figure>
+        <ol class="steps">
+          <li>Enter the approved <strong>Hero image URL</strong>. Use a production asset location over HTTPS.</li>
+          <li>Enter the <strong>Hero strapline</strong>; check spelling, competition naming and tone.</li>
+          <li>Enter the <strong>Ticket destination</strong> and test it in a separate private/incognito window.</li>
+          <li>Enter the <strong>Merchandise destination</strong> and <strong>Merchandise image URL</strong>.</li>
+          <li>Enter the monitored <strong>Public contact email</strong>.</li>
+          <li>Enter approved <strong>About the qualifier</strong> copy.</li>
+          <li>Set the <strong>Delayed live-update message</strong>. Use neutral language that does not speculate about the cause.</li>
+          <li>Select <strong>Save public configuration</strong>.</li>
+          <li>Open the public site and verify every image, link and text block.</li>
+        </ol>
+      </section>
+
+      <section class="chapter" id="commercial">
+        <p class="eyebrow">Chapter 10</p><h2>Partners and advertising</h2>
+        <div class="callout success"><strong>Managed service boundary</strong>Commercial content remains exclusively a SportsBB responsibility. The LOC does not upload or manage sponsors or advertisements.</div>
+        <h3>Current partner placement behavior</h3>
+        <div class="table-wrap"><table><thead><tr><th>Tier</th><th>Website placement</th><th>Operational note</th></tr></thead><tbody>
+          <tr><td>Gold</td><td>Main billboard</td><td>The first active Gold partner fills the primary advertising space.</td></tr>
+          <tr><td>Silver</td><td>First banner</td><td>Uses the supplied logo and destination.</td></tr>
+          <tr><td>Bronze</td><td>Second banner</td><td>Uses the supplied logo and destination.</td></tr>
+          <tr><td>Supporter</td><td>Partner-logo section</td><td>Displayed with the wider active partner list.</td></tr>
+        </tbody></table></div>
+        <h3>Add a partner</h3>
+        <ol class="steps">
+          <li>Obtain written approval for the partner name, tier, artwork and destination.</li>
+          <li>Validate the artwork: correct brand, adequate resolution, safe margins and permitted file format.</li>
+          <li>Upload the approved file to the production content/asset service. The current form accepts a URL; it does not upload the file itself.</li>
+          <li>Enter <strong>Partner name</strong>.</li>
+          <li>Select the correct <strong>Tier</strong>.</li>
+          <li>Paste the HTTPS <strong>Logo URL</strong> and the approved <strong>Destination URL</strong>.</li>
+          <li>Select <strong>Add partner</strong>.</li>
+          <li>Verify the expected website slot, desktop/mobile rendering and destination behavior.</li>
+        </ol>
+        <h3>Remove or replace a partner</h3>
+        <ol class="steps"><li>Record the approval or expiry instruction.</li><li>Use <strong>Remove</strong> beside the current entry.</li><li>For replacement, add the newly approved record and recheck the placement.</li><li>Clear CDN/browser caches only through the approved service procedure; never edit page code.</li></ol>
+        <div class="callout warning"><strong>Current management limitation</strong>The implemented screen adds and removes partner records. It does not yet provide direct uploads, editing, scheduled start/end dates, rotating campaigns, creative-specific placement controls or analytics. Until those controls are developed, SportsBB must operate the asset URL and publication process as a managed service.</div>
+      </section>
+
+      <section class="chapter" id="news">
+        <p class="eyebrow">Chapter 11</p><h2>Operate the newsroom</h2>
+        <ol class="steps">
+          <li>Obtain approved headline and summary text.</li>
+          <li>Enter the <strong>Headline</strong>. The platform derives a stable slug.</li>
+          <li>Enter the <strong>Summary</strong>.</li>
+          <li>Leave <strong>Publish immediately</strong> unchecked for a draft; select it only after approval.</li>
+          <li>Select <strong>Add article</strong>.</li>
+          <li>Confirm the status is Draft or Published as intended.</li>
+          <li>Open the public website and verify the visible entry.</li>
+          <li>Use <strong>Remove</strong> only with editorial approval.</li>
+        </ol>
+      </section>
+
+      <section class="chapter" id="registration">
+        <p class="eyebrow">Chapter 12</p><h2>Registration readiness</h2>
+        <h3>Before opening</h3><ul class="checklist"><li>Published version contains the correct opening/closing timestamps.</li><li>All eligible countries are active.</li><li>Roster and official limits match the signed requirements.</li><li>Player identity evidence policy is enabled.</li><li>Official event logo appears on Team Portal.</li><li>Password-recovery email delivery is proven.</li><li>LOC officer can access review surfaces but cannot enter SportsBB control.</li><li>Test team can complete registration, roster, document upload and submission.</li></ul>
+        <h3>At opening time</h3><ol class="steps"><li>Confirm production monitoring is green.</li><li>Open Team Portal in a private browser window.</li><li>Verify new-team registration is available.</li><li>Register a controlled test delegation only if the launch plan permits it.</li><li>Confirm the LOC sees the submitted registration.</li><li>Record launch time and result in the operations log.</li></ol>
+        <h3>At closing time</h3><ol class="steps"><li>Verify a new unauthenticated team cannot begin registration.</li><li>Verify an existing approved team can still sign in and amend its roster.</li><li>Confirm material amendments reopen LOC review and revoke affected credentials.</li><li>Notify the LOC that no new teams will enter the intake queue.</li></ol>
+      </section>
+
+      <section class="chapter" id="accounts">
+        <p class="eyebrow">Chapter 13</p><h2>Accounts and security</h2>
+        <ul class="checklist"><li>Use one named SportsBB administrator account; do not create a shared “admin” mailbox login.</li><li>Use a minimum 12-character unique password and approved password manager.</li><li>Distribute credentials through a secure channel, never email or this manual.</li><li>Rotate UAT/default passwords before external access.</li><li>Use password reset rather than revealing an existing password.</li><li>Revoke all sessions after suspected compromise or staff departure.</li><li>Review attributed audit events during launch and after critical changes.</li><li>Never use the migration/superuser database credential for runtime services.</li></ul>
+        <div class="callout"><strong>Database separation</strong>Production uses separate application, Platform operations, public read-only and migration connections. The public role must not read private user, registration or identity tables.</div>
+      </section>
+
+      <section class="chapter" id="uat">
+        <p class="eyebrow">Chapter 14</p><h2>UAT and launch approval</h2>
+        <h3>Required rehearsal</h3>
+        <ol class="steps"><li>Use the August 1 full-test window or an approved replacement date.</li><li>Exercise one delegation from registration through roster approval and credentials.</li><li>Configure a neutral Team A/Team B fixture.</li><li>Assign all five GameDay roles.</li><li>Submit both match sheets and complete a four-quarter rehearsal.</li><li>Record goals, corrections, substitutions, statistics and an incident.</li><li>Suspend/resume, reconcile paper and electronic records, then confirm the result.</li><li>Test the gate online, offline, reconnect and verify deduplicated audit records.</li><li>Test public live score delay/recovery and broadcast XML/JSON refresh.</li><li>Record SportsBB, LOC, venue technical and broadcast sign-off.</li></ol>
+        <h3>Launch gate</h3><div class="callout success"><strong>Pass only when</strong>Every production build is deployed; migrations are applied; backups restore; email works; all roles are isolated; official branding is correct; and the complete operational rehearsal has no unresolved severity-one or severity-two defect.</div>
+      </section>
+
+      <section class="chapter" id="service">
+        <p class="eyebrow">Chapter 15</p><h2>Daily service operations</h2>
+        <h3>Start-of-day</h3><ul class="checklist"><li>Check Platform, Team Portal, public website and API health.</li><li>Check database, object storage and email service health.</li><li>Review failed logins, application errors and storage alerts.</li><li>Confirm scheduled backups completed.</li><li>Check public content and commercial destinations.</li><li>During competition, confirm broadcast feeds and optional venue-edge status.</li></ul>
+        <h3>During service</h3><ul class="checklist"><li>Keep an incident log with timestamps, impact and owner.</li><li>Do not make policy changes directly in production without approval.</li><li>Use the delayed-update message if public scores are temporarily unavailable.</li><li>Coordinate operational issues with the LOC without granting SportsBB access.</li><li>Preserve logs and audit evidence for material incidents.</li></ul>
+        <h3>End-of-day</h3><ul class="checklist"><li>Confirm all scheduled matches are final or explicitly suspended/postponed.</li><li>Confirm result approvers completed reconciliation.</li><li>Review outstanding registration/credential exceptions with the LOC.</li><li>Verify backups and record restoration point.</li><li>Publish an internal daily status note.</li></ul>
+      </section>
+
+      <section class="chapter" id="change">
+        <p class="eyebrow">Chapter 16</p><h2>Change and incident control</h2>
+        <h3>Change procedure</h3><ol class="steps"><li>Record the requested change, owner, reason, affected modules and deadline.</li><li>Classify it as content, operational data, policy or infrastructure.</li><li>Obtain the correct approval.</li><li>Test in the UAT environment.</li><li>Schedule the production change and notify affected operators.</li><li>Take/verify a rollback point.</li><li>Apply the change and run targeted smoke tests.</li><li>Record result, version and any follow-up.</li></ol>
+        <h3>Incident priorities</h3><div class="table-wrap"><table><thead><tr><th>Priority</th><th>Example</th><th>Immediate response</th></tr></thead><tbody><tr><td>P1</td><td>Registration unavailable at launch; scoring unavailable during a live match; data exposure.</td><td>Declare incident, assign lead, preserve evidence, invoke continuity procedure and communicate.</td></tr><tr><td>P2</td><td>One major workflow degraded; broadcast/public feed materially delayed.</td><td>Workaround, targeted recovery, stakeholder update and tracked correction.</td></tr><tr><td>P3</td><td>Minor content/display issue with no operational block.</td><td>Log, prioritize and correct through normal change control.</td></tr></tbody></table></div>
+      </section>
+
+      <section class="chapter" id="handoff">
+        <p class="eyebrow">Chapter 17</p><h2>Handoff to the LOC</h2>
+        <ol class="steps"><li>Publish and, when approved, lock the event configuration.</li><li>Provide the LOC with event dates, registration window, roster/document policy, access zones and escalation contacts.</li><li>Create or verify the single named LOC officer account.</li><li>Confirm LOC access to operations, accreditation, fixtures, staffing, venue and broadcast areas.</li><li>Demonstrate that LOC credentials cannot enter <code>/control</code> or <code>/control/public</code>.</li><li>Complete one delegated workflow together from submitted team to issued credential.</li><li>Agree support channels and incident severity definitions.</li><li>Record formal handoff and outstanding dependencies.</li></ol>
+      </section>
+
+      <section class="chapter" id="deployment">
+        <p class="eyebrow">Chapter 18</p><h2>Production configuration</h2>
+        <p>This chapter begins when servers, DNS, certificates, databases, storage, email and broadcast services are available.</p>
+        <h3>Cloud environment</h3><ul class="checklist"><li>Set <code>NODE_ENV=production</code>.</li><li>Configure separate runtime, Platform, public-read and migration database URLs.</li><li>Configure strong JWT/session settings and production cookie domain.</li><li>Set API and public-site production origins.</li><li>Configure S3/MinIO endpoint, credentials and photo/identity buckets.</li><li>Configure password-recovery webhook, sender and support details.</li><li>If using venue standby, configure a strong edge synchronization secret.</li><li>Apply migrations through <code>0027_edge_public_broadcast</code>.</li></ul>
+        <h3>Optional venue environment</h3><ul class="checklist"><li>Register a venue node in the LOC venue-resilience screen.</li><li>Provision a trusted venue server and local database.</li><li>Set runtime mode to edge, node ID, secret, cloud origin and local origin.</li><li>Provision assigned GameDay identities and scoped match data using the authoritative bootstrap manifest.</li><li>Install process supervision and automatic restart.</li><li>Disconnect/reconnect internet during a full rehearsal and reconcile ledger versions.</li></ul>
+      </section>
+
+      <section class="chapter" id="troubleshooting">
+        <p class="eyebrow">Chapter 19</p><h2>Troubleshooting</h2>
+        <div class="table-wrap"><table><thead><tr><th>Symptom</th><th>Check</th><th>Action</th></tr></thead><tbody>
+          <tr><td>Control plane rejects account</td><td>Active role and hostname.</td><td>Use the named SportsBB account; reset through the approved process; do not use LOC credentials.</td></tr>
+          <tr><td>Draft will not save</td><td>Required dates, numeric limits and access-zone JSON.</td><td>Correct validation/JSON and save again.</td></tr>
+          <tr><td>Publish readiness not ready</td><td>Missing required fields and logo paths.</td><td>Resolve every listed readiness item before publishing.</td></tr>
+          <tr><td>Logo broken</td><td>HTTPS path, permissions, case and asset availability.</td><td>Restore the official asset and retest all portals.</td></tr>
+          <tr><td>Partner slot shows placeholder</td><td>Active record, correct tier and reachable logo URL.</td><td>Correct/add the SportsBB-managed partner record.</td></tr>
+          <tr><td>Registration opens at wrong time</td><td>Event timezone and stored timestamp.</td><td>Stop promotion, correct through approved change control and re-test.</td></tr>
+          <tr><td>Public scores delayed</td><td>API health, match state and venue connectivity.</td><td>Enable approved delay message, recover service and verify ledger consistency.</td></tr>
+        </tbody></table></div>
+      </section>
+
+      <section class="chapter" id="checklists">
+        <p class="eyebrow">Chapter 20</p><h2>Master checklists</h2>
+        <h3>Configuration sign-off</h3><ul class="checklist"><li>Event identity and timezone verified.</li><li>Registration/eligibility dates approved.</li><li>Countries and roster policy verified.</li><li>Officials, identity and consent policy verified.</li><li>Official positive and negative logos verified.</li><li>Access-zone JSON validated.</li><li>Public content and commercial links checked.</li><li>Draft reviewed by a second person.</li><li>Version published and recorded.</li><li>Lock approval recorded.</li></ul>
+        <h3>Production go-live</h3><ul class="checklist"><li>DNS/TLS and all four public services healthy.</li><li>Database roles separated and migrations applied.</li><li>Object storage and email proven.</li><li>Backups restored successfully in a clean environment.</li><li>All UAT/default passwords rotated.</li><li>LOC handoff and role isolation proven.</li><li>Full registration-to-scoring rehearsal passed.</li><li>Gate offline/reconnect passed.</li><li>Broadcast feeds and public recovery state passed.</li><li>Formal sign-offs recorded.</li></ul>
+      </section>
+    </main>
+  </div>
+  <footer class="footer">SportsBB GameDay · Configuration &amp; Service Operations Manual · Keep production credentials out of this document</footer>
+</body>
+</html>

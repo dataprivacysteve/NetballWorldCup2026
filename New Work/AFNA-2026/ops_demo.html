@@ -1,0 +1,2749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NetballAmericas · Organising Committee Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,800&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#1B2A6B; --navy-deep:#0F1A4A; --navy-soft:#2D3F8E;
+  --gold:#F4C430; --gold-bright:#FFD93D; --gold-deep:#B8860B;
+  --coral:#E8553D; --teal:#0E8C82; --violet:#6B4BA8;
+  --ink:#0E1230; --ink-soft:#3D4163; --ink-muted:#6E7191; --ink-faded:#A0A4B8;
+  --line:rgba(14,18,48,0.08); --line-strong:rgba(14,18,48,0.16);
+  --bg:#FAF7F0; --bg-soft:#F2EDDF; --bg-sand:#E8E0CC; --white:#fff;
+  --ok:#1E9E5A; --warn:#C9911A; --bad:#D8442C;
+  --font-display:'Fraunces',Georgia,serif; --font-body:'Manrope',system-ui,sans-serif; --font-mono:'JetBrains Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-body);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.5}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+input,select{font-family:inherit;font-size:0.9rem}
+.topbar{position:sticky;top:0;z-index:50;background:var(--navy-deep);color:#fff;display:flex;align-items:center;gap:1.4rem;padding:0.7rem 1.6rem;border-bottom:3px solid var(--gold)}
+.brand{display:flex;align-items:center;gap:0.7rem}
+.brand .mark{height:34px;width:34px;border-radius:7px;background:linear-gradient(135deg,var(--gold),var(--coral));display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:800;color:var(--navy-deep);font-size:1rem}
+.brand .gd{font-family:var(--font-display);font-weight:800;font-size:1.12rem;line-height:1}
+.brand .gd small{display:block;font-family:var(--font-mono);font-size:0.56rem;font-weight:500;letter-spacing:0.2em;color:var(--gold-bright);text-transform:uppercase;margin-top:2px}
+.evchip{display:flex;flex-direction:column;gap:1px;padding-left:1.2rem;border-left:1px solid rgba(255,255,255,0.16)}
+.evchip b{font-family:var(--font-display);font-weight:700;font-size:0.9rem}
+.evchip span{font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.07em;color:rgba(255,255,255,0.66);text-transform:uppercase}
+.topbar-spacer{flex:1}
+.mfa{font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.1em;text-transform:uppercase;color:#fff;background:rgba(30,158,90,0.25);border:1px solid rgba(30,158,90,0.5);padding:4px 9px;border-radius:20px}
+.demo-flag{font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.13em;text-transform:uppercase;color:var(--navy-deep);background:var(--gold);padding:4px 9px;border-radius:20px;font-weight:600}
+nav.tabs{position:sticky;top:53px;z-index:40;background:var(--white);border-bottom:1px solid var(--line);display:flex;padding:0 1.6rem;box-shadow:0 1px 0 var(--line);overflow-x:auto}
+nav.tabs button{padding:0.95rem 1.1rem;font-weight:600;font-size:0.84rem;color:var(--ink-muted);border-bottom:2.5px solid transparent;transition:.15s;display:flex;align-items:center;gap:0.5rem;white-space:nowrap}
+nav.tabs button:hover{color:var(--ink)}
+nav.tabs button.active{color:var(--navy);border-bottom-color:var(--gold)}
+nav.tabs button .pill{font-family:var(--font-mono);font-size:0.6rem;background:var(--bg-soft);color:var(--ink-soft);padding:1px 6px;border-radius:10px;font-weight:600}
+nav.tabs button.active .pill{background:var(--navy);color:#fff}
+main{max-width:1180px;margin:0 auto;padding:2rem 1.6rem 5rem}
+.view{display:none;animation:fade .3s ease}.view.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.vhead{margin-bottom:1.5rem}
+.vhead h1{font-family:var(--font-display);font-weight:700;font-size:1.85rem;letter-spacing:-0.01em;line-height:1.06}
+.vhead p{color:var(--ink-muted);font-size:0.92rem;margin-top:0.35rem;max-width:66ch}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.8rem}
+.stat{background:var(--white);border:1px solid var(--line);border-radius:14px;padding:1.1rem 1.2rem;position:relative;overflow:hidden}
+.stat::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--gold)}
+.stat .n{font-family:var(--font-display);font-weight:700;font-size:2rem;line-height:1;color:var(--navy)}
+.stat .l{font-size:0.72rem;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.07em;font-weight:600;margin-top:0.45rem}
+.stat.s2::before{background:var(--teal)}.stat.s3::before{background:var(--coral)}.stat.s4::before{background:var(--navy-soft)}
+@media(max-width:680px){.stats{grid-template-columns:repeat(2,1fr)}}
+.team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.1rem}
+.team-card{background:var(--white);border:1px solid var(--line);border-radius:14px;padding:1.2rem;cursor:pointer;transition:.15s}
+.team-card:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(14,18,48,0.10);border-color:var(--line-strong)}
+.tc-top{display:flex;align-items:center;gap:0.8rem;margin-bottom:0.9rem}
+.flag{width:42px;height:42px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:800;color:#fff;font-size:0.92rem;flex-shrink:0;overflow:hidden}
+.flag svg{width:100%;height:100%;display:block}
+.team-card h3{font-family:var(--font-display);font-weight:700;font-size:1.06rem;line-height:1.1}
+.team-card .iso{font-family:var(--font-mono);font-size:0.64rem;color:var(--ink-faded);letter-spacing:0.1em}
+.status{display:inline-flex;align-items:center;gap:0.4rem;font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;padding:3px 9px;border-radius:20px}
+.status .dot{width:6px;height:6px;border-radius:50%}
+.st-prog{background:#FEF6E0;color:var(--gold-deep)}.st-prog .dot{background:var(--gold)}
+.st-sub{background:#E5F3FF;color:#1763A8}.st-sub .dot{background:#2B86D9}
+.st-appr{background:#E2F6EC;color:var(--ok)}.st-appr .dot{background:var(--ok)}
+.tc-meta{display:flex;justify-content:space-between;align-items:center;margin-top:1rem}
+.tc-counts{font-size:0.82rem;color:var(--ink-soft)}.tc-counts b{color:var(--ink)}
+.progress{height:6px;background:var(--bg-soft);border-radius:6px;overflow:hidden;margin-top:0.9rem}
+.progress span{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-deep));border-radius:6px;transition:width .4s}
+.panel{background:var(--white);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:1.4rem}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1.05rem 1.3rem;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.panel-head h2{font-family:var(--font-display);font-weight:700;font-size:1.12rem}
+.panel-head .ph-sub{font-size:0.8rem;color:var(--ink-muted)}
+.toolbar{display:flex;gap:0.7rem;align-items:center;flex-wrap:wrap}
+select.team-select{padding:0.5rem 0.8rem;border:1px solid var(--line-strong);border-radius:9px;background:var(--bg);font-weight:600}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:0.66rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-muted);font-weight:700;padding:0.7rem 1.3rem;border-bottom:1px solid var(--line);background:var(--bg-soft)}
+td{padding:0.8rem 1.3rem;border-bottom:1px solid var(--line);font-size:0.87rem;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr.prow:hover td{background:#FBFAF6}
+.person{display:flex;align-items:center;gap:0.7rem}
+.avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.74rem;color:#fff;flex-shrink:0;overflow:hidden}
+.avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.person .pn{font-weight:700;line-height:1.15}
+.person .pmeta{font-size:0.7rem;color:var(--ink-muted);font-family:var(--font-mono)}
+.cat{font-size:0.64rem;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;padding:3px 8px;border-radius:6px;display:inline-block;white-space:nowrap}
+.cat-player{background:rgba(244,196,48,0.18);color:var(--gold-deep)}.cat-official{background:rgba(27,42,107,0.12);color:var(--navy)}
+.cat-technical{background:rgba(14,140,130,0.14);color:var(--teal)}.cat-media{background:rgba(232,85,61,0.14);color:var(--coral)}
+.cat-broadcast{background:rgba(107,75,168,0.14);color:var(--violet)}.cat-vip{background:rgba(14,18,48,0.86);color:var(--gold-bright)}
+.checks{display:flex;gap:0.35rem}
+.chk{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.66rem;font-weight:700;cursor:help}
+.chk.ok{background:#E2F6EC;color:var(--ok)}.chk.no{background:#FBE6E2;color:var(--bad)}
+.btn{display:inline-flex;align-items:center;gap:0.45rem;padding:0.6rem 1.1rem;border-radius:10px;font-weight:700;font-size:0.83rem;transition:.12s;white-space:nowrap}
+.btn:active{transform:translateY(1px)}
+.btn-primary{background:var(--navy);color:#fff}.btn-primary:hover{background:var(--navy-soft)}
+.btn-gold{background:var(--gold);color:var(--navy-deep)}.btn-gold:hover{background:var(--gold-bright)}
+.btn-ghost{background:var(--bg);color:var(--ink-soft);border:1px solid var(--line-strong)}.btn-ghost:hover{background:var(--bg-soft);color:var(--ink)}
+.btn-ok{background:#E2F6EC;color:var(--ok);border:1px solid rgba(30,158,90,0.3)}.btn-ok:hover{background:var(--ok);color:#fff}
+.btn-sm{padding:0.42rem 0.8rem;font-size:0.76rem;border-radius:8px}
+.btn[disabled]{opacity:0.4;cursor:not-allowed}
+.empty{text-align:center;padding:3rem 1rem;color:var(--ink-muted)}.empty .big{font-family:var(--font-display);font-size:1.25rem;color:var(--ink-soft);margin-bottom:0.3rem}
+.note{font-size:0.78rem;color:var(--ink-muted);margin-top:0.9rem;line-height:1.5}.note b{color:var(--ink-soft)}
+
+/* ===== CREDENTIAL BADGE (agreed design) ===== */
+.cred-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1.3rem}
+.badge{background:var(--white);border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 10px 30px rgba(14,18,48,0.10);cursor:pointer;transition:transform .15s}
+.badge:hover{transform:translateY(-4px)}
+.badge-top{background:var(--navy-deep);color:#fff;padding:0.85rem 1rem;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--gold)}
+.badge-top .bt-ev{font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.16em;color:var(--gold-bright);text-transform:uppercase}
+.badge-top .bt-cat{font-size:0.6rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;padding:2px 7px;border-radius:5px}
+.badge-body{padding:1.1rem 1rem;display:flex;gap:0.9rem;align-items:center}
+.badge-photo{width:62px;height:62px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:800;color:#fff;font-size:1.3rem;overflow:hidden}
+.badge-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.badge-info .bn{font-family:var(--font-display);font-weight:700;font-size:1.05rem;line-height:1.05}
+.badge-info .br{font-size:0.76rem;color:var(--ink-muted);margin-top:2px}
+.badge-info .bteam{font-size:0.72rem;font-weight:700;color:var(--navy);margin-top:4px;text-transform:uppercase;letter-spacing:0.04em;display:flex;align-items:center;gap:5px}
+.badge-foot{display:flex;align-items:center;gap:0.8rem;padding:0.7rem 1rem;border-top:1px dashed var(--line-strong);background:var(--bg)}
+.badge-foot .qr{width:54px;height:54px;background:#fff;border-radius:6px;padding:3px;flex-shrink:0}
+.badge-foot .qr svg{width:100%;height:100%;display:block}
+.badge-foot .zones{font-size:0.62rem;color:var(--ink-soft);line-height:1.35}
+.badge-foot .zones b{color:var(--ink);text-transform:uppercase;letter-spacing:0.06em;font-size:0.58rem;display:block;margin-bottom:2px}
+.cid{font-family:var(--font-mono);font-size:0.62rem;color:var(--ink-faded);letter-spacing:0.06em}
+.flag-mini{display:inline-block;width:18px;height:18px;border-radius:4px;overflow:hidden;vertical-align:-3px;box-shadow:0 0 0 1px var(--line)}
+.flag-mini svg{width:100%;height:100%;display:block}
+
+/* MODAL (big badge) */
+.modal-bg{position:fixed;inset:0;background:rgba(10,14,40,0.62);backdrop-filter:blur(4px);z-index:100;display:none;align-items:center;justify-content:center;padding:1.5rem}
+.modal-bg.show{display:flex}
+.bigbadge{width:340px;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 30px 70px rgba(0,0,0,0.4);animation:pop .25s ease;position:relative}
+@keyframes pop{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+.bb-top{background:var(--navy-deep);color:#fff;padding:1.1rem 1.3rem;border-bottom:4px solid var(--gold);text-align:center}
+.bb-top .ev{font-family:var(--font-display);font-weight:800;font-size:1.1rem;line-height:1.05}
+.bb-top .sub{font-family:var(--font-mono);font-size:0.6rem;letter-spacing:0.12em;color:var(--gold-bright);text-transform:uppercase;margin-top:4px}
+.bb-photo{width:120px;height:120px;border-radius:14px;margin:1.3rem auto 0.8rem;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:800;color:#fff;font-size:2.6rem;overflow:hidden}
+.bb-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.bb-name{text-align:center;font-family:var(--font-display);font-weight:700;font-size:1.5rem;line-height:1}
+.bb-role{text-align:center;color:var(--ink-muted);font-size:0.85rem;margin-top:4px}
+.bb-catrow{text-align:center;margin:0.9rem 0}
+.bb-team{text-align:center;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:0.06em;font-size:0.82rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:center;gap:6px}
+.bb-qr{width:150px;height:150px;margin:0 auto;background:#fff;padding:8px;border:1px solid var(--line)}
+.bb-qr svg{width:100%;height:100%;display:block}
+.bb-cid{text-align:center;font-family:var(--font-mono);font-size:0.72rem;letter-spacing:0.1em;color:var(--ink-soft);margin-top:0.7rem}
+.bb-zones{padding:1rem 1.4rem 1.4rem;border-top:1px dashed var(--line-strong);margin-top:1rem}
+.bb-zones b{font-size:0.62rem;text-transform:uppercase;letter-spacing:0.09em;color:var(--ink-muted);display:block;margin-bottom:0.5rem}
+.zone-tag{display:inline-block;font-size:0.7rem;font-weight:600;background:var(--bg-soft);color:var(--ink-soft);padding:3px 9px;border-radius:6px;margin:0 4px 4px 0}
+.modal-close{position:absolute;top:1rem;right:1.1rem;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.18);color:#fff;font-size:1.1rem;display:flex;align-items:center;justify-content:center;z-index:2}
+
+/* physical badge print sheet (4-up US Letter) */
+.print-modal{position:fixed;inset:0;background:var(--bg-sand);z-index:200;display:none;flex-direction:column}
+.print-modal.show{display:flex}
+.print-bar{background:var(--navy-deep);color:#fff;padding:.8rem 1.3rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.pb-bar-title{font-family:var(--font-display);font-weight:700;font-size:1.1rem}
+.print-scroll{flex:1;overflow:auto;padding:1.6rem 1rem;display:flex;flex-direction:column;align-items:center}
+.ppage{width:8.5in;height:11in;background:#fff;box-shadow:0 8px 30px rgba(0,0,0,.2);padding:.4in;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:.22in;box-sizing:border-box}
+.pbadge{border:1px dashed #c2c2c2;border-radius:.12in;overflow:hidden;display:flex;flex-direction:column;align-items:center;background:#fff;color:#0E1230;padding-bottom:.1in}
+.pb-top{width:100%;background:#0F1A4A;color:#fff;padding:.11in .15in;display:flex;align-items:flex-start;justify-content:space-between;border-bottom:.06in solid}
+.pb-ev{font-family:var(--font-display);font-weight:800;font-size:.19in;line-height:1}
+.pb-ev small{display:block;font-family:var(--font-mono);font-size:.082in;letter-spacing:.012in;color:#FFD93D;font-weight:500;margin-top:2px;text-transform:uppercase}
+.pb-slot{width:.55in;height:.1in;border:1.5px solid rgba(255,255,255,.55);border-radius:.06in;margin-top:3px;flex-shrink:0}
+.pb-cat{width:100%;color:#fff;text-align:center;font-weight:800;text-transform:uppercase;letter-spacing:.03in;font-size:.125in;padding:.05in 0}
+.pb-photo{width:1.5in;height:1.5in;margin:.13in 0 .07in;border-radius:.1in;overflow:hidden;background:#0a0e28}
+.pbadge-photo{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:800;color:#fff;font-size:.62in}
+.pbadge-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.pb-name{font-family:var(--font-display);font-weight:700;font-size:.21in;line-height:1.02;text-align:center;padding:0 .12in}
+.pb-role{font-size:.115in;color:#555;margin-top:3px;text-align:center;padding:0 .1in}
+.pb-team{font-size:.115in;font-weight:700;color:#1B2A6B;margin-top:5px;text-transform:uppercase;letter-spacing:.008in;display:flex;align-items:center;gap:5px}
+.pb-team .flag-mini{width:.2in;height:.2in;border-radius:3px}
+.pb-bottom{margin-top:auto;display:flex;align-items:center;gap:.13in;padding:.08in .16in 0;width:100%}
+.pb-qr{width:.95in;height:.95in;flex-shrink:0}
+.pb-qr svg{width:100%;height:100%;display:block}
+.pb-zones{font-size:.084in;color:#444;line-height:1.35}
+.pb-zones b{display:block;font-size:.078in;letter-spacing:.015in;color:#8a8a8a;margin-bottom:2px}
+.pb-cid{font-family:var(--font-mono);font-size:.1in;letter-spacing:.02in;color:#9a9a9a;margin-top:.05in}
+@media screen{.print-scroll .ppage{transform:scale(.74);transform-origin:top center;margin-bottom:-2.7in}}
+@media print{
+  body.printing{background:#fff}
+  body.printing>*{display:none !important}
+  body.printing .print-modal{display:flex !important;position:static;background:#fff;height:auto}
+  body.printing .print-modal .print-bar{display:none !important}
+  body.printing .print-scroll{overflow:visible;display:block;padding:0}
+  body.printing .ppage{box-shadow:none;margin:0;page-break-after:always;transform:none}
+  body.printing .ppage:last-child{page-break-after:auto}
+  @page{size:Letter portrait;margin:0}
+}
+
+/* GATE SCAN */
+.scan-wrap{max-width:420px;margin:0 auto}
+.scanner{background:var(--navy-deep);border-radius:20px;padding:1.4rem;color:#fff;text-align:center;box-shadow:0 20px 50px rgba(14,18,48,0.25)}
+.scan-view{aspect-ratio:1;border-radius:14px;background:#070B22;border:2px solid rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;margin-bottom:1rem}
+.scan-frame{width:62%;aspect-ratio:1;border:3px solid var(--gold);border-radius:14px;position:relative}
+.scan-line{position:absolute;left:0;right:0;height:2px;background:var(--gold);box-shadow:0 0 12px var(--gold);animation:scan 2s linear infinite}
+@keyframes scan{0%{top:6%}50%{top:92%}100%{top:6%}}
+.scan-result{border-radius:14px;padding:1.2rem;text-align:left;animation:pop .3s ease}
+.scan-result.granted{background:#fff;border:2px solid var(--ok)}
+.scan-result.denied{background:#fff;border:2px solid var(--bad)}
+.sr-head{display:flex;align-items:center;gap:0.7rem;margin-bottom:0.9rem}
+.sr-badge{width:46px;height:46px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:#fff}
+.sr-badge.g{background:var(--ok)}.sr-badge.d{background:var(--bad)}
+.sr-head .t{font-family:var(--font-display);font-weight:700;font-size:1.2rem;color:var(--ink)}
+.sr-head .s{font-size:0.74rem;color:var(--ink-muted)}
+.sr-person{display:flex;gap:0.8rem;align-items:center;padding:0.8rem;background:var(--bg-soft);border-radius:11px;margin-bottom:0.8rem}
+.sr-photo{width:50px;height:60px;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--font-display);font-weight:800;overflow:hidden}
+.sr-photo img{width:100%;height:100%;object-fit:cover}
+.sr-zones{font-family:var(--font-mono);font-size:0.68rem;color:var(--ink-soft);line-height:1.5}
+.toast{position:fixed;bottom:1.6rem;left:50%;transform:translateX(-50%) translateY(120%);background:var(--navy-deep);color:#fff;padding:0.85rem 1.3rem;border-radius:12px;font-weight:600;font-size:0.85rem;box-shadow:0 14px 30px rgba(14,18,48,0.3);z-index:300;transition:transform .35s cubic-bezier(.2,.9,.3,1.2);border-left:3px solid var(--gold)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.foot{text-align:center;font-size:0.72rem;color:var(--ink-faded);padding:2rem 1rem;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand"><div class="mark">N</div><div class="gd">NetballAmericas<small>OC Console</small></div></div>
+  <div class="evchip"><b>Americas Regional Qualifier 2026</b><span>platform.netballamericas.org</span></div>
+  <div class="topbar-spacer"></div>
+  <span class="mfa">🔒 MFA enforced</span>
+  <span class="demo-flag">Sample data · demo</span>
+</div>
+<nav class="tabs" id="tabs">
+  <button data-view="dashboard" class="active">Dashboard</button>
+  <button data-view="review">Accreditation Review <span class="pill" id="rev-count">0</span></button>
+  <button data-view="credentials">Credentials <span class="pill" id="cred-count">0</span></button>
+  <button data-view="gate">Gate Check</button>
+</nav>
+<main>
+  <section class="view active" id="view-dashboard">
+    <div class="vhead"><h1>Tournament accreditation</h1><p>Live status across all participating delegations. Rosters flow from delegation submission through the four-check review to issued credentials. Click any delegation to open its review queue.</p></div>
+    <div class="stats" id="stats"></div>
+    <div class="team-grid" id="team-grid"></div>
+  </section>
+  <section class="view" id="view-review">
+    <div class="vhead"><h1>Accreditation review</h1><p>Every submitted person is checked against four requirements before a credential issues: a photograph on file, an identity document recorded, a date of birth (eligibility), and an assigned access category. Only a record meeting all four can be approved.</p></div>
+    <div class="panel">
+      <div class="panel-head">
+        <div class="toolbar"><select class="team-select" id="rev-team"></select><span class="ph-sub" id="rev-sub"></span></div>
+        <button class="btn btn-gold btn-sm" onclick="approveAllReady()">Approve all ready ✓</button>
+      </div>
+      <div id="rev-wrap"></div>
+    </div>
+    <p class="note"><b>Documented exceptions.</b> A small number of personnel need cross-category access (e.g. a team doctor needing Field of Play and Back-of-House). These are handled as committee-approved exceptions, not new categories. <b>Reconciliation.</b> The platform record is reconciled against the official paper accreditation process, which remains the system of record for the sanctioned event.</p>
+  </section>
+  <section class="view" id="view-credentials">
+    <div class="vhead"><h1>Issued credentials</h1><p>Each approved person carries a QR credential that resolves to the verification service. Credentials are themed navy with the delegation flag and a category colour band — two distinct, fast reads. They print four to a US-Letter sheet for economical lamination. Click any pass to view it full size.</p></div>
+    <div class="panel">
+      <div class="panel-head"><div class="toolbar"><select class="team-select" id="cred-team"></select></div><button class="btn btn-ghost btn-sm" onclick="openPrint()">⬇ Print 4-up sheet</button></div>
+      <div style="padding:1.3rem"><div class="cred-grid" id="cred-grid"></div></div>
+    </div>
+  </section>
+  <section class="view" id="view-gate">
+    <div class="vhead"><h1>Gate check · <span style="font-family:var(--font-mono);font-size:0.7em;color:var(--ink-muted)">/scan</span></h1><p>The volunteer-facing route. A gate volunteer on a personal phone opens the camera, reads a credential's QR, and sees a clear result — granted or not valid — with the holder's photo, delegation, and permitted zones, and nothing else. Built to tolerate patchy venue wifi.</p></div>
+    <div class="scan-wrap">
+      <div class="scanner">
+        <div class="scan-view" id="scan-view"><div class="scan-frame"><div class="scan-line"></div></div></div>
+        <button class="btn btn-gold" style="width:100%;justify-content:center;padding:0.8rem" onclick="doScan()">Scan a credential</button>
+        <p style="font-size:0.72rem;color:rgba(255,255,255,0.55);margin-top:0.8rem;font-family:var(--font-mono)">Demo · scans a random issued credential</p>
+      </div>
+      <div id="scan-result" style="margin-top:1.2rem"></div>
+    </div>
+  </section>
+  <div class="foot">Functional demo of <b>platform.netballamericas.org</b> · GameDay by Sports Beyond Borders (SportsBB)<br>#14 Bannatyne Gardens, Christ Church, Barbados · steven@sports.bb · 246.233.0090<br>Sample data only. GameDay is the digital companion; the official paper accreditation process remains the system of record.</div>
+</main>
+
+<div class="modal-bg" id="modal-bg"><div class="bigbadge" id="bigbadge"></div></div>
+<div class="print-modal" id="print-modal">
+  <div class="print-bar"><span class="pb-bar-title">Badge print sheet · 4 per US-Letter</span>
+    <div style="display:flex;gap:0.6rem"><button class="btn btn-gold btn-sm" onclick="window.print()">Print / Save PDF</button><button class="btn btn-ghost btn-sm" style="color:#fff;border-color:rgba(255,255,255,0.3)" onclick="closePrint()">Close</button></div></div>
+  <div class="print-scroll"><div id="print-sheet"></div></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+var qrcode = function() {
+
+  //---------------------------------------------------------------------
+  // qrcode
+  //---------------------------------------------------------------------
+
+  /**
+   * qrcode
+   * @param typeNumber 1 to 40
+   * @param errorCorrectionLevel 'L','M','Q','H'
+   */
+  var qrcode = function(typeNumber, errorCorrectionLevel) {
+
+    var PAD0 = 0xEC;
+    var PAD1 = 0x11;
+
+    var _typeNumber = typeNumber;
+    var _errorCorrectionLevel = QRErrorCorrectionLevel[errorCorrectionLevel];
+    var _modules = null;
+    var _moduleCount = 0;
+    var _dataCache = null;
+    var _dataList = [];
+
+    var _this = {};
+
+    var makeImpl = function(test, maskPattern) {
+
+      _moduleCount = _typeNumber * 4 + 17;
+      _modules = function(moduleCount) {
+        var modules = new Array(moduleCount);
+        for (var row = 0; row < moduleCount; row += 1) {
+          modules[row] = new Array(moduleCount);
+          for (var col = 0; col < moduleCount; col += 1) {
+            modules[row][col] = null;
+          }
+        }
+        return modules;
+      }(_moduleCount);
+
+      setupPositionProbePattern(0, 0);
+      setupPositionProbePattern(_moduleCount - 7, 0);
+      setupPositionProbePattern(0, _moduleCount - 7);
+      setupPositionAdjustPattern();
+      setupTimingPattern();
+      setupTypeInfo(test, maskPattern);
+
+      if (_typeNumber >= 7) {
+        setupTypeNumber(test);
+      }
+
+      if (_dataCache == null) {
+        _dataCache = createData(_typeNumber, _errorCorrectionLevel, _dataList);
+      }
+
+      mapData(_dataCache, maskPattern);
+    };
+
+    var setupPositionProbePattern = function(row, col) {
+
+      for (var r = -1; r <= 7; r += 1) {
+
+        if (row + r <= -1 || _moduleCount <= row + r) continue;
+
+        for (var c = -1; c <= 7; c += 1) {
+
+          if (col + c <= -1 || _moduleCount <= col + c) continue;
+
+          if ( (0 <= r && r <= 6 && (c == 0 || c == 6) )
+              || (0 <= c && c <= 6 && (r == 0 || r == 6) )
+              || (2 <= r && r <= 4 && 2 <= c && c <= 4) ) {
+            _modules[row + r][col + c] = true;
+          } else {
+            _modules[row + r][col + c] = false;
+          }
+        }
+      }
+    };
+
+    var getBestMaskPattern = function() {
+
+      var minLostPoint = 0;
+      var pattern = 0;
+
+      for (var i = 0; i < 8; i += 1) {
+
+        makeImpl(true, i);
+
+        var lostPoint = QRUtil.getLostPoint(_this);
+
+        if (i == 0 || minLostPoint > lostPoint) {
+          minLostPoint = lostPoint;
+          pattern = i;
+        }
+      }
+
+      return pattern;
+    };
+
+    var setupTimingPattern = function() {
+
+      for (var r = 8; r < _moduleCount - 8; r += 1) {
+        if (_modules[r][6] != null) {
+          continue;
+        }
+        _modules[r][6] = (r % 2 == 0);
+      }
+
+      for (var c = 8; c < _moduleCount - 8; c += 1) {
+        if (_modules[6][c] != null) {
+          continue;
+        }
+        _modules[6][c] = (c % 2 == 0);
+      }
+    };
+
+    var setupPositionAdjustPattern = function() {
+
+      var pos = QRUtil.getPatternPosition(_typeNumber);
+
+      for (var i = 0; i < pos.length; i += 1) {
+
+        for (var j = 0; j < pos.length; j += 1) {
+
+          var row = pos[i];
+          var col = pos[j];
+
+          if (_modules[row][col] != null) {
+            continue;
+          }
+
+          for (var r = -2; r <= 2; r += 1) {
+
+            for (var c = -2; c <= 2; c += 1) {
+
+              if (r == -2 || r == 2 || c == -2 || c == 2
+                  || (r == 0 && c == 0) ) {
+                _modules[row + r][col + c] = true;
+              } else {
+                _modules[row + r][col + c] = false;
+              }
+            }
+          }
+        }
+      }
+    };
+
+    var setupTypeNumber = function(test) {
+
+      var bits = QRUtil.getBCHTypeNumber(_typeNumber);
+
+      for (var i = 0; i < 18; i += 1) {
+        var mod = (!test && ( (bits >> i) & 1) == 1);
+        _modules[Math.floor(i / 3)][i % 3 + _moduleCount - 8 - 3] = mod;
+      }
+
+      for (var i = 0; i < 18; i += 1) {
+        var mod = (!test && ( (bits >> i) & 1) == 1);
+        _modules[i % 3 + _moduleCount - 8 - 3][Math.floor(i / 3)] = mod;
+      }
+    };
+
+    var setupTypeInfo = function(test, maskPattern) {
+
+      var data = (_errorCorrectionLevel << 3) | maskPattern;
+      var bits = QRUtil.getBCHTypeInfo(data);
+
+      // vertical
+      for (var i = 0; i < 15; i += 1) {
+
+        var mod = (!test && ( (bits >> i) & 1) == 1);
+
+        if (i < 6) {
+          _modules[i][8] = mod;
+        } else if (i < 8) {
+          _modules[i + 1][8] = mod;
+        } else {
+          _modules[_moduleCount - 15 + i][8] = mod;
+        }
+      }
+
+      // horizontal
+      for (var i = 0; i < 15; i += 1) {
+
+        var mod = (!test && ( (bits >> i) & 1) == 1);
+
+        if (i < 8) {
+          _modules[8][_moduleCount - i - 1] = mod;
+        } else if (i < 9) {
+          _modules[8][15 - i - 1 + 1] = mod;
+        } else {
+          _modules[8][15 - i - 1] = mod;
+        }
+      }
+
+      // fixed module
+      _modules[_moduleCount - 8][8] = (!test);
+    };
+
+    var mapData = function(data, maskPattern) {
+
+      var inc = -1;
+      var row = _moduleCount - 1;
+      var bitIndex = 7;
+      var byteIndex = 0;
+      var maskFunc = QRUtil.getMaskFunction(maskPattern);
+
+      for (var col = _moduleCount - 1; col > 0; col -= 2) {
+
+        if (col == 6) col -= 1;
+
+        while (true) {
+
+          for (var c = 0; c < 2; c += 1) {
+
+            if (_modules[row][col - c] == null) {
+
+              var dark = false;
+
+              if (byteIndex < data.length) {
+                dark = ( ( (data[byteIndex] >>> bitIndex) & 1) == 1);
+              }
+
+              var mask = maskFunc(row, col - c);
+
+              if (mask) {
+                dark = !dark;
+              }
+
+              _modules[row][col - c] = dark;
+              bitIndex -= 1;
+
+              if (bitIndex == -1) {
+                byteIndex += 1;
+                bitIndex = 7;
+              }
+            }
+          }
+
+          row += inc;
+
+          if (row < 0 || _moduleCount <= row) {
+            row -= inc;
+            inc = -inc;
+            break;
+          }
+        }
+      }
+    };
+
+    var createBytes = function(buffer, rsBlocks) {
+
+      var offset = 0;
+
+      var maxDcCount = 0;
+      var maxEcCount = 0;
+
+      var dcdata = new Array(rsBlocks.length);
+      var ecdata = new Array(rsBlocks.length);
+
+      for (var r = 0; r < rsBlocks.length; r += 1) {
+
+        var dcCount = rsBlocks[r].dataCount;
+        var ecCount = rsBlocks[r].totalCount - dcCount;
+
+        maxDcCount = Math.max(maxDcCount, dcCount);
+        maxEcCount = Math.max(maxEcCount, ecCount);
+
+        dcdata[r] = new Array(dcCount);
+
+        for (var i = 0; i < dcdata[r].length; i += 1) {
+          dcdata[r][i] = 0xff & buffer.getBuffer()[i + offset];
+        }
+        offset += dcCount;
+
+        var rsPoly = QRUtil.getErrorCorrectPolynomial(ecCount);
+        var rawPoly = qrPolynomial(dcdata[r], rsPoly.getLength() - 1);
+
+        var modPoly = rawPoly.mod(rsPoly);
+        ecdata[r] = new Array(rsPoly.getLength() - 1);
+        for (var i = 0; i < ecdata[r].length; i += 1) {
+          var modIndex = i + modPoly.getLength() - ecdata[r].length;
+          ecdata[r][i] = (modIndex >= 0)? modPoly.getAt(modIndex) : 0;
+        }
+      }
+
+      var totalCodeCount = 0;
+      for (var i = 0; i < rsBlocks.length; i += 1) {
+        totalCodeCount += rsBlocks[i].totalCount;
+      }
+
+      var data = new Array(totalCodeCount);
+      var index = 0;
+
+      for (var i = 0; i < maxDcCount; i += 1) {
+        for (var r = 0; r < rsBlocks.length; r += 1) {
+          if (i < dcdata[r].length) {
+            data[index] = dcdata[r][i];
+            index += 1;
+          }
+        }
+      }
+
+      for (var i = 0; i < maxEcCount; i += 1) {
+        for (var r = 0; r < rsBlocks.length; r += 1) {
+          if (i < ecdata[r].length) {
+            data[index] = ecdata[r][i];
+            index += 1;
+          }
+        }
+      }
+
+      return data;
+    };
+
+    var createData = function(typeNumber, errorCorrectionLevel, dataList) {
+
+      var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, errorCorrectionLevel);
+
+      var buffer = qrBitBuffer();
+
+      for (var i = 0; i < dataList.length; i += 1) {
+        var data = dataList[i];
+        buffer.put(data.getMode(), 4);
+        buffer.put(data.getLength(), QRUtil.getLengthInBits(data.getMode(), typeNumber) );
+        data.write(buffer);
+      }
+
+      // calc num max data.
+      var totalDataCount = 0;
+      for (var i = 0; i < rsBlocks.length; i += 1) {
+        totalDataCount += rsBlocks[i].dataCount;
+      }
+
+      if (buffer.getLengthInBits() > totalDataCount * 8) {
+        throw 'code length overflow. ('
+          + buffer.getLengthInBits()
+          + '>'
+          + totalDataCount * 8
+          + ')';
+      }
+
+      // end code
+      if (buffer.getLengthInBits() + 4 <= totalDataCount * 8) {
+        buffer.put(0, 4);
+      }
+
+      // padding
+      while (buffer.getLengthInBits() % 8 != 0) {
+        buffer.putBit(false);
+      }
+
+      // padding
+      while (true) {
+
+        if (buffer.getLengthInBits() >= totalDataCount * 8) {
+          break;
+        }
+        buffer.put(PAD0, 8);
+
+        if (buffer.getLengthInBits() >= totalDataCount * 8) {
+          break;
+        }
+        buffer.put(PAD1, 8);
+      }
+
+      return createBytes(buffer, rsBlocks);
+    };
+
+    _this.addData = function(data, mode) {
+
+      mode = mode || 'Byte';
+
+      var newData = null;
+
+      switch(mode) {
+      case 'Numeric' :
+        newData = qrNumber(data);
+        break;
+      case 'Alphanumeric' :
+        newData = qrAlphaNum(data);
+        break;
+      case 'Byte' :
+        newData = qr8BitByte(data);
+        break;
+      case 'Kanji' :
+        newData = qrKanji(data);
+        break;
+      default :
+        throw 'mode:' + mode;
+      }
+
+      _dataList.push(newData);
+      _dataCache = null;
+    };
+
+    _this.isDark = function(row, col) {
+      if (row < 0 || _moduleCount <= row || col < 0 || _moduleCount <= col) {
+        throw row + ',' + col;
+      }
+      return _modules[row][col];
+    };
+
+    _this.getModuleCount = function() {
+      return _moduleCount;
+    };
+
+    _this.make = function() {
+      if (_typeNumber < 1) {
+        var typeNumber = 1;
+
+        for (; typeNumber < 40; typeNumber++) {
+          var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, _errorCorrectionLevel);
+          var buffer = qrBitBuffer();
+
+          for (var i = 0; i < _dataList.length; i++) {
+            var data = _dataList[i];
+            buffer.put(data.getMode(), 4);
+            buffer.put(data.getLength(), QRUtil.getLengthInBits(data.getMode(), typeNumber) );
+            data.write(buffer);
+          }
+
+          var totalDataCount = 0;
+          for (var i = 0; i < rsBlocks.length; i++) {
+            totalDataCount += rsBlocks[i].dataCount;
+          }
+
+          if (buffer.getLengthInBits() <= totalDataCount * 8) {
+            break;
+          }
+        }
+
+        _typeNumber = typeNumber;
+      }
+
+      makeImpl(false, getBestMaskPattern() );
+    };
+
+    _this.createTableTag = function(cellSize, margin) {
+
+      cellSize = cellSize || 2;
+      margin = (typeof margin == 'undefined')? cellSize * 4 : margin;
+
+      var qrHtml = '';
+
+      qrHtml += '<table style="';
+      qrHtml += ' border-width: 0px; border-style: none;';
+      qrHtml += ' border-collapse: collapse;';
+      qrHtml += ' padding: 0px; margin: ' + margin + 'px;';
+      qrHtml += '">';
+      qrHtml += '<tbody>';
+
+      for (var r = 0; r < _this.getModuleCount(); r += 1) {
+
+        qrHtml += '<tr>';
+
+        for (var c = 0; c < _this.getModuleCount(); c += 1) {
+          qrHtml += '<td style="';
+          qrHtml += ' border-width: 0px; border-style: none;';
+          qrHtml += ' border-collapse: collapse;';
+          qrHtml += ' padding: 0px; margin: 0px;';
+          qrHtml += ' width: ' + cellSize + 'px;';
+          qrHtml += ' height: ' + cellSize + 'px;';
+          qrHtml += ' background-color: ';
+          qrHtml += _this.isDark(r, c)? '#000000' : '#ffffff';
+          qrHtml += ';';
+          qrHtml += '"/>';
+        }
+
+        qrHtml += '</tr>';
+      }
+
+      qrHtml += '</tbody>';
+      qrHtml += '</table>';
+
+      return qrHtml;
+    };
+
+    _this.createSvgTag = function(cellSize, margin, alt, title) {
+
+      var opts = {};
+      if (typeof arguments[0] == 'object') {
+        // Called by options.
+        opts = arguments[0];
+        // overwrite cellSize and margin.
+        cellSize = opts.cellSize;
+        margin = opts.margin;
+        alt = opts.alt;
+        title = opts.title;
+      }
+
+      cellSize = cellSize || 2;
+      margin = (typeof margin == 'undefined')? cellSize * 4 : margin;
+
+      // Compose alt property surrogate
+      alt = (typeof alt === 'string') ? {text: alt} : alt || {};
+      alt.text = alt.text || null;
+      alt.id = (alt.text) ? alt.id || 'qrcode-description' : null;
+
+      // Compose title property surrogate
+      title = (typeof title === 'string') ? {text: title} : title || {};
+      title.text = title.text || null;
+      title.id = (title.text) ? title.id || 'qrcode-title' : null;
+
+      var size = _this.getModuleCount() * cellSize + margin * 2;
+      var c, mc, r, mr, qrSvg='', rect;
+
+      rect = 'l' + cellSize + ',0 0,' + cellSize +
+        ' -' + cellSize + ',0 0,-' + cellSize + 'z ';
+
+      qrSvg += '<svg version="1.1" xmlns="http://www.w3.org/2000/svg"';
+      qrSvg += !opts.scalable ? ' width="' + size + 'px" height="' + size + 'px"' : '';
+      qrSvg += ' viewBox="0 0 ' + size + ' ' + size + '" ';
+      qrSvg += ' preserveAspectRatio="xMinYMin meet"';
+      qrSvg += (title.text || alt.text) ? ' role="img" aria-labelledby="' +
+          escapeXml([title.id, alt.id].join(' ').trim() ) + '"' : '';
+      qrSvg += '>';
+      qrSvg += (title.text) ? '<title id="' + escapeXml(title.id) + '">' +
+          escapeXml(title.text) + '</title>' : '';
+      qrSvg += (alt.text) ? '<description id="' + escapeXml(alt.id) + '">' +
+          escapeXml(alt.text) + '</description>' : '';
+      qrSvg += '<rect width="100%" height="100%" fill="white" cx="0" cy="0"/>';
+      qrSvg += '<path d="';
+
+      for (r = 0; r < _this.getModuleCount(); r += 1) {
+        mr = r * cellSize + margin;
+        for (c = 0; c < _this.getModuleCount(); c += 1) {
+          if (_this.isDark(r, c) ) {
+            mc = c*cellSize+margin;
+            qrSvg += 'M' + mc + ',' + mr + rect;
+          }
+        }
+      }
+
+      qrSvg += '" stroke="transparent" fill="black"/>';
+      qrSvg += '</svg>';
+
+      return qrSvg;
+    };
+
+    _this.createDataURL = function(cellSize, margin) {
+
+      cellSize = cellSize || 2;
+      margin = (typeof margin == 'undefined')? cellSize * 4 : margin;
+
+      var size = _this.getModuleCount() * cellSize + margin * 2;
+      var min = margin;
+      var max = size - margin;
+
+      return createDataURL(size, size, function(x, y) {
+        if (min <= x && x < max && min <= y && y < max) {
+          var c = Math.floor( (x - min) / cellSize);
+          var r = Math.floor( (y - min) / cellSize);
+          return _this.isDark(r, c)? 0 : 1;
+        } else {
+          return 1;
+        }
+      } );
+    };
+
+    _this.createImgTag = function(cellSize, margin, alt) {
+
+      cellSize = cellSize || 2;
+      margin = (typeof margin == 'undefined')? cellSize * 4 : margin;
+
+      var size = _this.getModuleCount() * cellSize + margin * 2;
+
+      var img = '';
+      img += '<img';
+      img += '\u0020src="';
+      img += _this.createDataURL(cellSize, margin);
+      img += '"';
+      img += '\u0020width="';
+      img += size;
+      img += '"';
+      img += '\u0020height="';
+      img += size;
+      img += '"';
+      if (alt) {
+        img += '\u0020alt="';
+        img += escapeXml(alt);
+        img += '"';
+      }
+      img += '/>';
+
+      return img;
+    };
+
+    var escapeXml = function(s) {
+      var escaped = '';
+      for (var i = 0; i < s.length; i += 1) {
+        var c = s.charAt(i);
+        switch(c) {
+        case '<': escaped += '&lt;'; break;
+        case '>': escaped += '&gt;'; break;
+        case '&': escaped += '&amp;'; break;
+        case '"': escaped += '&quot;'; break;
+        default : escaped += c; break;
+        }
+      }
+      return escaped;
+    };
+
+    var _createHalfASCII = function(margin) {
+      var cellSize = 1;
+      margin = (typeof margin == 'undefined')? cellSize * 2 : margin;
+
+      var size = _this.getModuleCount() * cellSize + margin * 2;
+      var min = margin;
+      var max = size - margin;
+
+      var y, x, r1, r2, p;
+
+      var blocks = {
+        '██': '█',
+        '█ ': '▀',
+        ' █': '▄',
+        '  ': ' '
+      };
+
+      var blocksLastLineNoMargin = {
+        '██': '▀',
+        '█ ': '▀',
+        ' █': ' ',
+        '  ': ' '
+      };
+
+      var ascii = '';
+      for (y = 0; y < size; y += 2) {
+        r1 = Math.floor((y - min) / cellSize);
+        r2 = Math.floor((y + 1 - min) / cellSize);
+        for (x = 0; x < size; x += 1) {
+          p = '█';
+
+          if (min <= x && x < max && min <= y && y < max && _this.isDark(r1, Math.floor((x - min) / cellSize))) {
+            p = ' ';
+          }
+
+          if (min <= x && x < max && min <= y+1 && y+1 < max && _this.isDark(r2, Math.floor((x - min) / cellSize))) {
+            p += ' ';
+          }
+          else {
+            p += '█';
+          }
+
+          // Output 2 characters per pixel, to create full square. 1 character per pixels gives only half width of square.
+          ascii += (margin < 1 && y+1 >= max) ? blocksLastLineNoMargin[p] : blocks[p];
+        }
+
+        ascii += '\n';
+      }
+
+      if (size % 2 && margin > 0) {
+        return ascii.substring(0, ascii.length - size - 1) + Array(size+1).join('▀');
+      }
+
+      return ascii.substring(0, ascii.length-1);
+    };
+
+    _this.createASCII = function(cellSize, margin) {
+      cellSize = cellSize || 1;
+
+      if (cellSize < 2) {
+        return _createHalfASCII(margin);
+      }
+
+      cellSize -= 1;
+      margin = (typeof margin == 'undefined')? cellSize * 2 : margin;
+
+      var size = _this.getModuleCount() * cellSize + margin * 2;
+      var min = margin;
+      var max = size - margin;
+
+      var y, x, r, p;
+
+      var white = Array(cellSize+1).join('██');
+      var black = Array(cellSize+1).join('  ');
+
+      var ascii = '';
+      var line = '';
+      for (y = 0; y < size; y += 1) {
+        r = Math.floor( (y - min) / cellSize);
+        line = '';
+        for (x = 0; x < size; x += 1) {
+          p = 1;
+
+          if (min <= x && x < max && min <= y && y < max && _this.isDark(r, Math.floor((x - min) / cellSize))) {
+            p = 0;
+          }
+
+          // Output 2 characters per pixel, to create full square. 1 character per pixels gives only half width of square.
+          line += p ? white : black;
+        }
+
+        for (r = 0; r < cellSize; r += 1) {
+          ascii += line + '\n';
+        }
+      }
+
+      return ascii.substring(0, ascii.length-1);
+    };
+
+    _this.renderTo2dContext = function(context, cellSize) {
+      cellSize = cellSize || 2;
+      var length = _this.getModuleCount();
+      for (var row = 0; row < length; row++) {
+        for (var col = 0; col < length; col++) {
+          context.fillStyle = _this.isDark(row, col) ? 'black' : 'white';
+          context.fillRect(row * cellSize, col * cellSize, cellSize, cellSize);
+        }
+      }
+    }
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // qrcode.stringToBytes
+  //---------------------------------------------------------------------
+
+  qrcode.stringToBytesFuncs = {
+    'default' : function(s) {
+      var bytes = [];
+      for (var i = 0; i < s.length; i += 1) {
+        var c = s.charCodeAt(i);
+        bytes.push(c & 0xff);
+      }
+      return bytes;
+    }
+  };
+
+  qrcode.stringToBytes = qrcode.stringToBytesFuncs['default'];
+
+  //---------------------------------------------------------------------
+  // qrcode.createStringToBytes
+  //---------------------------------------------------------------------
+
+  /**
+   * @param unicodeData base64 string of byte array.
+   * [16bit Unicode],[16bit Bytes], ...
+   * @param numChars
+   */
+  qrcode.createStringToBytes = function(unicodeData, numChars) {
+
+    // create conversion map.
+
+    var unicodeMap = function() {
+
+      var bin = base64DecodeInputStream(unicodeData);
+      var read = function() {
+        var b = bin.read();
+        if (b == -1) throw 'eof';
+        return b;
+      };
+
+      var count = 0;
+      var unicodeMap = {};
+      while (true) {
+        var b0 = bin.read();
+        if (b0 == -1) break;
+        var b1 = read();
+        var b2 = read();
+        var b3 = read();
+        var k = String.fromCharCode( (b0 << 8) | b1);
+        var v = (b2 << 8) | b3;
+        unicodeMap[k] = v;
+        count += 1;
+      }
+      if (count != numChars) {
+        throw count + ' != ' + numChars;
+      }
+
+      return unicodeMap;
+    }();
+
+    var unknownChar = '?'.charCodeAt(0);
+
+    return function(s) {
+      var bytes = [];
+      for (var i = 0; i < s.length; i += 1) {
+        var c = s.charCodeAt(i);
+        if (c < 128) {
+          bytes.push(c);
+        } else {
+          var b = unicodeMap[s.charAt(i)];
+          if (typeof b == 'number') {
+            if ( (b & 0xff) == b) {
+              // 1byte
+              bytes.push(b);
+            } else {
+              // 2bytes
+              bytes.push(b >>> 8);
+              bytes.push(b & 0xff);
+            }
+          } else {
+            bytes.push(unknownChar);
+          }
+        }
+      }
+      return bytes;
+    };
+  };
+
+  //---------------------------------------------------------------------
+  // QRMode
+  //---------------------------------------------------------------------
+
+  var QRMode = {
+    MODE_NUMBER :    1 << 0,
+    MODE_ALPHA_NUM : 1 << 1,
+    MODE_8BIT_BYTE : 1 << 2,
+    MODE_KANJI :     1 << 3
+  };
+
+  //---------------------------------------------------------------------
+  // QRErrorCorrectionLevel
+  //---------------------------------------------------------------------
+
+  var QRErrorCorrectionLevel = {
+    L : 1,
+    M : 0,
+    Q : 3,
+    H : 2
+  };
+
+  //---------------------------------------------------------------------
+  // QRMaskPattern
+  //---------------------------------------------------------------------
+
+  var QRMaskPattern = {
+    PATTERN000 : 0,
+    PATTERN001 : 1,
+    PATTERN010 : 2,
+    PATTERN011 : 3,
+    PATTERN100 : 4,
+    PATTERN101 : 5,
+    PATTERN110 : 6,
+    PATTERN111 : 7
+  };
+
+  //---------------------------------------------------------------------
+  // QRUtil
+  //---------------------------------------------------------------------
+
+  var QRUtil = function() {
+
+    var PATTERN_POSITION_TABLE = [
+      [],
+      [6, 18],
+      [6, 22],
+      [6, 26],
+      [6, 30],
+      [6, 34],
+      [6, 22, 38],
+      [6, 24, 42],
+      [6, 26, 46],
+      [6, 28, 50],
+      [6, 30, 54],
+      [6, 32, 58],
+      [6, 34, 62],
+      [6, 26, 46, 66],
+      [6, 26, 48, 70],
+      [6, 26, 50, 74],
+      [6, 30, 54, 78],
+      [6, 30, 56, 82],
+      [6, 30, 58, 86],
+      [6, 34, 62, 90],
+      [6, 28, 50, 72, 94],
+      [6, 26, 50, 74, 98],
+      [6, 30, 54, 78, 102],
+      [6, 28, 54, 80, 106],
+      [6, 32, 58, 84, 110],
+      [6, 30, 58, 86, 114],
+      [6, 34, 62, 90, 118],
+      [6, 26, 50, 74, 98, 122],
+      [6, 30, 54, 78, 102, 126],
+      [6, 26, 52, 78, 104, 130],
+      [6, 30, 56, 82, 108, 134],
+      [6, 34, 60, 86, 112, 138],
+      [6, 30, 58, 86, 114, 142],
+      [6, 34, 62, 90, 118, 146],
+      [6, 30, 54, 78, 102, 126, 150],
+      [6, 24, 50, 76, 102, 128, 154],
+      [6, 28, 54, 80, 106, 132, 158],
+      [6, 32, 58, 84, 110, 136, 162],
+      [6, 26, 54, 82, 110, 138, 166],
+      [6, 30, 58, 86, 114, 142, 170]
+    ];
+    var G15 = (1 << 10) | (1 << 8) | (1 << 5) | (1 << 4) | (1 << 2) | (1 << 1) | (1 << 0);
+    var G18 = (1 << 12) | (1 << 11) | (1 << 10) | (1 << 9) | (1 << 8) | (1 << 5) | (1 << 2) | (1 << 0);
+    var G15_MASK = (1 << 14) | (1 << 12) | (1 << 10) | (1 << 4) | (1 << 1);
+
+    var _this = {};
+
+    var getBCHDigit = function(data) {
+      var digit = 0;
+      while (data != 0) {
+        digit += 1;
+        data >>>= 1;
+      }
+      return digit;
+    };
+
+    _this.getBCHTypeInfo = function(data) {
+      var d = data << 10;
+      while (getBCHDigit(d) - getBCHDigit(G15) >= 0) {
+        d ^= (G15 << (getBCHDigit(d) - getBCHDigit(G15) ) );
+      }
+      return ( (data << 10) | d) ^ G15_MASK;
+    };
+
+    _this.getBCHTypeNumber = function(data) {
+      var d = data << 12;
+      while (getBCHDigit(d) - getBCHDigit(G18) >= 0) {
+        d ^= (G18 << (getBCHDigit(d) - getBCHDigit(G18) ) );
+      }
+      return (data << 12) | d;
+    };
+
+    _this.getPatternPosition = function(typeNumber) {
+      return PATTERN_POSITION_TABLE[typeNumber - 1];
+    };
+
+    _this.getMaskFunction = function(maskPattern) {
+
+      switch (maskPattern) {
+
+      case QRMaskPattern.PATTERN000 :
+        return function(i, j) { return (i + j) % 2 == 0; };
+      case QRMaskPattern.PATTERN001 :
+        return function(i, j) { return i % 2 == 0; };
+      case QRMaskPattern.PATTERN010 :
+        return function(i, j) { return j % 3 == 0; };
+      case QRMaskPattern.PATTERN011 :
+        return function(i, j) { return (i + j) % 3 == 0; };
+      case QRMaskPattern.PATTERN100 :
+        return function(i, j) { return (Math.floor(i / 2) + Math.floor(j / 3) ) % 2 == 0; };
+      case QRMaskPattern.PATTERN101 :
+        return function(i, j) { return (i * j) % 2 + (i * j) % 3 == 0; };
+      case QRMaskPattern.PATTERN110 :
+        return function(i, j) { return ( (i * j) % 2 + (i * j) % 3) % 2 == 0; };
+      case QRMaskPattern.PATTERN111 :
+        return function(i, j) { return ( (i * j) % 3 + (i + j) % 2) % 2 == 0; };
+
+      default :
+        throw 'bad maskPattern:' + maskPattern;
+      }
+    };
+
+    _this.getErrorCorrectPolynomial = function(errorCorrectLength) {
+      var a = qrPolynomial([1], 0);
+      for (var i = 0; i < errorCorrectLength; i += 1) {
+        a = a.multiply(qrPolynomial([1, QRMath.gexp(i)], 0) );
+      }
+      return a;
+    };
+
+    _this.getLengthInBits = function(mode, type) {
+
+      if (1 <= type && type < 10) {
+
+        // 1 - 9
+
+        switch(mode) {
+        case QRMode.MODE_NUMBER    : return 10;
+        case QRMode.MODE_ALPHA_NUM : return 9;
+        case QRMode.MODE_8BIT_BYTE : return 8;
+        case QRMode.MODE_KANJI     : return 8;
+        default :
+          throw 'mode:' + mode;
+        }
+
+      } else if (type < 27) {
+
+        // 10 - 26
+
+        switch(mode) {
+        case QRMode.MODE_NUMBER    : return 12;
+        case QRMode.MODE_ALPHA_NUM : return 11;
+        case QRMode.MODE_8BIT_BYTE : return 16;
+        case QRMode.MODE_KANJI     : return 10;
+        default :
+          throw 'mode:' + mode;
+        }
+
+      } else if (type < 41) {
+
+        // 27 - 40
+
+        switch(mode) {
+        case QRMode.MODE_NUMBER    : return 14;
+        case QRMode.MODE_ALPHA_NUM : return 13;
+        case QRMode.MODE_8BIT_BYTE : return 16;
+        case QRMode.MODE_KANJI     : return 12;
+        default :
+          throw 'mode:' + mode;
+        }
+
+      } else {
+        throw 'type:' + type;
+      }
+    };
+
+    _this.getLostPoint = function(qrcode) {
+
+      var moduleCount = qrcode.getModuleCount();
+
+      var lostPoint = 0;
+
+      // LEVEL1
+
+      for (var row = 0; row < moduleCount; row += 1) {
+        for (var col = 0; col < moduleCount; col += 1) {
+
+          var sameCount = 0;
+          var dark = qrcode.isDark(row, col);
+
+          for (var r = -1; r <= 1; r += 1) {
+
+            if (row + r < 0 || moduleCount <= row + r) {
+              continue;
+            }
+
+            for (var c = -1; c <= 1; c += 1) {
+
+              if (col + c < 0 || moduleCount <= col + c) {
+                continue;
+              }
+
+              if (r == 0 && c == 0) {
+                continue;
+              }
+
+              if (dark == qrcode.isDark(row + r, col + c) ) {
+                sameCount += 1;
+              }
+            }
+          }
+
+          if (sameCount > 5) {
+            lostPoint += (3 + sameCount - 5);
+          }
+        }
+      };
+
+      // LEVEL2
+
+      for (var row = 0; row < moduleCount - 1; row += 1) {
+        for (var col = 0; col < moduleCount - 1; col += 1) {
+          var count = 0;
+          if (qrcode.isDark(row, col) ) count += 1;
+          if (qrcode.isDark(row + 1, col) ) count += 1;
+          if (qrcode.isDark(row, col + 1) ) count += 1;
+          if (qrcode.isDark(row + 1, col + 1) ) count += 1;
+          if (count == 0 || count == 4) {
+            lostPoint += 3;
+          }
+        }
+      }
+
+      // LEVEL3
+
+      for (var row = 0; row < moduleCount; row += 1) {
+        for (var col = 0; col < moduleCount - 6; col += 1) {
+          if (qrcode.isDark(row, col)
+              && !qrcode.isDark(row, col + 1)
+              &&  qrcode.isDark(row, col + 2)
+              &&  qrcode.isDark(row, col + 3)
+              &&  qrcode.isDark(row, col + 4)
+              && !qrcode.isDark(row, col + 5)
+              &&  qrcode.isDark(row, col + 6) ) {
+            lostPoint += 40;
+          }
+        }
+      }
+
+      for (var col = 0; col < moduleCount; col += 1) {
+        for (var row = 0; row < moduleCount - 6; row += 1) {
+          if (qrcode.isDark(row, col)
+              && !qrcode.isDark(row + 1, col)
+              &&  qrcode.isDark(row + 2, col)
+              &&  qrcode.isDark(row + 3, col)
+              &&  qrcode.isDark(row + 4, col)
+              && !qrcode.isDark(row + 5, col)
+              &&  qrcode.isDark(row + 6, col) ) {
+            lostPoint += 40;
+          }
+        }
+      }
+
+      // LEVEL4
+
+      var darkCount = 0;
+
+      for (var col = 0; col < moduleCount; col += 1) {
+        for (var row = 0; row < moduleCount; row += 1) {
+          if (qrcode.isDark(row, col) ) {
+            darkCount += 1;
+          }
+        }
+      }
+
+      var ratio = Math.abs(100 * darkCount / moduleCount / moduleCount - 50) / 5;
+      lostPoint += ratio * 10;
+
+      return lostPoint;
+    };
+
+    return _this;
+  }();
+
+  //---------------------------------------------------------------------
+  // QRMath
+  //---------------------------------------------------------------------
+
+  var QRMath = function() {
+
+    var EXP_TABLE = new Array(256);
+    var LOG_TABLE = new Array(256);
+
+    // initialize tables
+    for (var i = 0; i < 8; i += 1) {
+      EXP_TABLE[i] = 1 << i;
+    }
+    for (var i = 8; i < 256; i += 1) {
+      EXP_TABLE[i] = EXP_TABLE[i - 4]
+        ^ EXP_TABLE[i - 5]
+        ^ EXP_TABLE[i - 6]
+        ^ EXP_TABLE[i - 8];
+    }
+    for (var i = 0; i < 255; i += 1) {
+      LOG_TABLE[EXP_TABLE[i] ] = i;
+    }
+
+    var _this = {};
+
+    _this.glog = function(n) {
+
+      if (n < 1) {
+        throw 'glog(' + n + ')';
+      }
+
+      return LOG_TABLE[n];
+    };
+
+    _this.gexp = function(n) {
+
+      while (n < 0) {
+        n += 255;
+      }
+
+      while (n >= 256) {
+        n -= 255;
+      }
+
+      return EXP_TABLE[n];
+    };
+
+    return _this;
+  }();
+
+  //---------------------------------------------------------------------
+  // qrPolynomial
+  //---------------------------------------------------------------------
+
+  function qrPolynomial(num, shift) {
+
+    if (typeof num.length == 'undefined') {
+      throw num.length + '/' + shift;
+    }
+
+    var _num = function() {
+      var offset = 0;
+      while (offset < num.length && num[offset] == 0) {
+        offset += 1;
+      }
+      var _num = new Array(num.length - offset + shift);
+      for (var i = 0; i < num.length - offset; i += 1) {
+        _num[i] = num[i + offset];
+      }
+      return _num;
+    }();
+
+    var _this = {};
+
+    _this.getAt = function(index) {
+      return _num[index];
+    };
+
+    _this.getLength = function() {
+      return _num.length;
+    };
+
+    _this.multiply = function(e) {
+
+      var num = new Array(_this.getLength() + e.getLength() - 1);
+
+      for (var i = 0; i < _this.getLength(); i += 1) {
+        for (var j = 0; j < e.getLength(); j += 1) {
+          num[i + j] ^= QRMath.gexp(QRMath.glog(_this.getAt(i) ) + QRMath.glog(e.getAt(j) ) );
+        }
+      }
+
+      return qrPolynomial(num, 0);
+    };
+
+    _this.mod = function(e) {
+
+      if (_this.getLength() - e.getLength() < 0) {
+        return _this;
+      }
+
+      var ratio = QRMath.glog(_this.getAt(0) ) - QRMath.glog(e.getAt(0) );
+
+      var num = new Array(_this.getLength() );
+      for (var i = 0; i < _this.getLength(); i += 1) {
+        num[i] = _this.getAt(i);
+      }
+
+      for (var i = 0; i < e.getLength(); i += 1) {
+        num[i] ^= QRMath.gexp(QRMath.glog(e.getAt(i) ) + ratio);
+      }
+
+      // recursive call
+      return qrPolynomial(num, 0).mod(e);
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // QRRSBlock
+  //---------------------------------------------------------------------
+
+  var QRRSBlock = function() {
+
+    var RS_BLOCK_TABLE = [
+
+      // L
+      // M
+      // Q
+      // H
+
+      // 1
+      [1, 26, 19],
+      [1, 26, 16],
+      [1, 26, 13],
+      [1, 26, 9],
+
+      // 2
+      [1, 44, 34],
+      [1, 44, 28],
+      [1, 44, 22],
+      [1, 44, 16],
+
+      // 3
+      [1, 70, 55],
+      [1, 70, 44],
+      [2, 35, 17],
+      [2, 35, 13],
+
+      // 4
+      [1, 100, 80],
+      [2, 50, 32],
+      [2, 50, 24],
+      [4, 25, 9],
+
+      // 5
+      [1, 134, 108],
+      [2, 67, 43],
+      [2, 33, 15, 2, 34, 16],
+      [2, 33, 11, 2, 34, 12],
+
+      // 6
+      [2, 86, 68],
+      [4, 43, 27],
+      [4, 43, 19],
+      [4, 43, 15],
+
+      // 7
+      [2, 98, 78],
+      [4, 49, 31],
+      [2, 32, 14, 4, 33, 15],
+      [4, 39, 13, 1, 40, 14],
+
+      // 8
+      [2, 121, 97],
+      [2, 60, 38, 2, 61, 39],
+      [4, 40, 18, 2, 41, 19],
+      [4, 40, 14, 2, 41, 15],
+
+      // 9
+      [2, 146, 116],
+      [3, 58, 36, 2, 59, 37],
+      [4, 36, 16, 4, 37, 17],
+      [4, 36, 12, 4, 37, 13],
+
+      // 10
+      [2, 86, 68, 2, 87, 69],
+      [4, 69, 43, 1, 70, 44],
+      [6, 43, 19, 2, 44, 20],
+      [6, 43, 15, 2, 44, 16],
+
+      // 11
+      [4, 101, 81],
+      [1, 80, 50, 4, 81, 51],
+      [4, 50, 22, 4, 51, 23],
+      [3, 36, 12, 8, 37, 13],
+
+      // 12
+      [2, 116, 92, 2, 117, 93],
+      [6, 58, 36, 2, 59, 37],
+      [4, 46, 20, 6, 47, 21],
+      [7, 42, 14, 4, 43, 15],
+
+      // 13
+      [4, 133, 107],
+      [8, 59, 37, 1, 60, 38],
+      [8, 44, 20, 4, 45, 21],
+      [12, 33, 11, 4, 34, 12],
+
+      // 14
+      [3, 145, 115, 1, 146, 116],
+      [4, 64, 40, 5, 65, 41],
+      [11, 36, 16, 5, 37, 17],
+      [11, 36, 12, 5, 37, 13],
+
+      // 15
+      [5, 109, 87, 1, 110, 88],
+      [5, 65, 41, 5, 66, 42],
+      [5, 54, 24, 7, 55, 25],
+      [11, 36, 12, 7, 37, 13],
+
+      // 16
+      [5, 122, 98, 1, 123, 99],
+      [7, 73, 45, 3, 74, 46],
+      [15, 43, 19, 2, 44, 20],
+      [3, 45, 15, 13, 46, 16],
+
+      // 17
+      [1, 135, 107, 5, 136, 108],
+      [10, 74, 46, 1, 75, 47],
+      [1, 50, 22, 15, 51, 23],
+      [2, 42, 14, 17, 43, 15],
+
+      // 18
+      [5, 150, 120, 1, 151, 121],
+      [9, 69, 43, 4, 70, 44],
+      [17, 50, 22, 1, 51, 23],
+      [2, 42, 14, 19, 43, 15],
+
+      // 19
+      [3, 141, 113, 4, 142, 114],
+      [3, 70, 44, 11, 71, 45],
+      [17, 47, 21, 4, 48, 22],
+      [9, 39, 13, 16, 40, 14],
+
+      // 20
+      [3, 135, 107, 5, 136, 108],
+      [3, 67, 41, 13, 68, 42],
+      [15, 54, 24, 5, 55, 25],
+      [15, 43, 15, 10, 44, 16],
+
+      // 21
+      [4, 144, 116, 4, 145, 117],
+      [17, 68, 42],
+      [17, 50, 22, 6, 51, 23],
+      [19, 46, 16, 6, 47, 17],
+
+      // 22
+      [2, 139, 111, 7, 140, 112],
+      [17, 74, 46],
+      [7, 54, 24, 16, 55, 25],
+      [34, 37, 13],
+
+      // 23
+      [4, 151, 121, 5, 152, 122],
+      [4, 75, 47, 14, 76, 48],
+      [11, 54, 24, 14, 55, 25],
+      [16, 45, 15, 14, 46, 16],
+
+      // 24
+      [6, 147, 117, 4, 148, 118],
+      [6, 73, 45, 14, 74, 46],
+      [11, 54, 24, 16, 55, 25],
+      [30, 46, 16, 2, 47, 17],
+
+      // 25
+      [8, 132, 106, 4, 133, 107],
+      [8, 75, 47, 13, 76, 48],
+      [7, 54, 24, 22, 55, 25],
+      [22, 45, 15, 13, 46, 16],
+
+      // 26
+      [10, 142, 114, 2, 143, 115],
+      [19, 74, 46, 4, 75, 47],
+      [28, 50, 22, 6, 51, 23],
+      [33, 46, 16, 4, 47, 17],
+
+      // 27
+      [8, 152, 122, 4, 153, 123],
+      [22, 73, 45, 3, 74, 46],
+      [8, 53, 23, 26, 54, 24],
+      [12, 45, 15, 28, 46, 16],
+
+      // 28
+      [3, 147, 117, 10, 148, 118],
+      [3, 73, 45, 23, 74, 46],
+      [4, 54, 24, 31, 55, 25],
+      [11, 45, 15, 31, 46, 16],
+
+      // 29
+      [7, 146, 116, 7, 147, 117],
+      [21, 73, 45, 7, 74, 46],
+      [1, 53, 23, 37, 54, 24],
+      [19, 45, 15, 26, 46, 16],
+
+      // 30
+      [5, 145, 115, 10, 146, 116],
+      [19, 75, 47, 10, 76, 48],
+      [15, 54, 24, 25, 55, 25],
+      [23, 45, 15, 25, 46, 16],
+
+      // 31
+      [13, 145, 115, 3, 146, 116],
+      [2, 74, 46, 29, 75, 47],
+      [42, 54, 24, 1, 55, 25],
+      [23, 45, 15, 28, 46, 16],
+
+      // 32
+      [17, 145, 115],
+      [10, 74, 46, 23, 75, 47],
+      [10, 54, 24, 35, 55, 25],
+      [19, 45, 15, 35, 46, 16],
+
+      // 33
+      [17, 145, 115, 1, 146, 116],
+      [14, 74, 46, 21, 75, 47],
+      [29, 54, 24, 19, 55, 25],
+      [11, 45, 15, 46, 46, 16],
+
+      // 34
+      [13, 145, 115, 6, 146, 116],
+      [14, 74, 46, 23, 75, 47],
+      [44, 54, 24, 7, 55, 25],
+      [59, 46, 16, 1, 47, 17],
+
+      // 35
+      [12, 151, 121, 7, 152, 122],
+      [12, 75, 47, 26, 76, 48],
+      [39, 54, 24, 14, 55, 25],
+      [22, 45, 15, 41, 46, 16],
+
+      // 36
+      [6, 151, 121, 14, 152, 122],
+      [6, 75, 47, 34, 76, 48],
+      [46, 54, 24, 10, 55, 25],
+      [2, 45, 15, 64, 46, 16],
+
+      // 37
+      [17, 152, 122, 4, 153, 123],
+      [29, 74, 46, 14, 75, 47],
+      [49, 54, 24, 10, 55, 25],
+      [24, 45, 15, 46, 46, 16],
+
+      // 38
+      [4, 152, 122, 18, 153, 123],
+      [13, 74, 46, 32, 75, 47],
+      [48, 54, 24, 14, 55, 25],
+      [42, 45, 15, 32, 46, 16],
+
+      // 39
+      [20, 147, 117, 4, 148, 118],
+      [40, 75, 47, 7, 76, 48],
+      [43, 54, 24, 22, 55, 25],
+      [10, 45, 15, 67, 46, 16],
+
+      // 40
+      [19, 148, 118, 6, 149, 119],
+      [18, 75, 47, 31, 76, 48],
+      [34, 54, 24, 34, 55, 25],
+      [20, 45, 15, 61, 46, 16]
+    ];
+
+    var qrRSBlock = function(totalCount, dataCount) {
+      var _this = {};
+      _this.totalCount = totalCount;
+      _this.dataCount = dataCount;
+      return _this;
+    };
+
+    var _this = {};
+
+    var getRsBlockTable = function(typeNumber, errorCorrectionLevel) {
+
+      switch(errorCorrectionLevel) {
+      case QRErrorCorrectionLevel.L :
+        return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 0];
+      case QRErrorCorrectionLevel.M :
+        return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 1];
+      case QRErrorCorrectionLevel.Q :
+        return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 2];
+      case QRErrorCorrectionLevel.H :
+        return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 3];
+      default :
+        return undefined;
+      }
+    };
+
+    _this.getRSBlocks = function(typeNumber, errorCorrectionLevel) {
+
+      var rsBlock = getRsBlockTable(typeNumber, errorCorrectionLevel);
+
+      if (typeof rsBlock == 'undefined') {
+        throw 'bad rs block @ typeNumber:' + typeNumber +
+            '/errorCorrectionLevel:' + errorCorrectionLevel;
+      }
+
+      var length = rsBlock.length / 3;
+
+      var list = [];
+
+      for (var i = 0; i < length; i += 1) {
+
+        var count = rsBlock[i * 3 + 0];
+        var totalCount = rsBlock[i * 3 + 1];
+        var dataCount = rsBlock[i * 3 + 2];
+
+        for (var j = 0; j < count; j += 1) {
+          list.push(qrRSBlock(totalCount, dataCount) );
+        }
+      }
+
+      return list;
+    };
+
+    return _this;
+  }();
+
+  //---------------------------------------------------------------------
+  // qrBitBuffer
+  //---------------------------------------------------------------------
+
+  var qrBitBuffer = function() {
+
+    var _buffer = [];
+    var _length = 0;
+
+    var _this = {};
+
+    _this.getBuffer = function() {
+      return _buffer;
+    };
+
+    _this.getAt = function(index) {
+      var bufIndex = Math.floor(index / 8);
+      return ( (_buffer[bufIndex] >>> (7 - index % 8) ) & 1) == 1;
+    };
+
+    _this.put = function(num, length) {
+      for (var i = 0; i < length; i += 1) {
+        _this.putBit( ( (num >>> (length - i - 1) ) & 1) == 1);
+      }
+    };
+
+    _this.getLengthInBits = function() {
+      return _length;
+    };
+
+    _this.putBit = function(bit) {
+
+      var bufIndex = Math.floor(_length / 8);
+      if (_buffer.length <= bufIndex) {
+        _buffer.push(0);
+      }
+
+      if (bit) {
+        _buffer[bufIndex] |= (0x80 >>> (_length % 8) );
+      }
+
+      _length += 1;
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // qrNumber
+  //---------------------------------------------------------------------
+
+  var qrNumber = function(data) {
+
+    var _mode = QRMode.MODE_NUMBER;
+    var _data = data;
+
+    var _this = {};
+
+    _this.getMode = function() {
+      return _mode;
+    };
+
+    _this.getLength = function(buffer) {
+      return _data.length;
+    };
+
+    _this.write = function(buffer) {
+
+      var data = _data;
+
+      var i = 0;
+
+      while (i + 2 < data.length) {
+        buffer.put(strToNum(data.substring(i, i + 3) ), 10);
+        i += 3;
+      }
+
+      if (i < data.length) {
+        if (data.length - i == 1) {
+          buffer.put(strToNum(data.substring(i, i + 1) ), 4);
+        } else if (data.length - i == 2) {
+          buffer.put(strToNum(data.substring(i, i + 2) ), 7);
+        }
+      }
+    };
+
+    var strToNum = function(s) {
+      var num = 0;
+      for (var i = 0; i < s.length; i += 1) {
+        num = num * 10 + chatToNum(s.charAt(i) );
+      }
+      return num;
+    };
+
+    var chatToNum = function(c) {
+      if ('0' <= c && c <= '9') {
+        return c.charCodeAt(0) - '0'.charCodeAt(0);
+      }
+      throw 'illegal char :' + c;
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // qrAlphaNum
+  //---------------------------------------------------------------------
+
+  var qrAlphaNum = function(data) {
+
+    var _mode = QRMode.MODE_ALPHA_NUM;
+    var _data = data;
+
+    var _this = {};
+
+    _this.getMode = function() {
+      return _mode;
+    };
+
+    _this.getLength = function(buffer) {
+      return _data.length;
+    };
+
+    _this.write = function(buffer) {
+
+      var s = _data;
+
+      var i = 0;
+
+      while (i + 1 < s.length) {
+        buffer.put(
+          getCode(s.charAt(i) ) * 45 +
+          getCode(s.charAt(i + 1) ), 11);
+        i += 2;
+      }
+
+      if (i < s.length) {
+        buffer.put(getCode(s.charAt(i) ), 6);
+      }
+    };
+
+    var getCode = function(c) {
+
+      if ('0' <= c && c <= '9') {
+        return c.charCodeAt(0) - '0'.charCodeAt(0);
+      } else if ('A' <= c && c <= 'Z') {
+        return c.charCodeAt(0) - 'A'.charCodeAt(0) + 10;
+      } else {
+        switch (c) {
+        case ' ' : return 36;
+        case '$' : return 37;
+        case '%' : return 38;
+        case '*' : return 39;
+        case '+' : return 40;
+        case '-' : return 41;
+        case '.' : return 42;
+        case '/' : return 43;
+        case ':' : return 44;
+        default :
+          throw 'illegal char :' + c;
+        }
+      }
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // qr8BitByte
+  //---------------------------------------------------------------------
+
+  var qr8BitByte = function(data) {
+
+    var _mode = QRMode.MODE_8BIT_BYTE;
+    var _data = data;
+    var _bytes = qrcode.stringToBytes(data);
+
+    var _this = {};
+
+    _this.getMode = function() {
+      return _mode;
+    };
+
+    _this.getLength = function(buffer) {
+      return _bytes.length;
+    };
+
+    _this.write = function(buffer) {
+      for (var i = 0; i < _bytes.length; i += 1) {
+        buffer.put(_bytes[i], 8);
+      }
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // qrKanji
+  //---------------------------------------------------------------------
+
+  var qrKanji = function(data) {
+
+    var _mode = QRMode.MODE_KANJI;
+    var _data = data;
+
+    var stringToBytes = qrcode.stringToBytesFuncs['SJIS'];
+    if (!stringToBytes) {
+      throw 'sjis not supported.';
+    }
+    !function(c, code) {
+      // self test for sjis support.
+      var test = stringToBytes(c);
+      if (test.length != 2 || ( (test[0] << 8) | test[1]) != code) {
+        throw 'sjis not supported.';
+      }
+    }('\u53cb', 0x9746);
+
+    var _bytes = stringToBytes(data);
+
+    var _this = {};
+
+    _this.getMode = function() {
+      return _mode;
+    };
+
+    _this.getLength = function(buffer) {
+      return ~~(_bytes.length / 2);
+    };
+
+    _this.write = function(buffer) {
+
+      var data = _bytes;
+
+      var i = 0;
+
+      while (i + 1 < data.length) {
+
+        var c = ( (0xff & data[i]) << 8) | (0xff & data[i + 1]);
+
+        if (0x8140 <= c && c <= 0x9FFC) {
+          c -= 0x8140;
+        } else if (0xE040 <= c && c <= 0xEBBF) {
+          c -= 0xC140;
+        } else {
+          throw 'illegal char at ' + (i + 1) + '/' + c;
+        }
+
+        c = ( (c >>> 8) & 0xff) * 0xC0 + (c & 0xff);
+
+        buffer.put(c, 13);
+
+        i += 2;
+      }
+
+      if (i < data.length) {
+        throw 'illegal char at ' + (i + 1);
+      }
+    };
+
+    return _this;
+  };
+
+  //=====================================================================
+  // GIF Support etc.
+  //
+
+  //---------------------------------------------------------------------
+  // byteArrayOutputStream
+  //---------------------------------------------------------------------
+
+  var byteArrayOutputStream = function() {
+
+    var _bytes = [];
+
+    var _this = {};
+
+    _this.writeByte = function(b) {
+      _bytes.push(b & 0xff);
+    };
+
+    _this.writeShort = function(i) {
+      _this.writeByte(i);
+      _this.writeByte(i >>> 8);
+    };
+
+    _this.writeBytes = function(b, off, len) {
+      off = off || 0;
+      len = len || b.length;
+      for (var i = 0; i < len; i += 1) {
+        _this.writeByte(b[i + off]);
+      }
+    };
+
+    _this.writeString = function(s) {
+      for (var i = 0; i < s.length; i += 1) {
+        _this.writeByte(s.charCodeAt(i) );
+      }
+    };
+
+    _this.toByteArray = function() {
+      return _bytes;
+    };
+
+    _this.toString = function() {
+      var s = '';
+      s += '[';
+      for (var i = 0; i < _bytes.length; i += 1) {
+        if (i > 0) {
+          s += ',';
+        }
+        s += _bytes[i];
+      }
+      s += ']';
+      return s;
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // base64EncodeOutputStream
+  //---------------------------------------------------------------------
+
+  var base64EncodeOutputStream = function() {
+
+    var _buffer = 0;
+    var _buflen = 0;
+    var _length = 0;
+    var _base64 = '';
+
+    var _this = {};
+
+    var writeEncoded = function(b) {
+      _base64 += String.fromCharCode(encode(b & 0x3f) );
+    };
+
+    var encode = function(n) {
+      if (n < 0) {
+        // error.
+      } else if (n < 26) {
+        return 0x41 + n;
+      } else if (n < 52) {
+        return 0x61 + (n - 26);
+      } else if (n < 62) {
+        return 0x30 + (n - 52);
+      } else if (n == 62) {
+        return 0x2b;
+      } else if (n == 63) {
+        return 0x2f;
+      }
+      throw 'n:' + n;
+    };
+
+    _this.writeByte = function(n) {
+
+      _buffer = (_buffer << 8) | (n & 0xff);
+      _buflen += 8;
+      _length += 1;
+
+      while (_buflen >= 6) {
+        writeEncoded(_buffer >>> (_buflen - 6) );
+        _buflen -= 6;
+      }
+    };
+
+    _this.flush = function() {
+
+      if (_buflen > 0) {
+        writeEncoded(_buffer << (6 - _buflen) );
+        _buffer = 0;
+        _buflen = 0;
+      }
+
+      if (_length % 3 != 0) {
+        // padding
+        var padlen = 3 - _length % 3;
+        for (var i = 0; i < padlen; i += 1) {
+          _base64 += '=';
+        }
+      }
+    };
+
+    _this.toString = function() {
+      return _base64;
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // base64DecodeInputStream
+  //---------------------------------------------------------------------
+
+  var base64DecodeInputStream = function(str) {
+
+    var _str = str;
+    var _pos = 0;
+    var _buffer = 0;
+    var _buflen = 0;
+
+    var _this = {};
+
+    _this.read = function() {
+
+      while (_buflen < 8) {
+
+        if (_pos >= _str.length) {
+          if (_buflen == 0) {
+            return -1;
+          }
+          throw 'unexpected end of file./' + _buflen;
+        }
+
+        var c = _str.charAt(_pos);
+        _pos += 1;
+
+        if (c == '=') {
+          _buflen = 0;
+          return -1;
+        } else if (c.match(/^\s$/) ) {
+          // ignore if whitespace.
+          continue;
+        }
+
+        _buffer = (_buffer << 6) | decode(c.charCodeAt(0) );
+        _buflen += 6;
+      }
+
+      var n = (_buffer >>> (_buflen - 8) ) & 0xff;
+      _buflen -= 8;
+      return n;
+    };
+
+    var decode = function(c) {
+      if (0x41 <= c && c <= 0x5a) {
+        return c - 0x41;
+      } else if (0x61 <= c && c <= 0x7a) {
+        return c - 0x61 + 26;
+      } else if (0x30 <= c && c <= 0x39) {
+        return c - 0x30 + 52;
+      } else if (c == 0x2b) {
+        return 62;
+      } else if (c == 0x2f) {
+        return 63;
+      } else {
+        throw 'c:' + c;
+      }
+    };
+
+    return _this;
+  };
+
+  //---------------------------------------------------------------------
+  // gifImage (B/W)
+  //---------------------------------------------------------------------
+
+  var gifImage = function(width, height) {
+
+    var _width = width;
+    var _height = height;
+    var _data = new Array(width * height);
+
+    var _this = {};
+
+    _this.setPixel = function(x, y, pixel) {
+      _data[y * _width + x] = pixel;
+    };
+
+    _this.write = function(out) {
+
+      //---------------------------------
+      // GIF Signature
+
+      out.writeString('GIF87a');
+
+      //---------------------------------
+      // Screen Descriptor
+
+      out.writeShort(_width);
+      out.writeShort(_height);
+
+      out.writeByte(0x80); // 2bit
+      out.writeByte(0);
+      out.writeByte(0);
+
+      //---------------------------------
+      // Global Color Map
+
+      // black
+      out.writeByte(0x00);
+      out.writeByte(0x00);
+      out.writeByte(0x00);
+
+      // white
+      out.writeByte(0xff);
+      out.writeByte(0xff);
+      out.writeByte(0xff);
+
+      //---------------------------------
+      // Image Descriptor
+
+      out.writeString(',');
+      out.writeShort(0);
+      out.writeShort(0);
+      out.writeShort(_width);
+      out.writeShort(_height);
+      out.writeByte(0);
+
+      //---------------------------------
+      // Local Color Map
+
+      //---------------------------------
+      // Raster Data
+
+      var lzwMinCodeSize = 2;
+      var raster = getLZWRaster(lzwMinCodeSize);
+
+      out.writeByte(lzwMinCodeSize);
+
+      var offset = 0;
+
+      while (raster.length - offset > 255) {
+        out.writeByte(255);
+        out.writeBytes(raster, offset, 255);
+        offset += 255;
+      }
+
+      out.writeByte(raster.length - offset);
+      out.writeBytes(raster, offset, raster.length - offset);
+      out.writeByte(0x00);
+
+      //---------------------------------
+      // GIF Terminator
+      out.writeString(';');
+    };
+
+    var bitOutputStream = function(out) {
+
+      var _out = out;
+      var _bitLength = 0;
+      var _bitBuffer = 0;
+
+      var _this = {};
+
+      _this.write = function(data, length) {
+
+        if ( (data >>> length) != 0) {
+          throw 'length over';
+        }
+
+        while (_bitLength + length >= 8) {
+          _out.writeByte(0xff & ( (data << _bitLength) | _bitBuffer) );
+          length -= (8 - _bitLength);
+          data >>>= (8 - _bitLength);
+          _bitBuffer = 0;
+          _bitLength = 0;
+        }
+
+        _bitBuffer = (data << _bitLength) | _bitBuffer;
+        _bitLength = _bitLength + length;
+      };
+
+      _this.flush = function() {
+        if (_bitLength > 0) {
+          _out.writeByte(_bitBuffer);
+        }
+      };
+
+      return _this;
+    };
+
+    var getLZWRaster = function(lzwMinCodeSize) {
+
+      var clearCode = 1 << lzwMinCodeSize;
+      var endCode = (1 << lzwMinCodeSize) + 1;
+      var bitLength = lzwMinCodeSize + 1;
+
+      // Setup LZWTable
+      var table = lzwTable();
+
+      for (var i = 0; i < clearCode; i += 1) {
+        table.add(String.fromCharCode(i) );
+      }
+      table.add(String.fromCharCode(clearCode) );
+      table.add(String.fromCharCode(endCode) );
+
+      var byteOut = byteArrayOutputStream();
+      var bitOut = bitOutputStream(byteOut);
+
+      // clear code
+      bitOut.write(clearCode, bitLength);
+
+      var dataIndex = 0;
+
+      var s = String.fromCharCode(_data[dataIndex]);
+      dataIndex += 1;
+
+      while (dataIndex < _data.length) {
+
+        var c = String.fromCharCode(_data[dataIndex]);
+        dataIndex += 1;
+
+        if (table.contains(s + c) ) {
+
+          s = s + c;
+
+        } else {
+
+          bitOut.write(table.indexOf(s), bitLength);
+
+          if (table.size() < 0xfff) {
+
+            if (table.size() == (1 << bitLength) ) {
+              bitLength += 1;
+            }
+
+            table.add(s + c);
+          }
+
+          s = c;
+        }
+      }
+
+      bitOut.write(table.indexOf(s), bitLength);
+
+      // end code
+      bitOut.write(endCode, bitLength);
+
+      bitOut.flush();
+
+      return byteOut.toByteArray();
+    };
+
+    var lzwTable = function() {
+
+      var _map = {};
+      var _size = 0;
+
+      var _this = {};
+
+      _this.add = function(key) {
+        if (_this.contains(key) ) {
+          throw 'dup key:' + key;
+        }
+        _map[key] = _size;
+        _size += 1;
+      };
+
+      _this.size = function() {
+        return _size;
+      };
+
+      _this.indexOf = function(key) {
+        return _map[key];
+      };
+
+      _this.contains = function(key) {
+        return typeof _map[key] != 'undefined';
+      };
+
+      return _this;
+    };
+
+    return _this;
+  };
+
+  var createDataURL = function(width, height, getPixel) {
+    var gif = gifImage(width, height);
+    for (var y = 0; y < height; y += 1) {
+      for (var x = 0; x < width; x += 1) {
+        gif.setPixel(x, y, getPixel(x, y) );
+      }
+    }
+
+    var b = byteArrayOutputStream();
+    gif.write(b);
+
+    var base64 = base64EncodeOutputStream();
+    var bytes = b.toByteArray();
+    for (var i = 0; i < bytes.length; i += 1) {
+      base64.writeByte(bytes[i]);
+    }
+    base64.flush();
+
+    return 'data:image/gif;base64,' + base64;
+  };
+
+  //---------------------------------------------------------------------
+  // returns qrcode function.
+
+  return qrcode;
+}();
+
+// multibyte support
+!function() {
+
+  qrcode.stringToBytesFuncs['UTF-8'] = function(s) {
+    // http://stackoverflow.com/questions/18729405/how-to-convert-utf8-string-to-byte-array
+    function toUTF8Array(str) {
+      var utf8 = [];
+      for (var i=0; i < str.length; i++) {
+        var charcode = str.charCodeAt(i);
+        if (charcode < 0x80) utf8.push(charcode);
+        else if (charcode < 0x800) {
+          utf8.push(0xc0 | (charcode >> 6),
+              0x80 | (charcode & 0x3f));
+        }
+        else if (charcode < 0xd800 || charcode >= 0xe000) {
+          utf8.push(0xe0 | (charcode >> 12),
+              0x80 | ((charcode>>6) & 0x3f),
+              0x80 | (charcode & 0x3f));
+        }
+        // surrogate pair
+        else {
+          i++;
+          // UTF-16 encodes 0x10000-0x10FFFF by
+          // subtracting 0x10000 and splitting the
+          // 20 bits of 0x0-0xFFFFF into two halves
+          charcode = 0x10000 + (((charcode & 0x3ff)<<10)
+            | (str.charCodeAt(i) & 0x3ff));
+          utf8.push(0xf0 | (charcode >>18),
+              0x80 | ((charcode>>12) & 0x3f),
+              0x80 | ((charcode>>6) & 0x3f),
+              0x80 | (charcode & 0x3f));
+        }
+      }
+      return utf8;
+    }
+    return toUTF8Array(s);
+  };
+
+}();
+
+</script>
+
+<script>
+const FLAGS = {"BRB": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" id=\"bb_flag-icons-bb\" viewBox=\"0 0 512 512\"><path fill=\"#00267f\" d=\"M0-.2h512V512H0z\"/><path fill=\"#ffc726\" d=\"M170.7-.2h170.6V512H170.7z\"/><path id=\"bb_bb-a\" fill=\"#000001\" d=\"M256 173.3c-5.5 15.1-11.2 30.9-23.3 43a51.7 51.7 0 0 1 14.6-2.3v63.6l-18 2.7c-.7 0-.9-1-.9-2.4a243.6 243.6 0 0 0-11.7-53.6c-.4-2.3-7.2-11.3-2-9.7.7 0 7.7 3 6.6 1.6a68 68 0 0 0-37.1-19.2c-1.2-.3-2 .3-.9 1.7 18 27.7 33.1 60.4 33 99.2 7 0 24-4.1 31-4.1v44.9h8.8l2-125.4z\"/><use xlink:href=\"#bb_bb-a\" width=\"100%\" height=\"100%\" transform=\"matrix(-1 0 0 1 512 0)\"/></svg>", "JAM": "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"jm_flag-icons-jm\" viewBox=\"0 0 512 512\"><g fill-rule=\"evenodd\"><path fill=\"#000001\" d=\"m0 0 256 256L0 512zm512 0L256 256l256 256z\"/><path fill=\"#090\" d=\"m0 0 256 256L512 0zm0 512 256-256 256 256z\"/><path fill=\"#fc0\" d=\"M512 0h-47.7L0 464.3V512h47.7L512 47.7z\"/><path fill=\"#fc0\" d=\"M0 0v47.7L464.3 512H512v-47.7L47.7 0z\"/></g></svg>", "TTO": "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"tt_flag-icons-tt\" viewBox=\"0 0 512 512\"><path fill=\"#fff\" d=\"M0 0h512v512H0z\" style=\"width:0\"/><g fill-rule=\"evenodd\"><path fill=\"#e00000\" d=\"M371 512 0 1v510.7zM141 0l371 511V.2z\"/><path fill=\"#000001\" d=\"M22.2.2h94.9l374.5 511.3h-97.9z\"/></g></svg>", "ARG": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" id=\"ar_flag-icons-ar\" viewBox=\"0 0 512 512\"><path fill=\"#74acdf\" d=\"M0 0h512v512H0z\"/><path fill=\"#fff\" d=\"M0 170.7h512v170.7H0z\"/><g id=\"ar_ar-c\" transform=\"translate(-153.6)scale(1.024)\"><path id=\"ar_ar-a\" fill=\"#f6b40e\" stroke=\"#85340a\" stroke-width=\"1.1\" d=\"m396.8 251.3 28.5 62s.5 1.2 1.3.9c.8-.4.3-1.6.3-1.6l-23.7-64m-.7 24.2c-.4 9.4 5.4 14.6 4.7 23-.8 8.5 3.8 13.2 5 16.5 1 3.3-1.2 5.2-.3 5.7 1 .5 3-2.1 2.4-6.8-.7-4.6-4.2-6-3.4-16.3.8-10.3-4.2-12.7-3-22\"/><use xlink:href=\"#ar_ar-a\" width=\"100%\" height=\"100%\" transform=\"rotate(22.5 400 250)\"/><use xlink:href=\"#ar_ar-a\" width=\"100%\" height=\"100%\" transform=\"rotate(45 400 250)\"/><use xlink:href=\"#ar_ar-a\" width=\"100%\" height=\"100%\" transform=\"rotate(67.5 400 250)\"/><path id=\"ar_ar-b\" fill=\"#85340a\" d=\"M404.3 274.4c.5 9 5.6 13 4.6 21.3 2.2-6.5-3.1-11.6-2.8-21.2m-7.7-23.8 19.5 42.6-16.3-43.9\"/><use xlink:href=\"#ar_ar-b\" width=\"100%\" height=\"100%\" transform=\"rotate(22.5 400 250)\"/><use xlink:href=\"#ar_ar-b\" width=\"100%\" height=\"100%\" transform=\"rotate(45 400 250)\"/><use xlink:href=\"#ar_ar-b\" width=\"100%\" height=\"100%\" transform=\"rotate(67.5 400 250)\"/></g><use xlink:href=\"#ar_ar-c\" width=\"100%\" height=\"100%\" transform=\"rotate(90 256 256)\"/><use xlink:href=\"#ar_ar-c\" width=\"100%\" height=\"100%\" transform=\"rotate(180 256 256)\"/><use xlink:href=\"#ar_ar-c\" width=\"100%\" height=\"100%\" transform=\"rotate(-90 256 256)\"/><circle cx=\"256\" cy=\"256\" r=\"28.4\" fill=\"#f6b40e\" stroke=\"#85340a\" stroke-width=\"1.5\"/><path id=\"ar_ar-h\" fill=\"#843511\" stroke-width=\"1\" d=\"M265.7 250c-2 0-3.8.8-4.9 2.5 2.2 2 7 2.2 10.3-.2a7.5 7.5 0 0 0-5.4-2.4zm0 .4c1.9 0 3.6.8 3.9 1.7-2.2 2.4-5.7 2.2-7.9.4 1-1.5 2.5-2.1 4-2.1\"/><use xlink:href=\"#ar_ar-d\" width=\"100%\" height=\"100%\" transform=\"matrix(-1 0 0 1 512.3 0)\"/><use xlink:href=\"#ar_ar-e\" width=\"100%\" height=\"100%\" transform=\"matrix(-1 0 0 1 512.3 0)\"/><use xlink:href=\"#ar_ar-f\" width=\"100%\" height=\"100%\" transform=\"translate(19.3)\"/><use xlink:href=\"#ar_ar-g\" width=\"100%\" height=\"100%\" transform=\"matrix(-1 0 0 1 512.3 0)\"/><path fill=\"#85340a\" d=\"M251.6 260a2 2 0 1 0 2 3c.8.6 1.8.6 2.4.6h.3c.5 0 1.6 0 2.3-.6.4.5 1 .8 1.6.8a2 2 0 0 0 .4-3.9c.5.2.9.7.9 1.3a1.3 1.3 0 0 1-2.7 0 3 3 0 0 1-2.7 1.8 3.3 3.3 0 0 1-2.7-1.8c0 .7-.6 1.3-1.3 1.3a1.3 1.3 0 0 1-.4-2.6zm2.2 5.8c-2.2 0-3 2-5 3.3 1-.5 2-1.3 3.5-2.2 1.5-.9 2.8.2 3.7.2.9 0 2.2-1.1 3.7-.2 1.5.9 2.4 1.7 3.5 2.2-2-1.4-2.8-3.3-5-3.3a6 6 0 0 0-2.2.6c-1-.4-1.8-.6-2.2-.6\"/><path fill=\"#85340a\" d=\"M253 268.3c-.8 0-2 .3-3.6.8 4-1 4.8.4 6.6.4 1.7 0 2.6-1.3 6.6-.4-4.4-1.4-5.3-.5-6.6-.5-.9 0-1.5-.3-3-.3\"/><path fill=\"#85340a\" d=\"M249.6 269h-.8c4.6.5 2.4 3.1 7.2 3.1 4.8 0 2.6-2.6 7.2-3-4.8-.5-3.3 2.4-7.2 2.4-3.7 0-2.6-2.5-6.4-2.5\"/><path fill=\"#85340a\" d=\"M260 276.1a4 4 0 0 0-8 0 4 4 0 0 1 8 0\"/><path id=\"ar_ar-e\" fill=\"#85340a\" stroke-width=\"1\" d=\"M238.3 249.9c5-4.4 11.4-5 14.9-1.8a8.6 8.6 0 0 1 1.6 3.7c.5 2.5-.3 5.2-2.3 8 .3 0 .7.1 1 .4 1.7-3.4 2.3-6.8 1.7-10l-.7-2.5c-4.8-4-11.4-4.4-16.2 2.2\"/><path id=\"ar_ar-d\" fill=\"#85340a\" stroke-width=\"1\" d=\"M246.2 248.6c2.8 0 3.5.6 4.8 1.7 1.3 1.1 2 .9 2.2 1.1.2.2 0 .9-.4.7-.5-.3-1.4-.7-2.7-1.8-1.3-1-2.6-1-4-1-3.8 0-6 3.2-6.5 3-.4-.2 2.2-3.7 6.6-3.7\"/><use xlink:href=\"#ar_ar-h\" width=\"100%\" height=\"100%\" transform=\"translate(-19.6)\"/><circle id=\"ar_ar-f\" cx=\"246.3\" cy=\"252.1\" r=\"2\" fill=\"#85340a\" stroke-width=\"1\"/><path id=\"ar_ar-g\" fill=\"#85340a\" stroke-width=\"1\" d=\"M241 253.4c3.7 2.8 7.4 2.6 9.6 1.3 2.2-1.3 2.2-1.8 1.7-1.8-.4 0-.9.5-2.6 1.4-1.8.8-4.4.8-8.8-1z\"/></svg>", "CAY": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" id=\"ky_flag-icons-ky\" viewBox=\"0 0 512 512\"><path fill=\"#006\" d=\"M0 0h512v512H0z\"/><path fill=\"#012169\" d=\"M0-.5h256v256H0z\"/><path fill=\"#fff\" d=\"M256-.5v32l-95 96 95 93.5v34.5h-33.5l-95.5-94-93 94H0v-34L93 128 0 36.5v-37h31l96 94 93-94z\"/><path fill=\"#c8102e\" d=\"m92 161.5 5.5 17-76.5 77H0V254zm62-6 27 4 75 73.5v22.5zM256-.5l-96 98-2-22 75-76zM0 0l96.5 94.5-29.5-4L0 24z\"/><path fill=\"#fff\" d=\"M88-.5v256h80V-.5zm-88 88v80h256v-80z\"/><path fill=\"#c8102e\" d=\"M0 103.5v48h256v-48zM104-.5v256h48V-.5z\"/><g stroke=\"#fff\" stroke-linejoin=\"round\" stroke-width=\"9.6\" transform=\"translate(-272 37.8)scale(.72781)\"><use xlink:href=\"#ky_ky-a\" width=\"100%\" height=\"100%\"/><use xlink:href=\"#ky_ky-b\" width=\"100%\" height=\"100%\"/><use xlink:href=\"#ky_ky-c\" width=\"100%\" height=\"100%\"/><use xlink:href=\"#ky_ky-d\" width=\"100%\" height=\"100%\"/><use xlink:href=\"#ky_ky-e\" width=\"100%\" height=\"100%\"/><use xlink:href=\"#ky_ky-f\" width=\"100%\" height=\"100%\"/><use xlink:href=\"#ky_ky-g\" width=\"100%\" height=\"100%\"/></g><g stroke=\"#000\" stroke-width=\"1.4\" transform=\"translate(-272 37.8)scale(.72781)\"><g id=\"ky_ky-b\" fill=\"#fcea83\"><path d=\"M754.4 449.6c2.9 7.6 23.5 17.7 47.5 4.8 16.3-9.2 26.8-22 36.9-45 2.8-5.8 4.3-13-2.4-17.3-5.3-3.9-14-8.2-17.8-12-1.9-2-3.8-3.4-5.2-4.8 1 1 1.9 1.9 2.8 3.3 9.6 11.5-.4 28.3-11 38.4-7.7 7.2-21.5 24.9-41.7 8.1-4.3-3.8-14.4 12-9 24.5zm291.4 0c-3.4 7.6-24 17.7-47.5 4.8-16.2-9.2-26.8-22-37.3-45-2.4-5.8-3.9-13 2.8-17.3 5.3-3.9 14-8.2 17.8-12 1.9-2 3.3-3.4 5.2-4.8-1 1-1.9 1.9-2.8 3.3-9.6 11.5.4 28.3 10.5 38.4 7.7 7.2 22 24.9 42.2 8.1 4.3-3.8 13.9 12 9 24.5z\"/><path d=\"M900.1 490.8c38.3 0 97.3-17.3 129-77.7 5.2-10 0-15.3-6.3-18.6a73 73 0 0 1-19.2-14c7.7 7.7 6.2 13 1 21.6-24.5 40.8-58 61.4-104.5 61.4s-80-20.6-104.5-61.4c-5.2-8.6-6.7-13.9.5-21.5a66 66 0 0 1-19.2 13.9c-6.2 3.3-11.5 8.6-6.2 18.6 31.6 60.4 91 77.7 129.4 77.7z\"/></g><path id=\"ky_ky-c\" fill=\"#c8102e\" d=\"M811.4 409.8c-1-4.8-7.1-2.9-9 2.9a68.4 68.4 0 0 1-6.8-10.6c-5.7-8.6-6.7-14.4 1.5-22.5 3.8-3.8 11.5-8.2 16.7-3.4 11 9.1 5.3 24-2.4 33.6zm176.9 0c1-4.8 7.7-2.9 9.6 2.9 2.4-3.4 4.8-6.7 6.7-10.6 5.7-8.6 6.7-14.4-2-22.5-3.3-3.8-11-8.2-16.7-3.4-10.6 9.1-5.3 24 2.4 33.6zm-233.9 39.8c-4.8-7.2-8.6-26-9.6-30.7-1.4-4.3-1.9-8.2 3.4-10 5.3-2 10 4.7 12.4 10.5 2.4 5.7 6.3 14.3 10.6 24.9-10.6-6.2-19.2-2-16.8 5.3zm291.4 0c4.3-7.2 8.1-26 9.6-30.7 1-4.3 1.9-8.2-3.4-10-5.3-2-10 4.7-12.4 10.5-2.4 5.7-6.3 14.3-10.6 24.9 10.6-6.2 18.7-2 16.8 5.3z\"/><g fill=\"#00493d\" stroke=\"none\"><path d=\"m782.2 406.4-3.8 2c-1 .4-1 1.4-1 1.9h-.5L775 406h.5c0 .4.5 1 1.4.4l8.2-4.3c1-.5 1-1 .5-1.4l.4-.5 2.4 4.8h-.4c-.5-.5-1-1-2-.5l-3.3 2 1.4 2.8 3.9-1.4c1-.5.4-1.5.4-2h.5l2 4.4c-.5-.5-1-1-2-.5l-8.1 4.3c-1 .5-1 1-.5 1.4l-.5.5-2.4-4.3.5-.5c.5.5 1 1 2 .5l3.8-2zm8.2 6.3c1-.5 1-1 .4-2h.5l4.8 7.2-3.3 2.4v-.4c1.9-1.5 1.9-3.4 1.4-3.9s-1-1-1-1.4c-.4 0-.4-.5-1.4.5l-3.4 2.4c.5.4 1 1.9 3.4.4h.5l-5.3 3.9v-.5c2.4-2 1.4-3.4 1-3.8l-3.4 2.4c-1 .4-1 1-1 1.4.5 0 .5.5 1 1 .5 1 2 1.9 4.3 1l.5.4-3.8 1.4-4.8-7.6h.5c.4.4 1 1 1.9.4zm7.6 18.2-3.3 2.8c-.5.5-.5 1.5 0 2h-.5l-3.4-3.4.5-.5c.5.5 1 1 2 0l6.2-6.2c1-.5 1-1 .4-2l3.4 4c-.5-.6-1.4-.6-2 0l-2.8 2.8 2.4 2.4 2.9-2.4c1-1 .5-1.4 0-2l.5-.4 3.3 3.8h-.5c-.4 0-1-.4-1.9.5l-6.2 5.8c-1 1-1 1.4-.5 1.9v.5l-3.3-3.9c.4 0 1.4.5 1.9 0l3.3-3.3zm7.2 10.1 1.5 1.4 1.9-4.3s-1.5.4-3.9 1.9zl-.5.4-1-1c-.4.5-.9.5-1.4 1-1.4 1-1 1.5-.4 2v.4l-2.4-2.4h.4l2-.5 9.5-5.2.5.4s-.5.5-4.8 10.1c0 1-.4 1.4 0 2.4l-3.8-3.3.5-.5c.5 1 1.4 1 1.9 0 0-.5.5-1.5.5-2l-1.5-1.4.5-.5zm3.8 9.5.5-.5c.5.5 1 .5 2 0l6.2-8.1-.5-.5c-1-.5-2.4-.5-3.8 1v-.5l1.9-2.4 7.2 5.3-2.4 2.8h-.5c1.4-1.4 1-3.3 0-3.8v-.5l-6.2 8.2c-1 .5-.5 1.4 0 1.9h-.5z\"/><path d=\"m821.5 452.4-2.4 3.4c-.5 1 0 1.4.5 2l-.5.4-3.8-2.9v-.5c1 .5 1.4.5 1.9-.4l5.3-7.2c.4-1 0-1.5-.5-2l.5-.4 3.8 2.8v.5c-1-.5-1.4-.5-2 .5L822 452l2.9 1.9 2.4-3.4c.4-1 0-1.4-.5-1.9l.5-.5 3.8 2.9v.5c-.5-.5-1.4-.5-2 .5l-4.7 7.6c-1 .5-.5 1 0 1.5v.4l-4.3-2.8h.5c.4 0 1 0 1.4-.5l2.4-3.8zm9.6 13.5.5-.5c.5.5 1.4.5 1.9-.5l3.8-8.1c.5-1 0-1.5-.5-2l8.2 3.9-2 3.8-.4-.5c1.4-1.9 0-3.8-.5-4.3-.5 0-1-.5-1.4-.5-.5 0-.5 0-1 1-.5.5-1.9 3.3-1.9 3.3.5.5 1.4 1.5 3.4-1h.4l-2.8 5.8-.5-.4c1.4-3-.5-3.4-1-3.4l-1.9 3.8c-.5 1 0 1.5.5 1.5v.5zm13.9 6.7c-1.4-1-1.4-3.9 0-6.7 1-3 2.9-5.3 4.8-4.4 1.4.5 1 3.4 0 6.3-1.5 3.3-3.4 5.2-4.8 4.8h-.5c3.4 1.4 5.8-.5 7.2-3.9 1.4-2.8 1-6.2-2-7.6-2.8-1.5-5.7.4-7.1 3.8-1.4 3.4-1 6.7 2 7.7zm14.8.9 2-5.7c.4-1 0-1.5-.5-2l2.4.5v.5c-.5 0-1 0-1.5 1l-1.9 5.7c-1 2.4-2.4 4.3-5.2 3.4-2-.5-3.4-2.9-2.4-5.3l2.4-6.2c.4-1 0-1.5-.5-2v-.4l4.3 1.9v.5c-.5-.5-1.4-.5-1.4.5L855 472c-.5 1.9-.5 3.8 1 4.3 1.4.5 2.8-.5 3.7-2.9zm4.4-6.2c0-.5 0-.5-.5-.5l3.3.5 3 9.1 1.4-5.8c.4-1 0-1.4-.5-1.9l2.8.5-.4.5c-.5 0-1 0-1.5 1l-2.4 10.5h-.4l-3.9-11.5-2.4 7.7c0 1.4.5 1.4 1 1.9v.5l-2.9-1v-.5c.5.5 1.4 0 1.4-1l2.4-8.6zm16.3 9.6c-1 4.3-3 5.3-3.9 5.3h-1s-.4-.5 0-1l1.5-9.6c.5-.5.5-1 1-.5h1c.9 0 1.8 2 1.4 5.8l1.4.5c1-4.8-1-6.8-3.4-7.2-1.9-.5-4.8-1-4.8-1v.5c.5.5 1.5.5 1 2l-1.4 8.5c-.5 1-1 1.5-1.5 1.5h-.4l4.7 1c2.4.4 4.8 0 5.8-5.3zm4.3-3.9c0-1-1-1.4-1.5-1.4v-.5l8.7 1-.5 3.8c0-2.4-1.5-3.3-2.4-3.3-.5-.5-1-.5-1.5-.5-.4 0-.4 0-.4 1.4l-.5 3.9c.5 0 1.9.4 2.9-2.4l-.5 6.2h-.5c0-2.9-1.4-2.9-2-2.9l-.4 4.3c0 1 0 1 .5 1l1 .5c1.4 0 2.8-.5 3.8-3.4h.5l-1 3.8-9.1-1c1 0 1.4-.4 2-1.3zm15.8 5.8c0 4.3-1.5 5.7-2.9 5.7-.5-.4-.5-.4-1-.4l-.4-.5.5-10c0-.6 0-.6.4-.6h1c1 0 2.4 1.5 2.4 5.8h1.9c0-4.8-2.4-6.2-4.8-6.2-2-.5-4.8-.5-4.8-.5v.5c.5 0 1.5.4 1.5 1.4l-.5 9.1c0 1-.5 1.4-1 1.4v.5h4.3c2.4 0 4.8-1 5.3-6.2h-2zm13.9 3.8c0 1 .5 1 1.4 1v.5l-5.3.4c.5-.4 1.5-1 1.5-1.9l-1-9c-.5-1-1-1-1.9-1v-.5l5.3-.5c-.5.5-1.5 1-1 2zm4.8 1v-.5c.5 0 1-.5 1-1.4l-2-10h-.5c-1 .4-1.9 1.3-1.4 3.3h-.5l-.5-3.4 8.7-1.4.4 3.3h-.4c0-1.9-1.5-2.4-3-2.4h-.4l2 10c0 1 .4 1.5 1.4 1.5v.5zm20.6-9.6-2-5.7c0-1-.9-1-1.4-1v-.5l2.4-1v.5c-.5.5-.5.5-.5 1.5l2 6.2c.4 2 .4 4.8-2.4 5.8-2 .4-4.3-.5-4.8-3.4l-2-6.2c-.4-1-.9-1-1.4-1l-.5-.5 4.8-1.4v.5c-.4.5-1 1-.4 1.9l1.4 6.2c.5 2 2 2.9 3.3 2.9 1.5-.5 2-2.4 1.5-4.8m5.3-3.4c2.3-1 1.9-2.3 1.4-3.8-.5-1.4-1.4-2.4-2.4-1.9-.5 0-1 .5-.5 1zl.4.5 1 3.9c.5 1 1.4 1 2 .4v.5l-4.4 2-.5-.5c1-.5 1-1 1-2l-3.4-8.1c-.5-1.4-1-1-1.9-1v-.4l4.8-2c2-.4 3.8 0 4.8 2 .5 2.4-.5 3.8-2.4 4.8-.5 0-1 .4-1 .4z\"/><path d=\"M957.1 472c-1.4.6-3.3-1.4-4.8-4.7-1.4-2.9-1.4-5.8 0-6.2 1.5-.5 3.4 1.4 4.8 4.3 1.5 2.9 1.5 5.7 0 6.7 3-1 3.9-4.3 2.4-7.7-1.4-2.9-4.3-4.8-7.2-3.8a5.6 5.6 0 0 0-2.4 7.7c1.5 3.3 4.4 5.2 7.2 3.8zm.5-13.3h-.9l2.8-2 8.7 4.8-3-5.2c-.4-1-1.4-1-1.8-1v-.5l2.4-1c-.5.6-1 1 0 2l4.8 9.6-.5.5-10.6-5.8 3.9 7.2c.4 1 1.4 1 1.9.5v.5l-2.4 1.4v-.5c.5-.5.5-1 0-1.9l-3.8-7.7zm21.6 1.4v-.5c0-.5.5-1 0-1.9l-5.8-8.1h-.5c-1 .4-1.4 2.4 0 3.8l-.4.5-2-3.4 7.2-4.8 2 3c-1.5-1.5-3-1.5-3.9-1l-.5.4 5.8 8.2c.5 1 1.4 1 2 .5v.4z\"/><path d=\"m984.5 448.6 2.8 3.4c.5.4 1.5.4 2 0v.4l-3.9 3.4v-.5c.5-.5.5-1 0-1.9l-5.7-7.2c-.5-1-1-.5-2-.5l3.9-3.3v.5c0 .4-.5 1 0 1.9l2.4 2.8 2.8-1.9-2.3-3.3c-.5-1-1.5-.5-2-.5l3.9-3.4v.5c-.5.5-.5 1 0 2l5.7 7.1c.5.5 1 .5 1.5 0l.4.5-3.8 3.4-.5-.5c.5-.5 1-1 .5-2l-2.9-3.3zm4.3-10.1c-.5-.4-1.5-.4-2 0v-.4l6.3-5.8 2.9 2.9h-.5c-1.5-2-3.4-1-4.3-.5 0 .5-.5.5-1 1 0 0 0 .4.5 1.4l2.9 2.9c.4-.5 1.9-1.5 0-3.9h.4l3.9 4.4v.4c-2.4-2.4-3.4-1-3.9-.4l3 2.8c.4 1 .9 1 .9 1l1.4-1.4c.5-.5 1-2 0-4.8h.5l1.9 3.3-6.2 6.2-.5-.4c.5-.5 1-1 0-2zm11.5-13.4c-.5.5-.5 1.5.4 2 1 .9 2 .9 3.9 0 1-.5 2.8-1 4.3.4 2.4 2.4 1.4 4.3 1 5.3-.5.5-1.5 1-2 1.4-.5 0-.5 0-.5.5v.5l-3.3-2.9h.5c1.9 1 3.8 1.4 4.8 0 1-1 0-2-.5-2.4-1-1-2-1-3.4 0-1.4.5-3.3.5-4.8-.5-1.9-1.9-1.9-3.3-1-4.8l2-1.4c.5 0 .5 0 0-1l3.4 2.4h-.5c-2.4-1-3.9-.4-4.3.5m4.3-3.8c-1-.5-1.5 0-2 .5h-.4l5.3-7.7 3.3 2.4-.5.5a3.3 3.3 0 0 0-4.3 0c0 .5-.5 1-.5 1.4-.4 0-.4.5.5 1 .5.5 3.4 2.4 3.4 2.4.5-.5 1.4-1.5-.5-3.4v-.5l4.8 3.9c-2.9-1.5-3.4 0-3.8.4l3.3 2.4c1 .5 1.4.5 1.4.5 0-.5.5-1 1-1.4.5-1 1-2.4-1-4.3l.5-.5 2.4 2.9-4.8 7.2h-.5c.5-1 .5-1.5-.4-2.4zm12.9-8.6-1.4 2.4c-2-2-2.9-3.4-2.9-3.4zh1c.5 0 1.4.4 1.9.4 1.4.5 1 1 .5 2h.5l2.4-4.4c-1 1-1.5.5-2.4.5-10.1-1.9-11-2.4-11-2.4v.5l7.6 8.6c.5.5.5 1.5.5 2h.5l1.4-2.4-.5-.5c-.5 1-1 1.4-1.9 0l-1-1 1.5-3.3zm-2.9-10.6c-.4.5-.4 1.5 1 2 1.4.4 2 0 3.4-1s2.8-2 4.7-1c3 1.5 2.4 3.9 2 4.8l-1.5 2v.9l-3.8-2c2.4.5 4.3 0 4.8-1.4.5-1-.5-1.9-1-2.4-1-.4-1.9 0-3.3 1-1.5 1.4-3 2-4.8 1-2-1-2.9-2.4-2-3.9 0-1 1-1.4 1.5-1.9 0-.5 0-.5-.5-1v-.4l3.9 1.9h-.5c-2.4-.5-3.9.5-3.9 1.4\"/></g></g><g stroke=\"#000\" stroke-width=\"1.4\" transform=\"translate(-272 37.8)scale(.72781)\"><g id=\"ky_ky-d\" fill=\"#073163\"><path fill=\"#fff\" d=\"M863.2 232.5c-6.2 1.4-10.5 1.9-16.3-3.4-3.8-3.8-2.9-10.5 1-13 4.3-2.8 8.1-4.7 13.4-3.3 5.3 1.5 19.2 14.4 15.8 14.9-3.4 0-8.6 3.3-13.9 4.8zm14.8-23c2-1.5 4.4-2.4 10.6-3 5.8-.4 10-.4 11.5 4 2 5.2 3.4 11.4 7.2 14.3-2.4 1.4-14.4 2.9-18.7.5-5.7-2.9-7.2-14-10.5-15.8zm41.3.5c1.9-1.5 4.3-1.5 10.5-1s8.6 1 10 5.3c1.5 4.8 0 11 3 15.3-3 1-12.5 1-15.9-2.4-5.2-3.8-4.8-14.9-7.6-17.3z\"/><path d=\"M948 212.8c-4.3-1-7.2-1.4-9 0 2.3 2.9.4 14.4 5.2 18.2 3.3 2.4 12 3 13.9-2.4 2.4-4.8 2.4-12-10-15.8zm-49.3-4.8c1.4-1.4 4.3-1.9 10-1.9 6.3 0 10 1 12 4.8 2 4.8 1.4 11 4.8 14.9-1.4 1.9-14.4 1.9-18.2-1-5.3-3.4-5.8-14.4-8.6-16.8zm-40.7 4.3c0-2.4 3.3-2.8 12-3.3 8.5-1 9-.5 11.9 5.7 1.4 3.4 3.3 9.1 7.2 11-10.6 2.5-14 3.9-19.7.5a29.2 29.2 0 0 1-10-10.5c-.5-1.4-.5-2.9-1.5-3.4z\"/></g><g fill=\"#f9d050\" stroke-width=\".6\"><g id=\"ky_ky-f\"><path d=\"M881 163.5c-10.1-7.7-22.1-14.9-33.1-16.3a280 280 0 0 1 32.6 25.4\"/><path d=\"M886.7 156.3c-12-8.2-25.9-17.3-39.3-18.2a124 124 0 0 1 33 27.8m21.6-23a93 93 0 0 1 23.5-32.2c-4.8 10.1-10 30.7-12.5 38.9\"/><path d=\"M912.6 140.5A48.4 48.4 0 0 1 937 115a101.2 101.2 0 0 0-18.2 35\"/><path d=\"M916.9 150a84.5 84.5 0 0 1 37.8-31.6c-12 12-29.7 34-34 42.7m2.9-.5c8.6-4.8 25.9-12.5 38.3-10-7.6 2.8-30.6 13.3-40.7 23\"/><path d=\"M921.7 157.2c8.1-8.6 23-21.5 38.8-26.8-11.5 11-36 36-39.3 39.8M898.7 152c-5.8-17.8-14.4-34.5-27.3-39.8a130.9 130.9 0 0 1 21 48.9m-4.8-9.6c-9.5-11.5-22.5-23-37.3-25.4a90.1 90.1 0 0 1 33 38.8\"/><path d=\"M893 151c-12-21.6-21.2-25.4-26.4-29.7 4.3 8.1 14.8 29.7 21 38.8\"/><path fill=\"none\" d=\"M869 149.6a57.7 57.7 0 0 1 17.2 16.7\"/><path d=\"M869 159.6c2.8 2.4 8.1 5.3 12.9 9.6m44.1-2.4c4.8-3.8 15.3-10 20.6-12m-24 8.7c4.8-6.3 14.4-14.9 17.8-17.8m-4.4-12a286.9 286.9 0 0 0-18.2 22.6m5.8-26.9a157 157 0 0 0-12 21.1m-25.9-20.1c2.9 7.7 8.2 20.6 10 25.9m-14.3-17.8c2 3 5.8 9.6 7.2 14.4\"/></g><g id=\"ky_ky-g\"><path d=\"M897.7 136.1c0-4.3 2.9-9 5.8-9 3.3 0 5.7 5.7 5.7 9 0 3.9-2.9 7.2-5.7 7.2-3 0-5.8-2.8-5.8-7.2z\"/><path d=\"M891.5 140c.5-4.8 3.8-8.6 6.7-8.2 2.9.5 4.3 6.3 3.8 9.6-.5 3.8-3.8 6.7-6.2 6.2-2.4 0-4.8-3.3-4.3-7.6zm12.9 1.4c-1-4.3 1-9 3.9-9.6 2.8-.4 5.7 4.3 6.2 8.2 1 3.8-1.5 7.6-3.9 7.6-2.3.5-5.7-1.9-6.2-6.2z\"/><path d=\"M897.2 145.2c0-4.7 2.9-9 5.8-9 3.3 0 5.7 5.2 5.7 9 0 3.9-2.8 7.2-5.7 7.2-2.9 0-5.8-2.8-5.8-7.2z\"/><path d=\"M888.6 147.6c0-4.3 3.4-9 6.2-9 3 0 5.8 5.7 5.8 9 0 3.9-3.4 7.2-5.8 7.2-2.8 0-6.2-2.8-6.2-7.2zm17.7-1.9c0-4.3 3-9 5.8-9 3.3 0 5.7 5.7 5.7 9 0 3.9-2.8 7.2-5.7 7.2-2.9 0-5.8-2.9-5.8-7.2z\"/><path d=\"M904.4 149.6c0-4.8 3.4-9.1 6.2-9.1 3 0 5.8 5.2 5.8 9 0 3.9-2.9 7.3-5.8 7.3-2.8 0-6.2-3-6.2-7.2z\"/><path d=\"M896.8 153.9c0-4.8 2.8-9.1 5.7-9.1 3.4 0 5.8 5.7 5.8 9 0 4-3 7.3-5.8 7.3-2.9 0-5.8-3-5.8-7.2zm-12 0c0-4.8 2.4-9.1 4.8-9.1s4.3 5.7 4.3 9c0 4-2.4 7.3-4.3 7.3-2.4 0-4.8-3-4.8-7.2zm26.8-.9c0-4.4 2.4-8.7 4.8-8.7s4.8 5.3 4.8 8.6c0 4.3-2.9 7.2-4.8 7.2-2.4 0-4.8-2.9-4.8-7.2z\"/><path d=\"M914.5 161c1-4.7 3.8-8.6 5.7-8 2 .4 2.4 6.1 1.5 9.5-.5 4.3-3.4 6.7-5.3 6.2-2-.4-2.9-3.8-2-7.6z\"/><path d=\"M905.4 159.6c.5-4.3 3.3-8.6 5.7-8.1 2.9 0 4.3 5.7 3.9 9-.5 4.4-3 7.3-5.3 6.8-2.4 0-4.8-3.4-4.3-7.7zM892 161c-1.5-4.7-4.4-8-6.3-7.6-1.9.5-2.4 6.2-1.4 9.6 1 3.8 3.8 6.2 5.7 5.7 1.5-.4 3-3.8 2-7.6z\"/><path d=\"M888.6 160.1c0-4.3 2.4-8.6 4.8-8.6 2.9 0 4.8 5.3 4.8 8.6 0 4.3-2.4 7.2-4.8 7.2-2 0-4.8-2.9-4.8-7.2z\"/><path d=\"M895.8 162c0-4.8 2.9-9 5.7-9 3.4 0 5.8 5.2 5.8 9 0 3.9-2.9 7.2-5.8 7.2-2.8 0-5.7-2.9-5.7-7.2zm2.4-52.7c-1 3.8-4.3 7.2-2 12.5-4.2-1.5-8-2-11.4 1.9 4.3-.5 8.1 1 10 3.8-3.8-.5-5.7 1.5-6.7 3.9 3.4-1 6.7-2 8.2-1.5-1.5 1.5-3.9 3.8-4.3 5.8 2.8-2.4 6.2-2 8.1-3.4-1.4 3.4 1.4 6.7 3.8 10-.4-4.7 2.4-8 1-10.5 4.3 1 4.8 4.8 11 4.8-2.4-1.4-3.8-6.2-6.7-6.2 1.4-.5 7.2-1 8.2 0-1-2-4.4-3.8-6.3-3.8 2-2 5.3-5.8 7.7-6.8-3.4.5-8.6 1-10.5 3.9 4.7-3.9 3.8-11 9-12-2.8-.5-7.1 1.4-10.5 4.8 1.5-2.9 1.5-6.7 3.4-7.7-3.9 1-8.2 5.8-9.6 8.2a18 18 0 0 0-2.4-7.7z\"/><path d=\"M900.6 117c0 1.4 0 4.3-.5 5.2m6.7-5.7c-1 1-2.9 4.3-2.9 7.2\"/><path fill=\"none\" d=\"M909.7 122.2a7.6 7.6 0 0 0-3.4 4.4\"/></g></g><g id=\"ky_ky-e\" fill=\"#059334\"><path d=\"M858.9 169.7c-3.4 0-6.2-1.4-8.2-3.8-3.3-4.4-12.4-6.3-16.3-2.4-1.4 1-3.3 1-4.7 1.4-2.4 0-5.3 2.4-4.4 7.2 2-1.5 2.4 0 3.9 0 1-.5.5.5.5 1.4 0 2.4 5.2 7.2 10 6.7 5.3 0 7.7 2 8.6 3 1.5 1.3.5.9 1.5 3.3 1.4 1.4 1.9 1.9-.5 3.8a9.7 9.7 0 0 0 0 14.9c6.2 4.7 22 12 39.8-2 17.2-13.4 44-5.7 46-1 2.4 4.9 3.3 7.7 3.8 10.1.5 2 2.9 3.9 6.3 3.4 3.3 0 7.1 1.4 9 2.9 2.5 1.4 5.8 1 4.9-3.4-2-13.4-10.1-15.3-11-21.5 4.7.4 8 .4 10-1.5 1.4-1.9 3.3-5.3 5.3-6.2 1.4-1 1.4-2-.5-1.5-2.4.5-3.8 1.5-8.2 1-22-2.4-83.8-19.2-95.8-15.8z\"/><path fill=\"#000001\" d=\"M956.7 186a34.8 34.8 0 0 0-9.2 9.6c-4.7 6.2-19.1 12.4-36.9 12.4-17.2 0-27.7-2.8-35.4-9a60.6 60.6 0 0 0-10.6-6.8c-5.2-2.4-6.2-7.7-4.8-12-1.4 2.4-2.3 4.8-5.2 4.3-2 0-5.8 0-4.8 2-.5-1-.5-2.4-1-3l-1-.9c1.5 1 4.9-1.9 7.3-1.9 1.9.5 4.3-1.9 3.8-4.8l-1.4-6.2c3.8-2 54.1 7.2 64.2 8.1 10 .5 38.8 4.8 35 8.2z\"/><path d=\"M865.6 167.8c4.8-4.8 10.5-7.2 16.3-5.8h1.4c3-2.4 9.6-2.9 13.5-1h1.9c5.7-1.9 16.7 0 20.6 3.9l1.4 1c13-1 20.6 4.7 29.7 13.9 1 1 2.4 2.8 4.8 3.3 2.9.5 3.4 2 1 3.4a37.8 37.8 0 0 0-10 9c-4.4 5.8-18.3 11.6-35.6 11.6-16.7 0-26.8-3-34.5-8.7-4.3-3.3-7.6-5.2-10-6.7-2.9-1-6.7-4.8-5.3-8.6 1-3.8-1.4-8.6-3.3-13.4 1.4-1 5.2-2.4 7.1-1.4z\"/><g fill=\"#00493d\"><path d=\"M950.4 179.8c-9-9.2-16.7-14.9-29.7-14 0 .5 0 2-.5 3a66.3 66.3 0 0 1 23.5 17.7c2-2 5.3-4.3 6.7-6.7zm-31.1-14.9c-3.9-3.8-14.9-5.8-20.6-3.8 0 1.9 0 4.8-1 6.7 3.4 1.4 6.2 4.8 9.1 8.1 2-.5 6.7-1.9 9.1-2.4a44 44 0 0 0 3.4-8.6zm-22.5-3.9c-3.9-1.9-10.6-1.4-13.5 1-1 2-1.4 5.8-1.4 7.7 2 0 4.8 1.4 5.7 2.4 3-1 6.8-2.9 8.2-4.3.5-2 1.4-4.8 1-6.7zm-31.2 6.8c4.8-4.8 10.5-7.2 16.3-5.8-1 1.5-1.4 4.3-1.4 7.2-5.3-.5-12 1-14.9 2.9z\"/><path d=\"M941.8 187.4a64.2 64.2 0 0 0-22-16.8c0 .5-1 2.4-1.5 3.9 2.9 4.3 8.6 13.9 11 19.2 2.4-1 9.1-3.9 12.5-6.3zM905.4 198a179 179 0 0 0 1.4-19.7c2.4-.5 7.2-1.9 9.1-2.4 2.4 3.9 8.2 14 10.6 18.7-5.8 1.4-15.4 3.8-21.1 3.4zm-16.8-23c2.4-1 5.8-3 8.1-4.8 2 1.4 5.8 4.8 7.2 6.7 0 4.3-1.4 16.8-1.9 21-3.8 0-10-.9-13.4-2.8.5-7.2 1-15.3 0-20.1zm-24 5.7c.5-1 1-4.3 1-5.7 3.8-2.4 13.4-4.8 20.6-1 .5 4.8 0 16.8-.5 19.7a96.4 96.4 0 0 0-21-13z\"/></g><g fill=\"none\"><path fill=\"#000001\" stroke=\"none\" d=\"M840.7 172c-1 0-1.5-2.8-3.4-2.8-.5 0-1.9.5-2.4 0 0 1 .5 2 1 2.4.5 1.4 2.9.5 4.8.5z\"/><path d=\"M840.7 180.2c5.7 0 6.7-7.2 9.6-7.6m-6.3 8.1c4.3 2 7.7-8.1 11-7.7m-19.6-4.7c1.4 0 2.4-2 4.8.4 1 1 2.4 1.5 3.4 1.5m-1 5.2c-2 3-5.3 4.8-7.2 3.9m-1-15.8c-1.4 1-2.3 2.8-3.3 4.3m-1.4 2.8v2.4\"/></g></g></g><g stroke-width=\"1.4\" transform=\"translate(-272 37.8)scale(.72781)\"><path id=\"ky_ky-a\" fill=\"#fff\" d=\"M989.7 233v93.4c0 81-38.3 108.8-89.6 130.8-51.3-22-90-49.8-90-130.8v-93.5h179.6z\"/><path fill=\"#c8102e\" d=\"M900.1 312c4.3 0 11-3.8 16.8-9.6 6.2-6.7 16.8-9 27.8 0 11 9.1 17.7 5.3 23.5 0 5.7-5.2 10.5-7.2 21.5-7.2V233H810v62.3c11 0 15.8 2 21.6 7.2 5.7 5.3 12.4 9.1 23.5 0 11.5-9 21.5-6.7 28.2 0 5.3 5.8 12 9.6 16.8 9.6z\"/><path fill=\"#0b50a0\" d=\"M900.1 360c5.8 0 17.3-6.3 20.1-7.7 10.6-6.3 18.2-.5 24.5 2.4 6.7 2.8 19.1 6.2 26.8 0 7.7-6.3 12-5.8 17.3-5.8 1-7.2 1-14.4 1-22.5v-5.8c-6.8-1.4-10.1.5-17.3 6.8-7.2 6.2-15.4 4.8-26 1-10-4.4-20-12-30.1 0a24.2 24.2 0 0 1-16.3 8c-7.2 0-13.4-4.7-16.3-8-10.5-12-20.1-4.4-30.2 0-10.5 3.8-19.2 5.2-26.3-1-6.7-6.3-10.1-8.2-17.3-6.8v5.8c0 8.1.5 15.3 1.4 22.5 5.3 0 9.2-.5 16.8 5.8 7.7 6.2 20.6 2.8 26.9 0 6.7-2.9 14.3-8.7 24.9-2.4 2.9 1.4 13.9 7.6 20.1 7.6zm0 20.6a51 51 0 0 0 23.5-7.2c9.6-5.3 16.3-3 25.9 1.9 10 4.8 18.2 3.3 24 0 2.8-2 5.2-5.8 11.4-4.3-2.8 12-7.2 22.5-12.4 31.1a32.5 32.5 0 0 1-25-1.9c-10-4.8-22.5-7.7-29.2-3.4a36 36 0 0 1-18.2 5.8c-5.3 0-12-2-18.2-5.8-6.7-4.3-19.2-1.4-29.2 3.4a32.5 32.5 0 0 1-25 2c-5.2-8.7-9.5-19.3-12.4-31.2 6.2-1.5 8.6 2.4 11.5 4.3a23.9 23.9 0 0 0 23.5 0c10-4.8 16.7-7.2 26.3-2a51 51 0 0 0 23.5 7.3m0 76.6a191.9 191.9 0 0 0 51.3-29.7c-3.9-1.4-6.2-.5-9.6-2.9-3.4-2.4-13.4-3.3-22 1.5a39 39 0 0 1-39.3 0c-8.7-4.8-18.7-3.9-22-1.5-3.4 2.4-5.8 1.5-9.7 3a184.7 184.7 0 0 0 51.3 29.6\"/><g stroke=\"#000\"><path fill=\"#f9d050\" d=\"M887.6 256.4c.5 1-.4 3.4 0 4.3 1 2 1 3 2.4 3.9h3.4c10.5 0 23-4.3 33.5-4.3 10.1 0 16.3 3.3 22 3.3 3.4 0 6.3-2.4 6.3-4.8s-3.8-3.8-12-3.8c-11.5 0-17.7 2.9-27.3 2.9-14.4 0-16.8-5.3-16.8-7.7 0-2.4 2.4-5.7 10.1-5.7 2.4 0 4.3-.5 5.3-1.5.5-1 1.9-2.9 4.8-4.3 3.3-2 10 0 13.4-2.4 0 2-2.9 4.8-5.3 5.8 4.8-1.5 10-1.5 11 2.4-2.4-1.5-6.2-.5-7.6 0-2 .4-2.9 1-4.8 1.4 1.9-.5 2.9 3.3 5.7 3.3-2.8 2.4-7.6 2.4-12.4.5-1.5-.5-5.3-1.9-7.7-1.9-4.8 0-7.7 1-7.7 2.9 0 2.4 3 3.8 11.5 3.8 8.7 0 13.5-2.4 26.4-2.4-1-1.4.5-2.9-1.4-4.3 4.8 0 10 1.4 12 4.8-.5-3.4 2.3-6.2 1.4-9.1 2.9.5 5.3 3.3 5.7 5.7 0-1.4 2-1.4 2-2.8a7.4 7.4 0 0 1 3.8 7.6c1.4-2.4 2.9-1.4 3.8-4.3 1 2 .5 7.7-2.9 9.6 3-2 7.2-2 10.1 1.4-2.9-.4-4.3 1-5.7 1.5A44.4 44.4 0 0 1 948 267c-7.6-.5-8.6-2-13.4-2 2.9.5 8.6 6.3 14 6.3 3.3 0 5.7 0 7.1-.5 1.4-.5 3.8 0 5.7 1 1.5 1.4 4.4 2.8 6.3 2.4-.5 1.9-1.5 2.8-2.9 3.3 2.4 1.5 1 2.4 3.4 4.3-1 0-2 1-3.4.5 1.4 1.4 1.4 3.4 2.9 4.3-.5 0-2 .5-2.9 0 1.4 2 0 4.3 1.4 5.3 1.5 2-1.4 4.3-3.8 2.4.5 1.4-1 2.9-2.4 2.4s-2.4-2-2-2.4c0-.5 0-.5.6-1-1 1.5-2.9 1.5-3.9 1-.4-.5-1-1-1-1.4-3.3 1-4.7-2-4.2-3.4.4-1.4 3.3-2 4.3-1.4 1 .4 1.9 1 2.9 0 1-.5 1.4-1.5 1.4-2.4 0-1.5-1.4-5.8-7.7-5.3-7.2.5-18.7-1.4-24.4-3.4-.5-.4-1-.4-1.5-1 0 2-1.9 3-1.9 4.9 0 2.4 1 4.3 3.9 5.2-1.5 2.4-3.9 2-4.8.5 0 1.5-2 2.4-2 4.3-.4-1-1-1.4-1.4-2.4-1.4 3.4-5.3 5.3-7.2 4.4-2.4 1.9-5.2 1.4-6.2-.5-1.4 1-3.4 1-4.3 0 0 1.4-1 1-1.5 2.9 0 1-1.9 1.4-2.8 1-1-.6-1.5-2.5-.5-3.4-1.4 1-2.9 1-3.8 0 0-1 0-2.4 1-3h.9c-1-.4-2.4 0-3.4-.4-1-1-1-2-.5-2.9.5-.5 2-1.4 3-.5l.4.5c0-1 .5-1.9 1-1.9 1-.5 2.3-.5 3.8 1 1 1.4 1.9 1.4 4.8 1 2.4 0 6.2-2.5 9-4.9-8-1.4-3.3-6.7-.9-8.6-1.9-.5-4.8-.5-6.7.5-10 5.3-20.6 11.5-27.3 9.6a6 6 0 0 0 1 2.8c-1.5 0-4.4 0-5.3-1.4-.5 1-1.4 3.4-.5 5.3-1-1-3.8-2-5.3-2.4 1 1 0 2.9.5 4.3-1.4-1.4-3.8-2.4-4.8-1.4s-2.9 1.4-4.3 1a7.5 7.5 0 0 1-3.8 2.8c0-1 0-2.4-.5-2.9-.5 1.5-2 3.4-3.8 4.3 0-1 0-2.4-.5-3.3 0 1.9-3.8 2.9-4.3 4.3.5-1.4.5-2.9.5-3.8a7.3 7.3 0 0 1-4.8 3.3c.4-1 1-2 .4-2.9-.4 2-3.3 3-5.7 2.4 0 1-2 2.4-4.3 1-1.5-.5-2.4-2-1.5-2.9-1.9 0-3.8-1.9-2.8-3.3 0-.5.4-1 .4-1.5-1.4-1-1.9-2.9-.4-4.3.4-.5 1.9-.5 2.8-.5 0-3.8 3.4-3.8 4.8-1 1 1.5 3.9 3.9 6.3 3.4 1 0 1.4-.5 2.4-.5a43 43 0 0 0 12-6.2c.4-1.4.4-2.4.4-3.3-1.9 1-3.8 1.9-4.8 3.3v-1.4c-1.4 0-3.8-.5-4.8-.5.5-.5 1-2.9 2-3.4-2.4.5-4.8 0-6.8-.4 1-1 1-2.4 1.5-3.9-1 .5-3.4-.4-5.3 0 .5-1.4 1-3.3 2.4-3.8-2 .5-4.3 0-6.7-1 2 0 2.9-2.4 4.3-2.4-3.8 0-4.8-1.9-6.7-2.8 1.4.4 2.4-1 3.8-1-1.4-.5-3.8-2.9-2.8-4.3-.5.5-1 1.4-2 2-1 .4-2.8 0-4.3-1.5-1-2-.5-4.3 1.5-4.8a2.3 2.3 0 0 1-1.5-3.9c.5-1 2.4-2.3 3.4-1l1.4 2c-.5-1-.5-2.9-.5-4.3.5-1.4 1.5-1.4 3-2 1.3 0 2.3 1.5 2.3 3 0 1.4.5 2.3 1 4.3l.4-2c0-1.9 2.4-1.4 3.9-1 1.4.6 1.9 3.4 0 4.9-1 1-.5 2.4.5 3.3 3.3 5.3 9 9.6 13.9 10.1 0-2 1-3.8 2.4-5.3 0-1 .4-2.4 1-3.3.4-2.9 1.8-4.3 3.7-3.4-.4-.5-1-1-1-1.4-1.4-1.5-2.8-3.9-1.8-5.8 1-1.9 3.8-1.4 4.8-.4-.5-3 2.8-5.3 2.8-6.8.5 1.5 1.5 3.4 1 4.8.5-1.9 3.8-4.3 6.2-5.2-1 1.4 2 3.8 1.5 5.2 1-2.4 4.8-3.8 7.6-3.8-1 1-1 2.9-1 3.8 1.5 0 4-.4 4.9-1.9 0 2-1 3.9-2 4.8.5-.5 2.4-.5 3.9-.5-1.5 1.5-1 3-2.4 3.9 1.9-1 4.3-1 4.8 1 1 1.4-.5 3.8-1.5 5.2-1 .5-1.9 1.4-2.4 1.4z\"/><g fill=\"none\"><path d=\"M858 262.2c-3.4 1.4-4.4 4.8-4.9 6.7\"/><path d=\"M857.5 265.5c-4.8 3-6.8 5.3-5.8 10.6m8.1 3.9c3-1 4.8-2 7.2-6.3\"/><path d=\"M865.6 275.6c-1 2 0 5.3-1.4 6.7a8.8 8.8 0 0 0 4.8-6.7\"/><path d=\"M866.6 280.9c1.9-1 4.8-3.9 6.2-7.2-.5 1.4 0 3.8-1 5.3 2.4-2.4 3.4-3.9 3.9-6.3l.4 2c1-1 2-2 2-3.9m-.1 1.4v2.4c2-1.4 2.5-3.3 2.5-5.7\"/><path d=\"M880 271.8c2.9-2 3.3-4.8 3.3-9.1m0 4.8c2-1.5 2.4-2.4 2.4-6.8m-6.2-12.9c-1 0-2 .5-2 2 0 .9-1.4 2.3-1.4 3.8-.4 1.9-1.4 2.4-2.8 1.9-1.5-1-1.5-1-1.5-2.4 0-2 2.4-2.4 2.4-4.3.5-1 1-2.4 1.5-2.4-2.4 1.4-5.8.4-6.3-2.4\"/><path d=\"M883.8 249.2c-1 .5-2-1-3.3-.4-.5 0-2 .4-2.4 0\"/><path d=\"M877.1 251.6c.5.5 2.9 1.5 5.3.5-2 .5-3.4-1.9-1.5-3.3m-8.1-2c-2 0-3.4 1.5-2.9 3 .5 1.4 2.4 1.4 3.8.4m-4.3 20.6c.5-.5 1-1.4 1-2 1 0 2-.4 2.4-.9 1.9 0 3.3-1.4 3.8-2.8 1 0 1.5-2.4 2-3.4.4.5 1.4 0 1.9-2 1 .6 2.4 0 2.8-1.4m-19.6-3.3c0 .5-1 1.4-2 2 .5.9 0 3.3-.9 3.7.5 1 0 2.4-.5 3.4 0 .5.5 2 .5 2.4m4.8-21.1c-1 2.4-.5 5.3 1.4 5.8\"/><path d=\"M866.6 253c-.5 2.5-.5 5.8-1 7.3-.5 1-1.4 4.3 2.4 5.2 4.3 1 6.7.5 9.1-6.7m7.2 18.7c0 .5-.5 1.5-1.4 1.5m4.7-2.4c0 1-1 2.4-1.4 2.8m4.8-3.8c0 1 0 2.4-1 2.9m-28.2-32.6c.4 0 1 1 1.4 1.9-1.4-1-2.9 1.4-2 2.9m-.9 3.3-1.9 1.5m.5 2.8c-.5 0-1 .5-1.4.5m-21.6-9.1c0-.5 0-.5.5-1m-4.8-.4c-.5 0-.5 0-1-.5m1.4 7.2h1m-2.9-2.9a5 5 0 0 0-2.8-1.4m29.2 19.2c-3.4 2.8-4.8 5.2-5.3 8.6m8.6-6.3a11 11 0 0 1-3.8 4.4m-14.8 10a11 11 0 0 1-9.6-1.4c-.5-.5-1-.5-1.5-1m25.4-4.2c-.4 1.8-1 4.2-1.9 4.7 3.9-2 7.2-4.8 7.7-9.1M827.7 289c1.5-.5 3 .5 3.9-.5m79.5-15.3c1 .5 2.4 1 2.9 1.4.5-1 2.4-2.4 3.8-2.8m-40.7 11.5c-.5-2 .5-4.3 3.4-5.3m-22.1 13.4c.5-1 .5-2.4 1-3.3m-22.1 4.8c-.5 1-1.4 1.9-1.4 2.8m-5.8-1.9s0-.5.5-.5c1-.4 2.4-1.4 2.9-2.4m61.8-3.8c-1 .5-1.4 0-1.9-.5m1.4 2.9s-.4.5-1 .5m3.4 1.9c-.5.5-1 1-1.4 1m15.3 0c1-.5 1.5-1.5 2-3.4m-8.2 2.9c1.4-.5 2.4-1.5 3.8-2.9m9.6-1c0-1 0-1.9.5-2.8m35 7.2c-1-1-1-2.4.5-3.4 1-.5 1.4-1 2.4-1.4\"/><path d=\"M924.5 276c-7.6-3.3-7.1-7.6-13.4-7.1m47.5 22.1c.5.4 0 1.9 0 2.3m4.3-2.3c-.5 1.4-.5 1.9-.5 3.3M926 245.9h-4m-36.3 16.3c0 1 1.5 2.9 5.3 2.9-.5 0-1-.5-1-.5m-2.4-8.2c-.4.5-1 0-1 0-.9-1 .6-2.8 2-3.8-1.4.5-2.4.5-3.4.5-1 2.9-3.8 4.3-5.7 2.4-.5 1.9-2.9 4.3-4.8 3.8-2-1-2.4-2.4-2-3.8-2.3 2.8-5.2 1-6.1 0-.5-1 0-3.4 1-6.3\"/></g><path stroke=\"none\" d=\"M918.3 274.6c-1.4 1-2.9 0-4.3 1.5-1 1 .5 1.4 1.4 1.4-.4 1.5-.4 2 2 2-1 1.4 1.9 1.9 1.4 3.8a4.6 4.6 0 0 0 1-4.8c-.5-1.5-3-2.4-1.5-3.9\"/><path fill=\"#073163\" stroke=\"none\" d=\"M874.7 259.3c-2-1-2.4-2.4-2-3.8-.4 1-1.3 1.4-2.3 1.4-2 4.3-4.3 8.2-7.2 8.2-3.4.4-2.9 3.8-.5 3.8 5.3 1 7.7-1 12-9.6m-47.4-11.5c1.4-1.4.4-2.9-.5-3.3-1.5-.5-4.3 0-5.8 2.3 1.5-.4 3-.4 3.4.5.5 1 1.4 2 2.9.5m2.4-8.6c3.3 0 4.3.5 4.7 1.9.5 1-.4 2.4-1.4 2.4-1.4 0-2.9-1-2.4-1.4.5-1 .5-2.4-1-3zm9.5 7.6c2.4.5 3.4-1 2-2.8-.5-1.5-2-2.4-4.4-2 2.4 1.5 0 3.9 2.4 4.8m-17.7 8.2a4 4 0 0 0 4.8 2c1.4-.6 2-2 1.4-3-1-1.4-2.4-1.9-2.8 0-1 2-2.4 1.5-3.4 1m7.2 29.2c-1-1.9-3.8-1.9-6.2 0 1-.5 2.8 0 3.3 1s1.5 1 2 1c.4-.5 1.4-1 .9-2m3.8-2.8c0-2.4-3.3-3-5.2-2 1 0 2.4 1 2.4 2 .4 1 1.4 1.4 1.9 1.4 1-.5 1.4-1 1-1.4zm-4.8 8.6c-2.8-.5-4.3 2.9-4.3 5.2.5-1.4 2-2.3 3.4-1.9 1.4 0 1.9-.4 1.9-1.4.5-1 0-1.4-1-2zm.5 8.1c1 .5 2-.5 2.4-1.9 0-1 2-1 2.4-.5 1 .5 1 2.4-.5 3.4-1 .5-3.3 1-4.3-1m66.6-14.4c-1-.4-3.3-1.4-5.2 0 1.4-.4 2.4.5 2.8 1.5 0 1 1.5 1.4 2 .5.4-.5 1-1.5.4-2m-4.3 3.4c-1.9-1-4.3 1.4-4.8 3.4a7 7 0 0 1 3.4-1.5c1 .5 1.9 0 1.9-1 .5-.4.5-.9-.5-.9m2.5 3.9c-1.5 0-3.4 1.9-3.4 3.8.4-1 1.4-1.5 2.4-1 1 0 2.4-.5 2.4-1.4 0-1-.5-1.5-1.5-1.5zm4.2 3.8c-1-.5-2.4 0-2.4 1.4s0 2.9-.4 3.4c1-1 1.9-1.5 2.8-2 .5-.4 1-1.9 0-2.8m54.2-4.3c-1-1-2.4-.5-2.9.4-.5 1-1 3.4 0 5.3 0-1 1-2.4 2-2.4 1.4-.5 1.8-2.4.9-3.3m2.9 1.9c-2 1-2 4.3-.5 6.2 0-1 .5-2.4 1.4-2.9 1.5 0 2-1.9 1.5-2.8-1-1-2-.5-2.4-.5m5.7 1.9c-1-.5-2 .5-2 1.4-.4 1.5.6 3.4 2 4.3 0-1 .5-1.9 1-2.4 1.4-1 1-2.8-1-3.3m4.3-.5c-1 0-1.9 1.4-1 2.9.5 1 1.5 1.4 3.4 1-.5 0-1.4-1.5-1-2 .5-1 0-1.9-1.4-1.9\"/></g><g id=\"ky_ky-h\"><path fill=\"#f9d050\" d=\"m831.1 383.4 24-73.8 24 73.8-62.9-45.5H894Z\"/><path fill=\"#024919\" d=\"m835.9 376.7 49.8-36.4h-61.3l49.3 36.4-18.6-58.4z\"/></g><use xlink:href=\"#ky_ky-h\" width=\"100%\" height=\"100%\" x=\"90.1\"/><use xlink:href=\"#ky_ky-h\" width=\"100%\" height=\"100%\" x=\"45\" y=\"52.2\"/><path fill=\"none\" stroke=\"#000\" d=\"M989.7 233v93.4c0 81-38.3 108.8-89.6 130.8-51.3-22-90-49.8-90-130.8v-93.5h179.6z\"/></g></svg>", "ATG": "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"ag_flag-icons-ag\" viewBox=\"0 0 512 512\"><defs><clipPath id=\"ag_ag-a\"><path fill=\"#25ff01\" d=\"M109 47.6h464.8v464.9H109z\"/></clipPath></defs><g fill-rule=\"evenodd\" clip-path=\"url(#ag_ag-a)\" transform=\"translate(-120 -52.4)scale(1.1014)\"><path fill=\"#fff\" d=\"M0 47.6h693V512H0z\"/><path fill=\"#000001\" d=\"M109 47.6h464.8v186.1H109z\"/><path fill=\"#0072c6\" d=\"M128.3 232.1h435.8v103.5H128.3z\"/><path fill=\"#ce1126\" d=\"M692.5 49.2v463.3H347zm-691.3 0v463.3h345.7z\"/><path fill=\"#fcd116\" d=\"m508.8 232.2-69.3-17.6 59-44.4-72.5 10.3 37.3-63-64.1 37.2 11.3-73.5-43.4 58-17.6-67.3-19.6 69.3-43.4-59 12.4 75.6-64.1-39.3 37.2 63-70.3-11.3 57.9 43.4-72.4 18.6z\"/></g></svg>", "LCA": "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"lc_flag-icons-lc\" viewBox=\"0 0 512 512\"><g fill-rule=\"evenodd\"><path fill=\"#65cfff\" d=\"M0 0h512v512H0z\"/><path fill=\"#fff\" d=\"m254.8 44.8 173.5 421.6-344 1L254.7 44.8z\"/><path fill=\"#000001\" d=\"m255 103 150 362.6-297.5.8z\"/><path fill=\"#ffce00\" d=\"m254.8 256.1 173.5 210.8-344 .5z\"/></g></svg>", "VCT": "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"vc_flag-icons-vc\" viewBox=\"0 0 512 512\"><g fill-rule=\"evenodd\" stroke-width=\"1pt\"><path fill=\"#f4f100\" d=\"M0 0h510.4v512H0z\"/><path fill=\"#199a00\" d=\"M385.6 0H512v512H385.6z\"/><path fill=\"#0058aa\" d=\"M0 0h126.4v512H0z\"/></g><path fill=\"#199a00\" fill-rule=\"evenodd\" d=\"m191.2 138.6-49.5 76.2 47.8 79.3 46.7-78.6zm129.4 0L271 214.8l47.7 79.3 46.8-78.6-45-76.9zm-65.4 103.9-49.4 76.1 47.7 79.4 46.7-78.7z\"/></svg>", "GRN": "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" id=\"gd_flag-icons-gd\" viewBox=\"0 0 512 512\"><defs><g id=\"gd_gd-c\"><g id=\"gd_gd-b\"><path id=\"gd_gd-a\" fill=\"#fcd116\" d=\"M0-1v1h.5\" transform=\"rotate(18 0 -1)\"/><use xlink:href=\"#gd_gd-a\" width=\"100%\" height=\"100%\" transform=\"scale(-1 1)\"/></g><use xlink:href=\"#gd_gd-b\" width=\"100%\" height=\"100%\" transform=\"rotate(72)\"/><use xlink:href=\"#gd_gd-b\" width=\"100%\" height=\"100%\" transform=\"rotate(144)\"/><use xlink:href=\"#gd_gd-b\" width=\"100%\" height=\"100%\" transform=\"rotate(-144)\"/><use xlink:href=\"#gd_gd-b\" width=\"100%\" height=\"100%\" transform=\"rotate(-72)\"/></g></defs><path fill=\"#ce1126\" d=\"M0 0h512v512H0z\"/><path fill=\"#007a5e\" d=\"M71.7 71.7h368.6v368.6H71.7z\"/><path fill=\"#fcd116\" d=\"M71.7 71.7h368.6L71.7 440.4h368.6z\"/><circle cx=\"255.9\" cy=\"256.1\" r=\"61.4\" fill=\"#ce1126\"/><use xlink:href=\"#gd_gd-c\" width=\"100%\" height=\"100%\" transform=\"translate(256 256)scale(56.32)\"/><use xlink:href=\"#gd_gd-d\" width=\"100%\" height=\"100%\" x=\"-100\" transform=\"translate(-16.4 -.1)\"/><use xlink:href=\"#gd_gd-c\" id=\"gd_gd-d\" width=\"100%\" height=\"100%\" transform=\"translate(256 35.9)scale(33.28)\"/><use xlink:href=\"#gd_gd-d\" width=\"100%\" height=\"100%\" x=\"100\" transform=\"translate(16.4)\"/><path fill=\"#ce1126\" d=\"M99.8 256.8c7.7 14.3 22.6 29.8 35.7 35.3.2-14.5-5-33.2-12-48z\"/><path fill=\"#fcd116\" d=\"M86.8 207.6c11.1 23.3-29 78.7 37.8 91.7a67.5 67.5 0 0 1-11.5-44.7 75.5 75.5 0 0 1 34.6 32.8c17.5-63.4-44.8-59.5-61-79.8z\"/><use xlink:href=\"#gd_gd-d\" width=\"100%\" height=\"100%\" x=\"-100\" transform=\"translate(-16.4 442)\"/><use xlink:href=\"#gd_gd-c\" width=\"100%\" height=\"100%\" transform=\"translate(256 478)scale(33.28)\"/><use xlink:href=\"#gd_gd-d\" width=\"100%\" height=\"100%\" x=\"100\" transform=\"translate(16.4 442.2)\"/></svg>", "BER": "<svg xmlns=\"http://www.w3.org/2000/svg\" id=\"bm_flag-icons-bm\" viewBox=\"0 0 512 512\"><path fill=\"#cf142b\" d=\"M0 0h512v512H0z\"/><path fill=\"#006\" d=\"M0 0h256v256H0z\"/><path fill=\"#fff\" d=\"M256 0v32l-95 96 95 93.5V256h-33.5L127 162l-93 94H0v-34l93-93.5L0 37V0h31l96 94 93-94z\"/><path fill=\"#c8102e\" d=\"m92 162 5.5 17L21 256H0v-1.5zm62-6 27 4 75 73.5V256zM256 0l-96 98-2-22 75-76zM0 .5 96.5 95 67 91 0 24.5z\"/><path fill=\"#fff\" d=\"M88 0v256h80V0zM0 88v80h256V88z\"/><path fill=\"#c8102e\" d=\"M0 104v48h256v-48zM104 0v256h48V0z\"/><path fill=\"#fff\" d=\"M467 146.6v161.6c0 43.1-86.1 57.2-86.1 57.2s-86.5-14-86.5-57.4V146.6z\"/><path fill=\"#2f8f22\" d=\"M467 308.2c0 43.1-86.1 57.2-86.1 57.2s-86.5-14-86.5-57.4c0 0 0-3.5 1.8-5.4 0 0-1 7.1 4.5 12.6 0 0-4.3-7.8 0-15.3 0 0-1.6 9.8 4.4 15.3 0 0-3.3-7.9.4-16.7 0 0-1.8 14.3 4.8 17.3 0 0 1.8-8.4-.9-13.6 0 0 4.6 1.8 4.3 13.8 0 0 1.5-1.8 1.8-10.5 0 0 .3 10 3.6 12.3 0 0 1.2-1-.4-5.5-1.5-4.4.6-6 1-6 0 0-.7 5 3.4 8.8 0 0-1.7-7.9.8-9 0 0-.6 6.7 4.7 8.1 0 0 .4-1.9-.8-4 0 0-1-2.5-.2-4.5 0 0 1.6 6 3.9 7 0 0-1.3-3.6 0-7 0 0 .2 5 4.8 7.1 0 0-3-4-2-8.2l28.8 1.4 14.9.7 44.7-3 7.6-6.7s3.1 4.1-1.7 10.8c0 0 4.7-.8 6.3-8.3 0 0 1.9 4.1-.7 8.8 0 0 5.2-5.4 6-11.3 0 0 2 5.8-3 12 0 0 4.5-1.6 6.4-8.1 0 0 1.5 4-2.8 9.5 0 0 8.1-4.1 8-13 0 0 3.2 4.8-.6 11.6 0 0 4-3.7 4.6-9.3 0 0 2.2 2.5-.3 9.4 0 0 5-4.8 5.9-9.9 0 0 1 4.8-3.3 10.8 0 0 3-.8 5.8-6.6 0 0 .7 2.4-1.8 6.6 0 0 2.7-.5 4.5-5.9 0 0 .4 3.2-.5 6 0 0 2.2-1.3 2.7-7.3 0 0 1.1 1.9 1.1 4.4v.8z\"/><path fill=\"#d40000\" stroke=\"#000\" stroke-linejoin=\"round\" stroke-width=\"1.2\" d=\"M422.7 214.7s-3 .6-6.9-.6c-3.8-1.2-5.4-.7-6.6 0 0 0 1.6-3.1-2.2-5.6 0 0 1.2 3.2-.5 4.6 0 0-.7.7-1.7-.3 0 0-1.3-1.5-2.7-2.4 0 0 3.2-1.2 2.6-4.5-.6-3.3-2.4-3.6-3.2-4.1a6 6 0 0 0 0 2.4s-3.6-2 1.2-4.7 4-4.4 3-5.8a13.1 13.1 0 0 0-3.5-3.6s1 1.6.7 2.9c-.1 1.2-2.4 2-1.9-.1.5-2.4 0-2 0-4.3 0 0 4.2 1.4 6-2.8 0 0 1.5-4.3-3.8-6.4 0 0 1.3 1.8.7 3 0 0-1.2 2.2-2.5.6-1.3-1.7-2.3-2.2-2.2-4.2 0 0 5 .7 3.6-4.7 0 0-.8 3.6-7.2-1.2 0 0 4.2-4.2 2.5-7.6 0 0-.4-1.5-4.8-.7 0 0 3.8-2.4 2.2-4.5 0 0-.8-1.3-4.5.4 0 0 1.4-2.3-2.2-5 0 0-2.3 1.2-3.5 2.4 0 0-2.4-3-4-4.3 0 0-2.8 1.1-3.5 4.3 0 0-1.4-1.5-4.3-2.4 0 0-1.5 2.8.4 5 0 0-1.4 0-3.9-1.1 0 0-2.9-1.2-2.4 1.1.4 2.4.6 3 1.2 4.2 0 0-6.4-1.5-6.2 2a8.8 8.8 0 0 0 3.1 6.2s-3.6 4.8-6.7 1.2c0 0-1.2 1.2 1.2 4.2 0 0 2.4 2.5.4 4.2 0 0-2.5 2-3.7-2 0 0-4.2 4.1.7 7.2 0 0 3.1 1.8 6.3-1 0 0-1 8-4 6.4 0 0-1.8-1.2 1.4-2.9 0 0-4.8-.6-5.5 4 0 0-.6 3.5 3.6 5 0 0 3.1 1.2-.1 3.6 0 0-2.4 1.7-.9 4.4 0 0 1.8 2.8-2.8 3.2 0 0-2.4 0-3.4-.4 0 0-1 2-.3 4 0 0-2.4-1.7-7.5.2-5.3 2-5 .6-5.3 1.2l-1.5 2.4s2.7 3.6 2.8 3.3l-.6 4 1.5.6 10.7-4.8 11-5.7 9 .4 5.5 1.3 7.3.6 5.4-2.8h7.6l8.3 4.2 9.6 5.7 5 1 3.8-.3v-7.8z\"/><path fill=\"#d40000\" stroke=\"#000\" stroke-linejoin=\"round\" stroke-width=\"1.2\" d=\"M335.6 223.7s4.1 2.2 6-.3c0 0 2.2-4.4-2.8-6 0 0 2.7-3.2-.3-6.2 0 0-1.5-1.6-4.1-.5 0 0-1.2-2.3-3.7-2.2 0 0-2.4 0-3.1 2.5 0 0-3.1-1.2-4.8.6 0 0-3 3.2 1 5.8l3 .3 2.8-1.4 3.2.9s-.8 3.2 2.8 6.5z\"/><path fill=\"#64b4d1\" stroke=\"#000\" stroke-width=\"1.2\" d=\"M429 216.1a6.7 6.7 0 0 1 6.8 3.8c2.7 6.2-3 9.6-3 9.6.4 1.3.5 3.2.5 3.2 7.9 1 6.5 9.8 6.5 9.8l-2.7-2.2c-4.5-1.8-9.3 2.2-12.6 8.6-3.3 6.6-1.8 9.5-1.2 17.3.6 7.7 13.1 12.4 13.1 12.4l-9.8 25c-3.8 10-11.9 5.9-14.3 3.7-2.2-2-2.8-.8-3.9 0-1.2 1 5.3 6-6.6 10.8-11.6 4.7-13.7 8.3-15.7 9.5-1.9 1.2-10 .5-10.7-.6-1-1-.5-1-3.6-2.9-3-1.7-8.1-3.5-13.7-6.2s-5.5-6.2-5.4-6.9c0-.7 2-6.5-4.6-1.9-6.6 4.7-12.2-2.2-12.2-2.2-1.2-1.7-6.8-16.4-6.8-16.4a92.4 92.4 0 0 0-4.3-12s-.3.8 4.6-2c4.7-2.7 7-7.3 8.7-11.9 1.6-4.6 0-12.5-.6-14-.6-1.6-4.2-8.9-8.7-10.4-4.5-1.6-7.6 2.4-7.6 2.4s-1.3-9 6.6-10c0 0 0-1.8.5-3.1 0 0-5.6-3.4-3-9.6 0 0 1.8-4.3 6.8-3.8l-1.2 2.4s-1.2 12.6 17.3 4.2c18.5-8.6 17.9-10.2 28.6-4.8l7.6-.1s11.1-5.3 14.7-3c3.6 2.3 16.3 9.4 16.3 9.4s12.4 4.7 15-4z\"/><path fill=\"#fff\" stroke=\"#00247d\" stroke-miterlimit=\"10\" stroke-width=\"1.2\" d=\"M373.1 271s-.6-3.9-1.2-6.4c0 0-1.4-3.9 1-6.8l2.8-3.3s1.8-2.4 4-2.7c0 0 2.4 0 2.5-.5.2-.5 2.7-4.5 8.6 0 0 0 1.7-3 4.7-3.6 0 0 3-.8 4.6 1.4 0 0 3.4-2.6 6.4 1.7 0 0 4-2.4 7.2 2.3 0 0 3.9-2 6.4 2.1 2.5 4.3 2 6 2 6l2 6.8 6.5 8-15.3 5.8h-6.9l-13.7 3.6-24.3 1.9-6.7-8 9.5-8.3z\"/><path fill=\"#d40000\" stroke=\"#000\" stroke-linejoin=\"round\" stroke-width=\"1.2\" d=\"M352.6 311.5s-3.6.1-5.5 1.2c-1.8.8-3.2 1.8-5.3 3.2 0 0-1.1 1.3-5.3.5 0 0-7.1-1.7-7.1 4 0 0-8.9.6-5.3 8.3 0 0 2.4 6 7.4 1.8 0 0-3.2 4.5 3 6.3 0 0 4.4 1.2 5.7-3.5 0 0 .7-1.8-1-4 0 0 2.2-.4 3.6-2.7 0 0-4.5 5.8.5 8 0 0 6.3 1.5 6.7-5 0 0-.6-3.2 1.9-4.3 0 0 5-1.2 7.1-6.6 0 0-7.1-3.9-6.4-7.2zM337.9 254s-5.6-2.5-8.3 0c0 0-3.6-2.2-7.5 0 0 0-3.7 2.4-6.3 5.2 0 0-1.8 1.5-1.2 6.4 0 0 1 3.5.4 5.1 0 0-1.2-.2-3.7 2.8 0 0-3 3.5-6 .3 0 0 1 4.6 6.2 3.8 0 0-2.5 2-.4 7 0 0 1.7 3.6-1 8.2 0 0 4.6-1.8 4.5-7.2 0 0-.5-3.6 1-6 0 0-1.5 2.2 1.6 7.1 0 0 2.4 3.6.5 7.2 0 0 4.4-1.6 4-7-.5-5.4-3-3.2-1.4-8.2 0 0 .5 2.6 1.8 4a7.2 7.2 0 0 1 2.4 7s2.6-3.4 2-6.8a13.1 13.1 0 0 0-1.3-4.4l8.3-4.8 4.3-7.5z\"/><path fill=\"none\" stroke=\"#000\" stroke-miterlimit=\"10\" stroke-width=\"1.2\" d=\"M325.2 275.5s-3.6-.2-4-3m-6.2-1.8s1.2 0 2.4 1.2c0 0 .7 1.2 2 1\"/><path d=\"M330.3 265.2s-1.8 0-2.9-.8c0 0-1-.7-1.5.4 0 0-1 1.6.7 2.3 0 0 2.3 1.2-1.2 3.4 0 0 4-1.6 2.4-3.6 0 0-1.8-1.2-1.2-1.7 0 0 .2-.4 1 0 .7.6 2.1.4 2.7 0\"/><path fill=\"#784421\" stroke=\"#000\" stroke-width=\"1.2\" d=\"m385 275 2-.6-13.9-48h-.5z\"/><path d=\"M338.5 328.3s-3.2-1.9-6 .3c0 0 .4-1.2 2.5-1.7 0 0 1.1-3.2 4.2-2.9 0 0-1.3 1.6-3 2.8 0 0 1.9.2 2.5 1.5z\"/><path fill=\"#64b4d1\" stroke=\"#00247d\" stroke-miterlimit=\"2.6\" stroke-width=\"1.2\" d=\"M327 335.8s-5.2-3.2-2.3-8.7c0 0 .8-1.5 2.4-1.2 0 0 3.2 1 .7 5.5 0 0-1.3 2.9-.7 4.5zm10.6 5.3s-7.4-3.4-5.1-9.2c0 0 .7-2 2.3-1.8 0 0 2.9.2 2.3 4 0 0-.8 3.6.5 7z\"/><path d=\"M336 319.6s-2.2 1.7-3 2.8c0 0-1-1.2-2.2-1.8 0 0 1.4-.3 2.1.3 0 0 1.2-1 3.1-1.3\"/><path fill=\"#64b4d1\" stroke=\"#00247d\" stroke-miterlimit=\"2.6\" stroke-width=\"1.2\" d=\"M342.6 339.6s6-1.4 4.8-7.5c0 0-.6-2.6-3-2.2 0 0-3 .8-1.1 4.6 0 0 1.2 2.6-.7 5.1z\"/><path fill=\"#f5ce00\" stroke=\"#000\" stroke-miterlimit=\"2.6\" stroke-width=\"1.2\" d=\"m369 212.7 5.7 1.9s5.3 2.3 12.2 0l5.3-2-3.6 5.4v2.9l2.2 3.2s-1.4.6-5.4-2c0 0-4.4-3.4-9.7 0 0 0-3 2-5.3 2l3.4-3.8-1.3-3.5-3.6-4.3z\"/><path fill=\"#fff\" d=\"M344.9 332.5s.2-.4 0-.5l-.5.2s-.6 1 0 2.4c0 0 .5.9.2 1.8l.1.4s.3-.1.3-.4c0 0 .3-.8-.3-1.8 0 0-.6-1.4.2-2.1\"/><path fill=\"#d40000\" stroke=\"#000\" stroke-linejoin=\"round\" stroke-width=\"1.2\" d=\"M425.3 223.7s-4.1 2.2-6-.3c0 0-2-4.4 3-6 0 0-2.8-3.2 0-6.2 0 0 1.6-1.6 4.2-.5 0 0 1.2-2.3 3.7-2.2 0 0 2.4 0 3.1 2.5 0 0 3.2-1.2 5 .6 0 0 2.8 3.2-1.3 5.8l-2.8.3-2.9-1.4-3.1.9s.8 3.2-2.9 6.5z\"/><path fill=\"#f5ce00\" stroke=\"#000\" stroke-miterlimit=\"2.6\" stroke-width=\"1.2\" d=\"M392.2 220.4s0 .8-.8 1c0 0-1 .3-1.6-.9v-.3c0-.5-.2-2 1.4-3.3 0 0 2.7-2.1 7.7.5a192 192 0 0 0 14.8 7.5s3 1.6 7.8 1.8c0 0 6.6.5 9.3-4.1 0 0 2.2-3.5 0-5.8 0 0-.8-1-2.2-.8a3 3 0 0 0-1.8 1.2s-1.1 1.4 0 2.5c0 0 1.6 1 2.2-1 0 .2.5 1.7-.3 2.9 0 0-4 6-15-.1l-14.2-8.1s-7.2-3.7-11.6 2.1c0 0-3.5 4.8 1 7.9 0 0 3.4 2 5.4-1.2 0 0 1.8-3.1-1-4.4 0 0-2.3-1.2-3.3 1.2s1.8 3 2 1.3c0 0 0-.4.3 0z\"/><path fill=\"#e4cb5e\" stroke=\"#000\" stroke-miterlimit=\"2.6\" stroke-width=\"1.2\" d=\"M335.3 245.2v-9c0-.8 0-1.2 1.2-2.2 1-.8 2.2-2.3 3.7 1.7 0 0 3.2-3.5 4.3-4 0 0 1.9-1.5 3.2.7 0 0 1.7-2.6 3-3.2 0 0 3.2-2 3.3 4.2l2.5-2.4s2-1.5 4.2.7c0 0 3.6 3.6 4 4.6 0 0 .9 1 1 2.7 0 0 0 2 1 3 0 0 1.2 1 2.2 1.2 0 0 2.5.1 3.6 2.6 0 0 .4-.5 1.7 11.2v21.5l-14.4 17.1-23.2-6.6-9.2-3.9-2.1-6.6 9-5.9 4.7-13-1.4-9.3-2.3-5.2z\"/><path fill=\"#784421\" stroke=\"#000\" stroke-width=\"1.2\" d=\"m399 256.4 1.2-1.5 2.5-2s4 10.4 4.2 12.7v3.2s6 1.6 7.1 10.7l-5 9.2-7.7-4.4-2.3-1.5z\"/><path fill=\"#fff\" d=\"M325.7 328.4s.2-.3 0-.6l-.5.4s-1.6 1.7-.3 4.4c0 0 0 .4.4.2 0 0 .2 0 0-.3 0 0-1.2-2.4.4-4z\"/><path fill=\"none\" stroke=\"#000\" stroke-miterlimit=\"10\" stroke-width=\"1.2\" d=\"M349 326.6s.1-.8-.3-1.6c0 0-.4-.6-.3-1.5m5.6-90.1s0 2.3.7 4c.6 1.6 3 4.5 3 5.9\"/><path fill=\"#d40000\" stroke=\"#000\" stroke-linejoin=\"round\" stroke-width=\"1.2\" d=\"M408.4 311.5s3.6.1 5.5 1.2c1.9.8 3.3 1.8 5.5 3.2 0 0 1 1.3 5.1.5 0 0 7.3-1.7 7.3 4 0 0 8.7.6 5.1 8.3 0 0-2.4 6-7.4 1.8 0 0 3.2 4.5-3 6.3 0 0-4.4 1.2-5.7-3.5 0 0-.7-1.8 1-4 0 0-2-.4-3.5-2.7 0 0 4.5 5.8-.5 8 0 0-6.3 1.5-6.7-5 0 0 .5-3.2-1.9-4.3 0 0-5-1.2-7.2-6.6 0 0 7.1-3.9 6.4-7.2z\"/><path fill=\"none\" stroke=\"#000\" stroke-miterlimit=\"10\" stroke-width=\"1.2\" d=\"m351.2 243.4 6 47.8m-4.6-47.9 6.7 44.6m-5.5-44.8 7.7 44.2\"/><path fill=\"#784421\" stroke=\"#000\" stroke-width=\"1.2\" d=\"m366 283.5 2.1-.7-14-48h-.4z\"/><path fill=\"none\" stroke=\"#000\" stroke-miterlimit=\"10\" stroke-width=\"1.2\" d=\"m358 241.3 14.2 35.5m-15-35 13.5 37\"/><path fill=\"#fff\" d=\"M335 337.6s-1.7-1.5-1.5-4.3c0 0 0-.6-.2-.7 0 0-.4-.1-.4.6 0 0-.4 2.9 1.6 4.5 0 0 .1.3.3.2 0 0 .3 0 0-.3z\"/><path fill=\"none\" stroke=\"#000\" stroke-miterlimit=\"10\" stroke-width=\"1.2\" d=\"m358.8 240.8 14.3 32.4M355 242.8l9 43.7\"/><path fill=\"#f5ce00\" stroke=\"#000\" stroke-miterlimit=\"2.6\" stroke-width=\"1.2\" d=\"M427.4 275c-6.4-3.6-7.8-11.4-7.8-11.4a24.6 24.6 0 0 1 1.7-14.3c4-8.6 11-10.3 11-10.3s-6.8 4.8-8.8 11.2c0 0-1.4 5.5-.5 10.7.8 5.5.4 4.1 1.7 8.3l2.7 6z\"/><path fill=\"#784421\" stroke=\"#000\" stroke-width=\"1.2\" d=\"m400 254.7-26.5 8.5-1.5 12c-6.3 9.1-19.2 10.7-19.2 10.7l10 10.7 19.1 4 10.2-7.8 9.2-8.4c-1-4.5-.5-11.2-.5-11.2 0-1.2.5-3.8.5-3.8s-1.6-10.7-1.2-14.5z\"/><path fill=\"none\" stroke=\"#000\" stroke-miterlimit=\"10\" stroke-width=\"1.2\" d=\"M372.4 272.2s17.5-5.5 28-10m-36.5 20s22-4 37.4-12.8l5.6-3.8\"/><path fill=\"none\" stroke=\"#000\" stroke-miterlimit=\"10\" stroke-width=\"1.2\" d=\"m406.9 268.8-6 4.4s-24.6 11.2-43.3 11.6m43.2-3.6s-18.9 9.7-29.6 9.8\"/><path fill=\"#d40000\" stroke=\"#000\" stroke-linejoin=\"round\" stroke-width=\"1.2\" d=\"M423.2 254s5.6-2.5 8.3 0c0 0 3.6-2.2 7.7 0 0 0 3.5 2.4 6.2 5.2 0 0 1.8 1.5 1.2 6.4 0 0-1 3.5-.4 5.1 0 0 1.2-.2 3.6 2.8 0 0 3.2 3.5 6 .3 0 0-.9 4.6-6 3.8 0 0 2.4 2 .2 7 0 0-1.5 3.6 1 8.2 0 0-4.6-1.8-4.3-7.2 0 0 .3-3.6-1-6 0 0 1.3 2.2-1.8 7.1 0 0-2.3 3.6-.3 7.2 0 0-4.6-1.6-4-7 .3-5.4 3-3.2 1.2-8.2 0 0-.3 2.6-1.6 4a7.2 7.2 0 0 0-2.4 7s-2.6-3.4-2-6.8c.6-3.5 1.1-4.4 1.1-4.4l-8.3-4.8-4.2-7.5z\"/><path fill=\"#fff\" stroke=\"#00247d\" stroke-miterlimit=\"10\" stroke-width=\"1.2\" d=\"M328 284.4s.8-3.7 4.2-2.4c0 0 1.2-6 7.8-6.2 6.4-.2 6.8 6.4 6.8 6.8 0 0 2-2.8 5-2.5 0 0 5.6-.3 3.7 8.5l1 1.2s4-9.9 12.7-7.4c0 0 8.3 2.6 3 10.7 0 0 4.1 5.5 7.6 5 3.6-.5 6.7-1.6 10.1-7.8 3.6-6.2 11.7-7.2 13.7-6.8 2 .3 3.7 1.8 4 3.2 0 0 4.4-14.3 19.9-12.2l6.2 3.3 2.4 1-3.6 10L424 308l-6.5 2-6.8-3.9-2.4 1.2-.1 5.9-9 6.4-6.2 2.5-6.8 4.8-1.6 4.2s-3.7-1.7-8 0l-1.5-3.6-4-3.7-15.5-7.4-2.8-9-2.8-1.3-3.2 3.6-4.6.6-6.9-4.8-7.5-21z\"/><path fill=\"none\" stroke=\"#000\" stroke-miterlimit=\"2.6\" stroke-width=\"1.2\" d=\"M395.5 214s-6-.2-5.7 6\"/><path fill=\"#f5ce00\" stroke=\"#000\" stroke-miterlimit=\"2.6\" stroke-width=\"1.2\" d=\"M434.4 279.3c-10.3-3.2-13.1-14.3-13.1-14.3a25.5 25.5 0 0 1 1.3-15.5c4.8-11 12.6-11 12.6-11a4 4 0 0 1 4.6 3.2c.3 2.4-1.3 3.3-1.3 3.3-2.8 1.5-4.6-.5-4.6-.5-1.2-1.6-.2-2.9-.2-2.9.7-1 2-.4 2-.4 1.2.2 1 1.6 1 1.6s.3-1.6-1.2-1.8c0 0-3.2-.7-6.8 3.8 0 0-4.8 6.1-4.8 14.1 0 0-.6 14.8 14.8 18.6 0 0-1.7 2.4-4.7 11.1 0 0-3.3 11.2-6.4 17.3 0 0-4.3 8.6-13.8 5.1 0 0-5.6-2.5-5.6-6.5 0 0-.4-3.8 3-4 0 0 3.3-.3 3.3 2.5 0 0 0 3-3.6 2.4 0 0-1.2-.3-1-1.5 0 0 .2-1.2 1.7-.6 1.6.6 0 0 0-.1 0 0-.6-.3-1.2 0 0 0-.6 0-.6 1 0 0 0 .6.8 1.1l1.6.2s1 2 3.1 2.7a8 8 0 0 0 7-1.2 10.7 10.7 0 0 0 3-4.3 113.3 113.3 0 0 0 5.3-13.5s1.8-5.7 3.3-8.7z\"/><path fill=\"#f5ce00\" stroke=\"#000\" stroke-miterlimit=\"2.6\" stroke-width=\"1.2\" d=\"M405.3 307.4s2-.2 2 1.5c0 0 0 2.4-3.2 1.9 0 0-3-.6-1.9-4 0 0 .7-2.3 3.6-2 0 0 2.7 0 4 3.8 0 0 .9 3.3-.8 6-1.8 3-6.2 5-8.3 6 0 0-8.8 3.3-11.4 5.3 0 0-4 2.9-2.1 5.6 0 0 .7 1.1 1.6 1.1 0 0 1.2 0 1.4-1.2 0 0 0 .7-.8 1 0 0-.8.4-1.6-.3 0 0-1-1-.3-2.4 0 0 1.1-1.6 3.6-.6 0 0 2 1.1 1.2 3.3 0 0-.8 2.1-3.3 2 0 0-2 0-3.3-1.2-1.9-2.1-2-6-.2-8 0 0 1.6-2.1 4.8-3.6l9-3.5a18 18 0 0 0 6.4-4.1s1.3-1.4 1.8-4c0 0 .3-2-.9-2.4l-1.2-.3z\"/><path fill=\"none\" stroke=\"#000\" stroke-miterlimit=\"2.6\" stroke-width=\"1.2\" d=\"M405.5 307.4s2.2-.4 3.5 2.2c0 0 .7 1.5.8 2.5m.8-9s-2.2.3-1.1 3.4c1.2 2.9 3 3.7 3.6 4.2\"/><path fill=\"#f5ce00\" stroke=\"#000\" stroke-miterlimit=\"2.6\" stroke-width=\"1.2\" d=\"M369 220.4s0 .8.9 1c0 0 .8.2 1.3-.9l.1-.3c0-.5.3-2-1.3-3.3 0 0-2.7-2.1-7.7.5 0 0-4 2-6.7 3.6 0 0-7.2 3.8-8.1 4 0 0-3.1 1.6-7.9 1.8 0 0-6.6.5-9.3-4.1 0 0-2.1-3.5 0-5.8 0 0 .8-1 2.3-.8.6.1 1.2.4 1.8 1.2 0 0 1 1.4-.2 2.5 0 0-1.5 1-2.1-1 0 .2-.4 1.6.5 3 0 0 3.9 5.9 14.8-.3l14.3-8s7.1-3.7 11.5 2c0 0 3.5 4.8-1 8 0 0-3.3 2-5.4-1.2 0 0-1.7-3 1-4.4 0 0 2.3-1.2 3.4 1.2 1 2.4-2 3-2.1 1.3 0 0 0-.4-.2 0zm-35.2 54.7c6.3-3.5 7.7-11.5 7.7-11.5 1.4-8-1.7-14.3-1.7-14.3-4-8.6-11-10.3-11-10.3s6.9 4.8 8.8 11.2c0 0 1.5 5.5.6 10.7-.9 5.5-.5 4.1-1.8 8.3z\"/><path fill=\"none\" stroke=\"#000\" stroke-miterlimit=\"2.6\" stroke-width=\"1.2\" d=\"M365.7 214s6-.2 5.6 6\"/><path fill=\"#f5ce00\" stroke=\"#000\" stroke-miterlimit=\"2.6\" stroke-width=\"1.2\" d=\"M326.6 279.3c10.4-3.2 13.1-14.3 13.1-14.3a25.5 25.5 0 0 0-1.2-15.5c-4.7-11-12.6-11-12.6-11a4 4 0 0 0-4.5 3.2c-.4 2.4 1.3 3.3 1.3 3.3 2.7 1.5 4.5-.5 4.5-.5 1.2-1.6.2-2.9.2-2.9-.7-1-2-.4-2-.4-1.2.2-1 1.6-1 1.6s-.3-1.6 1.3-1.8c0 0 3.2-.7 6.8 3.8 0 0 4.7 6.1 4.7 14.1 0 0 .6 14.8-14.8 18.6 0 0 1.7 2.4 4.7 11.1 0 0 3.3 11.2 6.5 17.3 0 0 4.2 8.6 13.8 5.1 0 0 5.6-2.5 5.6-6.5 0 0 .3-3.8-3-4 0 0-3.4-.3-3.4 2.5 0 0 0 3 3.6 2.4 0 0 1.2-.3 1-1.5 0 0-.1-1.2-1.7-.6-1.5.6 0 0 0-.1 0 0 .6-.3 1.2 0 0 0 .6 0 .6 1 0 0 0 .6-.7 1.1l-1.6.2s-1 2-3.2 2.7a7.5 7.5 0 0 1-7-1.2 10.7 10.7 0 0 1-3-4.3 113.5 113.5 0 0 1-5.3-13.5s-1.7-5.7-3.2-8.7l-.6-1.2z\"/><path fill=\"#f5ce00\" stroke=\"#000\" stroke-miterlimit=\"2.6\" stroke-width=\"1.2\" d=\"M355.8 307.4s-1.9-.2-1.9 1.5c0 0 0 2.4 3.1 1.9 0 0 3-.6 2-4 0 0-.8-2.3-3.7-2 0 0-2.7 0-3.9 3.8 0 0-1 3.3.7 6 1.8 3 6.2 5 8.4 6 0 0 8.7 3.3 11.3 5.3 0 0 4 2.9 2.1 5.6 0 0-.6 1.1-1.6 1.1 0 0-1.2 0-1.3-1.2 0 0 0 .7.7 1 0 0 .8.4 1.6-.3 0 0 1-1 .3-2.4 0 0-1-1.6-3.5-.6 0 0-2.1 1.1-1.2 3.3 0 0 .8 2.1 3.3 2 0 0 1.9 0 3.2-1.2 1.9-2.1 2-6 .3-8 0 0-1.6-2.1-4.7-3.6-2-.6-5.5-2.1-9.1-3.5a16.5 16.5 0 0 1-6.4-4.1s-1.3-1.4-1.8-4c0 0-.4-2 .8-2.4z\"/><path fill=\"none\" stroke=\"#000\" stroke-miterlimit=\"2.6\" stroke-width=\"1.2\" d=\"M355.6 307.4s-2.2-.4-3.5 2.2c0 0-.7 1.5-.8 2.5m-.7-9s2.1.3 1 3.4c-1.1 2.9-3 3.7-3.5 4.2m27.4-91.1s5.1-3.3 10.4.3m-39.7 31.3s.7-3-2.7-8l-3.2-7.5m7.4-3.3 2.4 6.6 2.9 6.8\"/><path fill=\"none\" stroke=\"#000\" stroke-miterlimit=\"10\" stroke-width=\"1.2\" d=\"M348.5 254.3s2 2.1 1.8 5.6m-8-7.9s2 1 1.8 6.8c0 0 0 4 3 6.2m-5.2 1.4s6.6-.7 7.1 3.5c0 0 0 4 2.4 4.3 0 0 3.3.3 4 3.6M344 271s1.2 1.7 2.4 2.6m6.2-7s1.7 2.7 2 4.1m5.4-35s1.5 2.1 3 3m3.2 9.6s3.3 1.6 2.9 10c0 0-.5 5 1 7.7\"/><path fill=\"#784421\" stroke=\"#000\" stroke-width=\"1.2\" d=\"m350.5 242.6.3.8s6 .3 9.2-3.8l-.4-.8s-5.2-.3-9 3.8z\"/><path fill=\"none\" stroke=\"#000\" stroke-miterlimit=\"10\" stroke-width=\"1.2\" d=\"M372 274.5s20.7-6 28.7-9.6\"/><path fill=\"#784421\" stroke=\"#000\" stroke-width=\"1.2\" d=\"m369.9 236.5-.2-.6 10-4 .3.8z\"/><path fill=\"none\" stroke=\"#000\" stroke-miterlimit=\"10\" stroke-width=\"1.2\" d=\"m370.7 236.1 6.8 33.3m-5.6-33.6 7.8 33m-6.5-33.6 8.5 32.9m-5.1-34.1 11.5 24.6m-10-25 12.3 24.2M379.2 233l13.3 24.3M377 269.6l5.3-1.6m-9.2-1.6s15.3-4.5 27-9.2M372.9 268s19.4-5 27.2-8.8m-21.3 24.6 1 3.3 2.8-1-.9-3.1m5-1.3 1 3 2.7-.9-1-3m-16-17.6-.2-4.2 25.5-7.7 1.4 3.6m-16 .8 1.3 3.8m7.5-6.4 1.7 3.6m.4-4.3 1.6 3.3m.5-4 1.5 3.6m0-4 2.9-1.6 1.2 3.1m-2.6-2.3 1.4 3.3\"/><path fill=\"none\" stroke=\"#00247d\" stroke-miterlimit=\"10\" stroke-width=\"1.2\" d=\"M336.9 299.1s-5-5.1 0-10c0 0-5.5-2.6-4.7-7m13.6 21s-5.2.7-3.7-9.4c0 0-2.1 4-2.9 6a4.7 4.7 0 0 0 2 5.4c1 .6 5.6 1.8 7-1.2m-8.2-16.2s-2.2 1.9-.6 5.4m2.7-5s.2 3.5 2 5.4m-.4-6.7s0 4 2.8 6.6m-1.4-8s0 4.5 3.3 7.4m13.5-.7s1.7-3.9 5.2-3.6c0 0-1.6.8-1.6 2.5 0 0-.3 3 2.8 3.2 0 0 2.5.4 3.9-1\"/><path fill=\"none\" stroke=\"#00247d\" stroke-miterlimit=\"10\" stroke-width=\"1.2\" d=\"M370.5 309.1s-9-4.2-8-10.1c0 0 .4-3.6 4-5.4m-2 3.8s-.8 2.5 1 4.3m1-6s-1.1 2.8.8 4.8m1.4-6.3s-1.3 2.4.2 4.5m-8.3 11s4.8 4.3 8.6 4.3m-10.2-2.9s4.6 3.6 7.4 4.2m-9-3.2s5.6 4.9 9 5.2m13.7 4.6s-5.4 3-1.1 6.2m-2.4-9.4 9-4.6m-6.8 6.2s9.1-5.5 11.7-6.7m-7 7.2s7.7-5.2 12-7.5m-6.9 7.1s5.4-4 10.5-7.1m1.8-5.1s-2.6-3.9-11.2 0c0 0 3.2-2.9 9.4-5.2m8.6-16.3s.7 3.1 0 5\"/><path fill=\"none\" stroke=\"#00247d\" stroke-miterlimit=\"10\" stroke-width=\"1.2\" d=\"M393.9 301.7s1.7-2.6 6.3-4c0 0 1.2 3 4.7 2.5 0 0 5.3-1.1 3.6-7 0 0-1-4.2-7.1-4.7m18-7.3s6.2 1.2 6 6.1c0 0 .7 7.6-7.3 9m6.5-12s1.7-3.7 5.5-5.2m-4.5-2.2s1.6 2.8 2.7 3.1m-3.6-1 2 2.5m-2.6-.5a8 8 0 0 0 1.6 1.6m-33.4-30.8s1.2-2 4.3-1.2m12.2 15.8s1.9-7.8 8.4-5m-2.6-.6s.6-3.6-1-5.5m-3.5 5.2s.8 1.5 0 2.7\"/><path fill=\"#64b4d1\" stroke=\"#00247d\" stroke-miterlimit=\"2.6\" stroke-width=\"1.2\" d=\"M423.5 341s7.4-3.3 5.2-9.1c0 0-.7-2-2.4-1.8 0 0-2.9.1-2.4 4 0 0 1 3.8-.5 7z\"/><path fill=\"#fff\" d=\"M426.2 337.6s1.6-1.5 1.4-4.3c0 0-.1-.6.1-.7 0 0 .4-.1.4.6 0 0 .5 2.9-1.5 4.5 0 0 0 .3-.3.2 0 0-.2 0-.1-.3\"/><path fill=\"#64b4d1\" stroke=\"#00247d\" stroke-miterlimit=\"2.6\" stroke-width=\"1.2\" d=\"M434 335.8s5.3-3.2 2.4-8.7c0 0-.8-1.5-2.4-1.2 0 0-3.2 1-.7 5.5 0 0 1.2 2.9.7 4.5z\"/><path fill=\"#fff\" d=\"M435.4 328.4s-.3-.3 0-.6l.3.4s1.6 1.7.4 4.4c0 0-.2.4-.5.2v-.3s1.2-2.4-.2-4z\"/><path fill=\"#64b4d1\" stroke=\"#00247d\" stroke-miterlimit=\"2.6\" stroke-width=\"1.2\" d=\"M418.4 339.6s-5.8-1.4-4.7-7.5c0 0 .5-2.6 3-2.2 0 0 3 .8 1.1 4.6 0 0-1.2 2.6.6 5.1z\"/><path fill=\"#fff\" d=\"M416.2 332.5s-.2-.4 0-.5c0 0 .3 0 .4.2 0 0 .6 1 .2 2.4 0 0-.5.9-.3 1.8 0 0 0 .3-.2.4l-.3-.4s-.2-.8.3-1.8c0 0 .6-1.4 0-2.1z\"/><path d=\"M422.6 328.3s3.3-1.9 6 .3c0 0-.3-1.2-2.4-1.7 0 0-1.1-3.2-4.2-2.9 0 0 1.2 1.6 3 2.8 0 0-1.8.2-2.4 1.5m2.4-8.7s2.4 1.7 3.2 2.8c0 0 .8-1.2 2-1.8 0 0-1.3-.3-2 .3 0 0-1.2-1-3.1-1.3z\"/><path fill=\"none\" stroke=\"#000\" stroke-miterlimit=\"10\" stroke-width=\"1.2\" d=\"M412.1 326.6s-.2-.8.4-1.6c0 0 .3-.6.2-1.5m23.4-48s3.4-.2 4-3m6-1.8s-1.2 0-2.3 1.2c0 0-.8 1.2-2 1\"/><path d=\"M431 265.2s1.7 0 2.7-.8c0 0 1-.7 1.7.4 0 0 1 1.6-.9 2.3 0 0-2.1 1.2 1.3 3.4 0 0-4.1-1.6-2.4-3.6 0 0 1.8-1.2 1.1-1.7 0 0-.2-.4-1 0-.7.6-2 .4-2.6 0z\"/><path fill=\"#64b4d1\" stroke=\"#00247d\" stroke-miterlimit=\"2.6\" stroke-width=\"1.2\" d=\"M433.3 221.6s.9-1.2.5-4.4 2.6-3.7 3.7-2.8c0 0 1.2 1 0 3.1a8.3 8.3 0 0 1-4.2 4.1z\"/><path fill=\"#fff\" d=\"M434.4 219s1.2-1.1.6-3.6l.1-.2h.4s.6 2.8-.6 4.2c0 0-.3.3-.5 0z\"/><path fill=\"#64b4d1\" stroke=\"#00247d\" stroke-miterlimit=\"2.6\" stroke-width=\"1.2\" d=\"M432.5 220.4s-.1-1.4-2.4-3.6c-2.4-2.4-.5-4.4 1-4.4 0 0 1.4 0 2 2.3a8.3 8.3 0 0 1-.6 5.7z\"/><path fill=\"#fff\" d=\"M432.1 217.4s0-1.6-2.1-3.3v-.4h.3s2.3 1.8 2.3 3.8c0 0 0 .3-.2.3 0 0-.3 0-.3-.4\"/><path fill=\"#64b4d1\" stroke=\"#00247d\" stroke-miterlimit=\"2.6\" stroke-width=\"1.2\" d=\"M429.3 219.3s-.6-1-3.5-2.1c-2.8-1-2.1-3.5-1-4 0 0 1.4-.5 2.7 1.1a7.6 7.6 0 0 1 1.8 5z\"/><path fill=\"#fff\" d=\"M428 217.3s-.6-1.4-3.3-2.1c0 0-.2 0-.2-.3 0 0 0-.2.4-.1 0 0 2.8.6 3.7 2.4l-.2.3s-.2 0-.3-.2z\"/><path fill=\"#64b4d1\" stroke=\"#00247d\" stroke-miterlimit=\"2.6\" stroke-width=\"1.2\" d=\"M431 220.4s-1.3.5-4.4-1c-3-1.5-4.4 1.1-3.8 2.3 0 0 .5 1.6 2.9 1.2a8.3 8.3 0 0 0 5.4-2.4z\"/><path fill=\"#fff\" d=\"M424 221.4s1.3 1 3.8 0h.4s0 .2-.2.3c0 0-2.7 1.2-4.5.1 0 0-.2 0 0-.3h.4z\"/><path fill=\"none\" stroke=\"#000\" stroke-miterlimit=\"2.6\" stroke-width=\"1.2\" d=\"M426.6 210.7s1.5.8 1.2 2.5\"/><path fill=\"none\" stroke=\"#000\" stroke-miterlimit=\"10\" stroke-width=\"1.2\" d=\"M433.3 211s.6 1.9 0 3\"/><path fill=\"#64b4d1\" stroke=\"#00247d\" stroke-miterlimit=\"2.6\" stroke-width=\"1.2\" d=\"M327.6 221.6s-.9-1.2-.5-4.4c.3-3.4-2.5-3.7-3.6-2.8 0 0-1.2 1-.1 3.1a8.3 8.3 0 0 0 4.2 4.1z\"/><path fill=\"#fff\" d=\"M326.5 219s-1-1.1-.6-3.6v-.2h-.5s-.5 2.8.7 4.2c0 0 .3.3.4 0z\"/><path fill=\"#64b4d1\" stroke=\"#00247d\" stroke-miterlimit=\"2.6\" stroke-width=\"1.2\" d=\"M328.5 220.4s0-1.4 2.4-3.6c2.4-2.4.5-4.4-1-4.4 0 0-1.5 0-2 2.3a8.3 8.3 0 0 0 .6 5.7z\"/><path fill=\"#fff\" d=\"M328.9 217.4s0-1.6 2-3.3c0 0 .2-.3 0-.4h-.2s-2.4 1.8-2.4 3.8c0 0 0 .3.3.3 0 0 .3 0 .3-.4\"/><path fill=\"#64b4d1\" stroke=\"#00247d\" stroke-miterlimit=\"2.6\" stroke-width=\"1.2\" d=\"M331.6 219.3s.6-1 3.6-2.1c2.7-1 2-3.5.8-4 0 0-1.2-.5-2.6 1.1a7.6 7.6 0 0 0-1.8 5z\"/><path fill=\"#fff\" d=\"M333 217.3s.5-1.4 3.1-2.1c0 0 .3 0 .3-.3 0 0 0-.2-.3-.1 0 0-2.8.6-3.6 2.4v.3s.3 0 .4-.2z\"/><path fill=\"#64b4d1\" stroke=\"#00247d\" stroke-miterlimit=\"2.6\" stroke-width=\"1.2\" d=\"M329.8 220.4s1.5.5 4.4-1c3.1-1.5 4.5 1.1 4 2.3 0 0-.6 1.6-3 1.2a8.3 8.3 0 0 1-5.4-2.4z\"/><path fill=\"#fff\" d=\"M337 221.4s-1.3 1-4 0h-.2v.3s2.9 1.2 4.5.1c0 0 .3 0 0-.3z\"/><path fill=\"none\" stroke=\"#000\" stroke-miterlimit=\"2.6\" stroke-width=\"1.2\" d=\"M334.4 210.7s-1.6.8-1.2 2.5\"/><path fill=\"none\" stroke=\"#000\" stroke-miterlimit=\"10\" stroke-width=\"1.2\" d=\"M327.6 211s-.6 1.9 0 3\"/><path d=\"M394.1 193.6s1 2.7.6 5.2c-.4 2.4.1 2.9 1 3.4.7.3 2.3-.4 2.4-2.2 0 0 2 3.8-1.7 6.3 0 0-2.8 1.7-5-.4-.9-.9-1.2-3-.8-5 0 0 .6-2.7-.4-5.5 0 0 1.5 1.6 1.2 4.9 0 0-.9 6 3.5 5.6 0 0 3 0 3.1-3.6 0 0-1.2 1.2-2.5.8a2.4 2.4 0 0 1-1.8-2.8c.2-1.6.6-4.3.4-6.7m-4.8 9.5s-.3 4.8-4.5 5.9c0 0 .6-.9-.4-3.3 0 0-1-1.2-1-3.3 0 0-1.1 1 .3 3.8 1 1.7.1 3.6-.1 3.7-.4.1 7-1 5.6-6.7zm-5.6-4.5s-1-1.2-1.2-3.8c0-2.7-.4-3.4-.8-3.6 0 0 .5 2.3.4 3.6 0 1.5 0 2.4.3 3 0 0-2.4.3-3.8-3-1.3-3.3-2.7-3-3.5-3 0 0 .9.1 2.4 3 1.7 3 2.2 3.7 6.2 3.7zm-10.7-7s1.2 3.2 1.3 4.8c0 0-3.1-1-4-3.5 0 0-3.2 1-2 4.7 0 0-2.8-1-4.1-3.2 0 0 1.5 1.2 3 1.7 0 0-.2-3.1 3.6-4.2 0 0 .6 2.7 2.7 3.3zm5-5.4s1.2 1.5 3.3 1.5a3.6 3.6 0 0 0 3.3-1.5s-.2 2.6-3.3 2.7c0 0-3.3 0-3.3-2.7m-13.5 18.5 2 1.9s1.2 1.2 2-.3c0 0 1.4-2.4 3-2.2 0 0-1.3.7-2.4 3 0 0-.3.7-1.2.8-.5 0-1 .2-1.8-.7l-1.6-2.4zm16.7-29.4c-3.2 0-.5 2.4-.5 2.4 0 4-3 5.4-5.2 4.2-2.3-1.2-.5-4-.5-4s-2.4 1.5-1 3.9c1.6 2.4 5.8 1.2 7.2-.9 1.6 2.2 5.7 3.3 7.2.9 1.6-2.4-.9-4-.9-4s1.8 2.9-.4 4c-2.2 1.3-5.4 0-5.3-4 0 0 2.8-2.5-.5-2.5zm2-4.4s1.2 2 1 5c0 0 1-3-1-4.9zm-10 4.7s-.2-2.2-2.4-2.4c0 0 2 1.3 2.4 2.4m16.1 0s.3-2.2 2.4-2.4c0 0-1.8 1.3-2.4 2.4m-19.3 3.2s1.7.5 2.6-.7zm-5.4-13.1s2-.1 3.9 2.7c0 0-2 1-2.4 1.6 0 0 0-1 1-1.7 0 0-.4-1.4-2.5-2.5zm32 0s-2-.1-3.8 2.7c0 0 1.9 1 2.4 1.6 0 0 0-1-1-1.7 0 0 .4-1.4 2.4-2.5zm-14.7 2.2s1.7.5 3.8-.7c0 0 2.7-1.4 4.3 0 0 0-1.4-.7-4.3.7 0 0-2.7 1.6-3.8 0\"/><path fill=\"#fff\" d=\"M383.7 169.6s1.5-2.5 6-2c0 0-1.2 3.6-6 2\"/><ellipse cx=\"386.7\" cy=\"168.8\" fill=\"#784421\" rx=\".8\" ry=\"1.1\"/><ellipse cx=\"386.7\" cy=\"168.8\" rx=\".5\" ry=\".7\"/><path d=\"M374.2 164.1s2.7.3 4.5 1.2c0 0 1.8 1.2 3.8-.3 0 0 2.3-1.4 3.7-3.1 0 0-3.4 2.3-4.7 2.7 0 0-1.2-1-1.6-2.3 0 0 .1-1 2-2.7 0 0-2.5.8-3 2.9a7.2 7.2 0 0 0 1.5 2.3s-.5.3-1.7-.6c0 0-2.7-.8-4.5 0zm7.1 17c-2.3 2.1 0 1.9 0 1.9s2.4.2 0-2zm-1.4-13.2s-1.8.5-4-.7c0 0-2.6-1.4-4.2 0 0 0 1.4-.7 4.3.7 0 0 2.8 1.6 4 0z\"/><path fill=\"#fff\" d=\"M378.1 169.6s-1.4-2.5-6-2c0 0 1.2 3.6 6 2\"/><ellipse cx=\"375\" cy=\"168.8\" fill=\"#784421\" rx=\".8\" ry=\"1.1\"/><ellipse cx=\"375\" cy=\"168.8\" rx=\".5\" ry=\".7\"/><path fill=\"none\" stroke=\"#000\" stroke-width=\"1.2\" d=\"M467.3 146.6v161.6c0 43.1-86.2 57.2-86.2 57.2s-86.3-14-86.3-57.2V146.6z\"/></svg>"};
+
+const FLAG_FALLBACK=['#1B2A6B','#0E8C82','#E8553D','#6B4BA8','#B8860B','#2D3F8E','#C9911A','#D8442C','#1E9E5A','#8E5A2D'];
+function flagColor(iso){let h=0;for(const c of iso)h+=c.charCodeAt(0);return FLAG_FALLBACK[h%FLAG_FALLBACK.length];}
+function flagBox(iso,cls){return FLAGS[iso]?`<div class="${cls}" style="overflow:hidden;background:#fff">${FLAGS[iso]}</div>`:`<div class="${cls}" style="background:${flagColor(iso)}">${iso}</div>`;}
+function flagMini(iso){return FLAGS[iso]?`<span class="flag-mini">${FLAGS[iso]}</span>`:'';}
+function initials(n){return n.split(/\s+/).filter(Boolean).slice(0,2).map(w=>w.replace('.','')[0]||'').join('').toUpperCase();}
+function avatarColor(name){let h=0;for(const c of name)h=(h*31+c.charCodeAt(0))%360;return `hsl(${h},42%,42%)`;}
+function pic(p,k){return p.photo?`<div class="${k}" style="padding:0;background:#0a0e28"><img src="${p.photo}" alt=""></div>`:`<div class="${k}" style="background:${avatarColor(p.name)}">${initials(p.name)}</div>`;}
+function qrSvg(text,cell){const qr=qrcode(0,'M');qr.addData(text);qr.make();return qr.createSvgTag({cellSize:cell||3,margin:0,scalable:true});}
+
+const EV='Americas Qualifier 2026';
+const EV_SHORT='NETBALL AMERICAS';
+const VERIFY='platform.netballamericas.org/verify';
+
+const CATS={
+  player:{label:'Player',color:'#B8860B',cls:'cat-player',zones:['Field of Play','Team Bench','Warm-up Court','Mixed Zone']},
+  official:{label:'Team Official',color:'#1B2A6B',cls:'cat-official',zones:['Field of Play','Team Bench','Mixed Zone']},
+  technical:{label:'Technical Official',color:'#0E8C82',cls:'cat-technical',zones:['Field of Play','Officials\u2019 Room','Scorers\u2019 Table']},
+  media:{label:'Media',color:'#E8553D',cls:'cat-media',zones:['Media Tribune','Mixed Zone','Press Room']},
+  broadcast:{label:'Broadcast',color:'#6B4BA8',cls:'cat-broadcast',zones:['Broadcast Positions','Field of Play','Production Compound','Mixed Zone']},
+  vip:{label:'VIP / Organising',color:'#0E1230',cls:'cat-vip',zones:['All Areas','Hospitality Suite','Field of Play']}
+};
+const TEAMS=[
+  {iso:'BRB',name:'Barbados',host:true},{iso:'JAM',name:'Jamaica'},
+  {iso:'TTO',name:'Trinidad & Tobago'},{iso:'LCA',name:'Saint Lucia'},
+  {iso:'ARG',name:'Argentina'},{iso:'VCT',name:'St Vincent & Gren.'},
+  {iso:'GRN',name:'Grenada'},{iso:'ATG',name:'Antigua & Barbuda'},
+  {iso:'CAY',name:'Cayman Islands'},{iso:'BER',name:'Bermuda'}
+];
+const FIRST=['S.','K.','M.','D.','A.','R.','T.','J.','L.','C.','N.','P.'];
+const LAST=['Williams','Bailey','Grant','Henry','Forde','Clarke','Joseph','Charles','Roberts','Phillips','Browne','Edwards','Hall','James','Lewis'];
+const ROLES_P=['Goal Shooter','Goal Attack','Wing Attack','Centre','Wing Defence','Goal Defence','Goal Keeper'];
+let cid=1;
+function mkPerson(){
+  const cat=Math.random()<0.74?'player':(['official','technical','media','broadcast'][Math.floor(Math.random()*4)]);
+  const name=FIRST[Math.floor(Math.random()*FIRST.length)]+' '+LAST[Math.floor(Math.random()*LAST.length)];
+  const role=cat==='player'?ROLES_P[Math.floor(Math.random()*ROLES_P.length)]:({official:'Team Manager',technical:'Umpire',media:'Photographer',broadcast:'Camera Op'})[cat];
+  const complete=Math.random()<0.7;
+  return {id:cid++,name,role,cat,photo:null,hasPhoto:complete||Math.random()<0.6,hasId:complete||Math.random()<0.6,dob:complete||Math.random()<0.7,catSet:true,status:'submitted'};
+}
+TEAMS.forEach((t,i)=>{
+  const n=t.host?16:10+Math.floor(Math.random()*6);
+  t.roster=Array.from({length:n},mkPerson);
+  if(i<3){t.roster.forEach(p=>{if(p.hasPhoto&&p.hasId&&p.dob){p.status='approved';p.cred='AFN-'+t.iso+'-'+String(1000+cid++).slice(-4);}});t.state='appr';}
+  else if(i<7){t.state='sub';} else {t.state='prog';}
+});
+function ready(p){return p.hasPhoto&&p.hasId&&p.dob&&p.catSet;}
+function teamCounts(t){const total=t.roster.length,appr=t.roster.filter(p=>p.status==='approved').length,rdy=t.roster.filter(p=>ready(p)&&p.status!=='approved').length;return{total,appr,rdy};}
+
+document.getElementById('tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  document.querySelectorAll('nav.tabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active');
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById('view-'+b.dataset.view).classList.add('active');window.scrollTo(0,0);});
+function gotoTab(v){document.querySelector(`nav.tabs button[data-view="${v}"]`).click();}
+
+function renderDash(){
+  const tot=TEAMS.reduce((a,t)=>a+t.roster.length,0);
+  const appr=TEAMS.reduce((a,t)=>a+t.roster.filter(p=>p.status==='approved').length,0);
+  const pend=TEAMS.reduce((a,t)=>a+t.roster.filter(p=>p.status==='submitted').length,0);
+  document.getElementById('stats').innerHTML=
+    `<div class="stat"><div class="n">${TEAMS.length}</div><div class="l">Delegations</div></div>
+     <div class="stat s2"><div class="n">${tot}</div><div class="l">People registered</div></div>
+     <div class="stat s3"><div class="n">${pend}</div><div class="l">Awaiting review</div></div>
+     <div class="stat s4"><div class="n">${appr}</div><div class="l">Credentials issued</div></div>`;
+  document.getElementById('team-grid').innerHTML=TEAMS.map((t,i)=>{
+    const c=teamCounts(t);const pct=Math.round(c.appr/c.total*100);
+    const stCls={prog:'st-prog',sub:'st-sub',appr:'st-appr'}[t.state];
+    const stTxt={prog:'In progress',sub:'Submitted',appr:'Credentialing'}[t.state];
+    return `<div class="team-card" onclick="openTeam(${i})">
+      <div class="tc-top">${flagBox(t.iso,'flag')}
+        <div><h3>${t.name}${t.host?' <span style="font-size:0.6rem;color:var(--gold-deep);background:rgba(244,196,48,0.2);padding:1px 6px;border-radius:5px;vertical-align:middle">HOST</span>':''}</h3><div class="iso">${t.iso} · delegation</div></div></div>
+      <span class="status ${stCls}"><span class="dot"></span>${stTxt}</span>
+      <div class="progress"><span style="width:${pct}%"></span></div>
+      <div class="tc-meta"><div class="tc-counts"><b>${c.appr}</b>/${c.total} credentialed</div><div class="tc-counts">${c.rdy} ready</div></div>
+    </div>`;
+  }).join('');
+}
+function openTeam(i){document.getElementById('rev-team').value=i;gotoTab('review');renderReview();}
+
+function fillTeamSelects(){const opts=TEAMS.map((t,i)=>`<option value="${i}">${t.name} (${t.roster.length})</option>`).join('');
+  document.getElementById('rev-team').innerHTML=opts;document.getElementById('cred-team').innerHTML=opts;}
+function renderReview(){
+  const i=+document.getElementById('rev-team').value;const t=TEAMS[i];
+  const pending=t.roster.filter(p=>p.status!=='approved');
+  document.getElementById('rev-count').textContent=TEAMS.reduce((a,t)=>a+t.roster.filter(p=>p.status==='submitted').length,0);
+  document.getElementById('rev-sub').textContent=`${pending.length} awaiting · ${t.roster.filter(p=>p.status==='approved').length} approved`;
+  const rows=t.roster.map(p=>{
+    const ck=(v,t1,t2)=>`<div class="chk ${v?'ok':'no'}" title="${v?t1:t2}">${v?'✓':'✕'}</div>`;
+    const can=ready(p)&&p.status!=='approved';
+    return `<tr class="prow">
+      <td><div class="person">${pic(p,'avatar')}<div><div class="pn">${p.name}</div><div class="pmeta">${p.role}</div></div></div></td>
+      <td><span class="cat cat-${p.cat}">${CATS[p.cat].label}</span></td>
+      <td><div class="checks">${ck(p.hasPhoto,'Photo on file','No photo')}${ck(p.hasId,'ID recorded','No ID')}${ck(p.dob,'DOB recorded','No DOB')}${ck(p.catSet,'Category set','No category')}</div></td>
+      <td style="text-align:right">${p.status==='approved'
+        ?`<span class="status st-appr"><span class="dot"></span>Approved · ${p.cred}</span>`
+        :`<button class="btn ${can?'btn-ok':'btn-ghost'} btn-sm" ${can?'':'disabled'} onclick="approve(${i},${p.id})">Approve &amp; issue</button>`}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('rev-wrap').innerHTML=`<table><thead><tr><th>Person</th><th>Category</th><th>Photo · ID · DOB · Cat</th><th style="text-align:right">Decision</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+function approve(i,pid){const p=TEAMS[i].roster.find(x=>x.id===pid);if(!ready(p)){showToast('⚠ Incomplete record cannot be approved');return;}
+  p.status='approved';p.cred='AFN-'+TEAMS[i].iso+'-'+String(1000+cid++).slice(-4);
+  showToast('✓ Credential issued · '+p.cred);renderReview();renderDash();updateCounts();}
+function approveAllReady(){const i=+document.getElementById('rev-team').value;let n=0;TEAMS[i].roster.forEach(p=>{if(ready(p)&&p.status!=='approved'){p.status='approved';p.cred='AFN-'+TEAMS[i].iso+'-'+String(1000+cid++).slice(-4);n++;}});
+  showToast(n?`✓ ${n} credentials issued`:'No ready records to approve');renderReview();renderDash();updateCounts();}
+
+function renderCreds(){
+  const i=+document.getElementById('cred-team').value;const t=TEAMS[i];
+  const issued=t.roster.filter(p=>p.status==='approved');
+  if(!issued.length){document.getElementById('cred-grid').innerHTML='<div class="empty" style="grid-column:1/-1"><div class="big">No credentials issued yet</div>Approve people in the review tab to issue their credentials.</div>';return;}
+  document.getElementById('cred-grid').innerHTML=issued.map(p=>{
+    const c=CATS[p.cat];const url='https://'+VERIFY+'/'+p.cred;
+    return `<div class="badge" onclick="openBadge('${p.cred}')">
+      <div class="badge-top"><span class="bt-ev">${EV}</span><span class="bt-cat" style="background:${c.color};color:#fff">${c.label}</span></div>
+      <div class="badge-body">${pic(p,'badge-photo')}
+        <div class="badge-info"><div class="bn">${p.name}</div><div class="br">${p.role||c.label}</div><div class="bteam">${flagMini(t.iso)}${t.iso} · ${t.name}</div></div>
+      </div>
+      <div class="badge-foot"><div class="qr">${qrSvg(url,3)}</div>
+        <div class="zones"><b>Access</b>${c.zones.slice(0,3).join(' · ')}${c.zones.length>3?' · +':''}</div></div>
+    </div>`;
+  }).join('');
+}
+function findCred(cred){for(const t of TEAMS){const p=t.roster.find(x=>x.cred===cred);if(p)return{t,p};}return null;}
+function openBadge(cred){
+  const f=findCred(cred);if(!f)return;const {t,p}=f;const c=CATS[p.cat];const url='https://'+VERIFY+'/'+p.cred;
+  document.getElementById('bigbadge').innerHTML=`
+    <button class="modal-close" onclick="closeBadge()">✕</button>
+    <div class="bb-top"><div class="ev">${EV_SHORT}</div><div class="sub">Americas Regional Qualifier</div></div>
+    ${pic(p,'bb-photo')}
+    <div class="bb-name">${p.name}</div>
+    <div class="bb-role">${p.role||''}</div>
+    <div class="bb-catrow"><span class="cat ${c.cls}" style="font-size:0.72rem;padding:4px 12px">${c.label}</span></div>
+    <div class="bb-team">${flagMini(t.iso)}${t.iso} · ${t.name}</div>
+    <div class="bb-qr">${qrSvg(url,4)}</div>
+    <div class="bb-cid">${p.cred}</div>
+    <div class="bb-zones"><b>Authorised access</b>${c.zones.map(z=>`<span class="zone-tag">${z}</span>`).join('')}</div>`;
+  document.getElementById('modal-bg').classList.add('show');
+}
+function closeBadge(){document.getElementById('modal-bg').classList.remove('show');}
+document.getElementById('modal-bg').addEventListener('click',e=>{if(e.target.id==='modal-bg')closeBadge();});
+
+/* PRINT 4-up */
+function openPrint(){
+  const i=+document.getElementById('cred-team').value;const t=TEAMS[i];
+  const issued=t.roster.filter(p=>p.status==='approved');
+  if(!issued.length){showToast('No credentials to print');return;}
+  const sheet=document.getElementById('print-sheet');sheet.innerHTML='';
+  for(let k=0;k<issued.length;k+=4){
+    const page=document.createElement('div');page.className='ppage';
+    issued.slice(k,k+4).forEach(p=>{
+      const c=CATS[p.cat];const url='https://'+VERIFY+'/'+p.cred;
+      const photo=p.photo?`<div class="pbadge-photo" style="padding:0"><img src="${p.photo}"></div>`:`<div class="pbadge-photo" style="background:${avatarColor(p.name)}">${initials(p.name)}</div>`;
+      page.insertAdjacentHTML('beforeend',`<div class="pbadge">
+        <div class="pb-top" style="border-bottom-color:${c.color}"><div class="pb-ev">${EV_SHORT}<small>Americas Qualifier 2026</small></div><div class="pb-slot"></div></div>
+        <div class="pb-cat" style="background:${c.color}">${c.label}</div>
+        <div class="pb-photo">${photo}</div>
+        <div class="pb-name">${p.name}</div>
+        <div class="pb-role">${p.role||''}</div>
+        <div class="pb-team">${flagMini(t.iso)}${t.name}</div>
+        <div class="pb-bottom"><div class="pb-qr">${qrSvg(url,3)}</div>
+          <div><div class="pb-zones"><b>Access</b>${c.zones.map(z=>`<span>${z}</span>`).join(' · ')}</div><div class="pb-cid">${p.cred}</div></div></div>
+      </div>`);
+    });
+    sheet.appendChild(page);
+  }
+  document.getElementById('print-modal').classList.add('show');
+}
+function closePrint(){document.getElementById('print-modal').classList.remove('show');}
+window.addEventListener('beforeprint',()=>{if(document.getElementById('print-modal').classList.contains('show'))document.body.classList.add('printing');});
+window.addEventListener('afterprint',()=>document.body.classList.remove('printing'));
+
+function doScan(){
+  const issued=[];TEAMS.forEach(t=>t.roster.forEach(p=>{if(p.status==='approved')issued.push({p,t});}));
+  const res=document.getElementById('scan-result');
+  if(!issued.length){showToast('No issued credentials to scan');return;}
+  const granted=Math.random()<0.82;
+  if(granted){
+    const {p,t}=issued[Math.floor(Math.random()*issued.length)];const c=CATS[p.cat];
+    res.innerHTML=`<div class="scan-result granted">
+      <div class="sr-head"><div class="sr-badge g">✓</div><div><div class="t">Access granted</div><div class="s">${p.cred}</div></div></div>
+      <div class="sr-person">${pic(p,'sr-photo')}
+        <div><div style="font-family:var(--font-display);font-weight:700">${p.name}</div><div style="font-size:0.74rem;color:var(--ink-muted)">${p.role}</div>
+        <span class="cat cat-${p.cat}" style="margin-top:4px">${c.label}</span></div></div>
+      <div style="font-size:0.66rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-muted);font-weight:700;margin-bottom:0.3rem">Delegation</div>
+      <div style="font-family:var(--font-display);font-weight:700;margin-bottom:0.6rem;display:flex;align-items:center;gap:6px">${flagMini(t.iso)}${t.name}</div>
+      <div style="font-size:0.66rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-muted);font-weight:700;margin-bottom:0.3rem">Permitted zones</div>
+      <div class="sr-zones">${c.zones.join(' · ')}</div></div>`;
+  } else {
+    res.innerHTML=`<div class="scan-result denied">
+      <div class="sr-head"><div class="sr-badge d">✕</div><div><div class="t">Not valid</div><div class="s">Credential not recognised at this gate</div></div></div>
+      <div style="font-size:0.8rem;color:var(--ink-soft);line-height:1.5">This QR does not resolve to an active credential. Direct the holder to the accreditation desk. No further details are shown at the gate.</div></div>`;
+  }
+}
+function updateCounts(){
+  document.getElementById('rev-count').textContent=TEAMS.reduce((a,t)=>a+t.roster.filter(p=>p.status==='submitted').length,0);
+  document.getElementById('cred-count').textContent=TEAMS.reduce((a,t)=>a+t.roster.filter(p=>p.status==='approved').length,0);
+}
+let toastTimer;function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2400);}
+document.getElementById('rev-team').addEventListener('change',renderReview);
+document.getElementById('cred-team').addEventListener('change',renderCreds);
+fillTeamSelects();renderDash();renderReview();renderCreds();updateCounts();
+</script>
+</body>
+</html>

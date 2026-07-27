@@ -8,6 +8,7 @@ import * as schema from '../db/schema';
 // need no request-scoped DI.
 export interface TenantStore {
   delegationId: string;
+  userId: string;
   db: NodePgDatabase<typeof schema>;
 }
 

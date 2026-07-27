@@ -14,6 +14,7 @@ import * as schema from '../db/schema';
 import { hashPassword } from '../auth/password.util';
 import type { SessionUser } from '../auth/auth.service';
 import { RegisterDelegationDto } from './dto';
+import { registrationWindowState } from './registration-window';
 
 @Injectable()
 export class RegistrationService {
@@ -34,8 +35,43 @@ export class RegistrationService {
   async registrationWindow() {
     const db = drizzle(this.pool, { schema });
     const [event] = await db.select().from(schema.tournament).limit(1);
+    const opensAt = event?.registrationOpensAt ?? null;
     const closesAt = event?.registrationClosesAt ?? null;
-    return { closesAt, open: !closesAt || new Date() < closesAt };
+    const now = new Date();
+    const state = registrationWindowState(
+      event?.configurationStatus ?? 'draft',
+      opensAt,
+      closesAt,
+      now,
+    );
+    return {
+      opensAt,
+      closesAt,
+      open: state.open,
+      phase: state.phase,
+      tournament: event
+        ? {
+            name: event.name,
+            shortName: event.shortName,
+            timezone: event.timezone,
+            brandPrimaryLogoUrl: event.brandPrimaryLogoUrl,
+          }
+        : null,
+      policy: event
+        ? {
+            activePlayerMinimum: event.activePlayerMinimum,
+            activePlayerMaximum: event.activePlayerMaximum,
+            reserveMaximum: event.reserveMaximum,
+            benchMaximum: event.benchMaximum,
+            biographyMinimumCharacters: event.biographyMinimumCharacters,
+            requiredOfficialRoles: event.requiredOfficialRoles,
+            identityRequiredCategories: event.identityRequiredCategories,
+            consentRequiredCategories: event.consentRequiredCategories,
+            eligibilityRegulationReference:
+              event.eligibilityRegulationReference,
+          }
+        : null,
+    };
   }
 
   // Registers a delegation FOR APPROVAL and creates its manager account.
@@ -73,7 +109,16 @@ export class RegistrationService {
 
       const [event] = await db.select().from(schema.tournament).limit(1);
       if (!event) throw new BadRequestException('No tournament is configured.');
-      if (event.registrationClosesAt && new Date() > event.registrationClosesAt) {
+      if (!['published', 'locked'].includes(event.configurationStatus)) {
+        throw new ForbiddenException('Registration is not yet open.');
+      }
+      if (event.registrationOpensAt && new Date() < event.registrationOpensAt) {
+        throw new ForbiddenException('Registration is not yet open.');
+      }
+      if (
+        event.registrationClosesAt &&
+        new Date() > event.registrationClosesAt
+      ) {
         throw new ForbiddenException('Registration has closed.');
       }
 
@@ -83,14 +128,16 @@ export class RegistrationService {
           id: delegationId,
           tournamentId: event.id,
           countryCode: country.code,
-          name: country.name,
+          name: dto.teamName.trim(),
           registrationStatus: 'submitted',
           registrationSubmittedAt: new Date(),
           associationName: dto.associationName,
           headOfDelegation: dto.headOfDelegation,
           headCoach: dto.headCoach,
+          contactName: dto.contactName,
           contactEmail: email,
           contactPhone: dto.contactPhone,
+          contactRoleTitle: dto.contactRoleTitle,
           expectedSquadSize: dto.expectedSquadSize,
           travellingParty: dto.travellingParty,
           arrivalDate: dto.arrivalDate,
@@ -116,7 +163,13 @@ export class RegistrationService {
       });
 
       await client.query('COMMIT');
-      return { userId: user.id, delegationId: created.id, isAdmin: false };
+      return {
+        userId: user.id,
+        delegationId: created.id,
+        isAdmin: false,
+        platformRole: null,
+        authVersion: 0,
+      };
     } catch (err: unknown) {
       await client.query('ROLLBACK').catch(() => {});
       if (isUniqueViolation(err, 'delegation_tournament_country_unique')) {

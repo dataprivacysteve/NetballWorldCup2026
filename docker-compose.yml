@@ -78,7 +78,8 @@ services:
       done;
       mc mb --ignore-existing local/${S3_BUCKET_PHOTOS};
       mc mb --ignore-existing local/${S3_BUCKET_BADGES};
-      echo 'Buckets ready: ${S3_BUCKET_PHOTOS}, ${S3_BUCKET_BADGES}';
+      mc mb --ignore-existing local/${S3_BUCKET_IDENTITY:-gameday-identity};
+      echo 'Buckets ready: ${S3_BUCKET_PHOTOS}, ${S3_BUCKET_BADGES}, identity';
       "
 
   caddy:

@@ -32,8 +32,10 @@ export const delegation = pgTable(
     associationName: text('association_name'),
     headOfDelegation: text('head_of_delegation'),
     headCoach: text('head_coach'),
+    contactName: text('contact_name'),
     contactEmail: text('contact_email'),
     contactPhone: text('contact_phone'),
+    contactRoleTitle: text('contact_role_title'),
     expectedSquadSize: integer('expected_squad_size'),
     travellingParty: integer('travelling_party'),
     arrivalDate: date('arrival_date'),
@@ -43,6 +45,7 @@ export const delegation = pgTable(
     registrationSubmittedAt: timestamp('registration_submitted_at', {
       withTimezone: true,
     }),
+    registrationReviewNote: text('registration_review_note'),
     approvedAt: timestamp('approved_at', { withTimezone: true }),
 
     // --- Roster / accreditation submission + committee review ---

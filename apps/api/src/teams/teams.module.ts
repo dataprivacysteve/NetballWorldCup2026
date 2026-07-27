@@ -3,9 +3,12 @@ import { RegistrationController } from './registration.controller';
 import { DelegationController } from './delegation.controller';
 import { PlayerController } from './player.controller';
 import { RegistrationService } from './registration.service';
+import { TeamSheetController } from './team-sheet.controller';
+import { TeamSheetService } from './team-sheet.service';
 import { DelegationService } from './delegation.service';
 import { PlayerService } from './player.service';
 import { PhotoService } from './photo.service';
+import { IdentityService } from './identity.service';
 import { TenantInterceptor } from '../tenant/tenant.interceptor';
 
 // Module 1 — the teams surface: registration, roster, consent, photo intake,
@@ -16,12 +19,15 @@ import { TenantInterceptor } from '../tenant/tenant.interceptor';
     RegistrationController,
     DelegationController,
     PlayerController,
+    TeamSheetController,
   ],
   providers: [
     RegistrationService,
+    TeamSheetService,
     DelegationService,
     PlayerService,
     PhotoService,
+    IdentityService,
     TenantInterceptor,
   ],
 })
