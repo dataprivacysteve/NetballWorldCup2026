@@ -323,7 +323,8 @@ export default function Page() {
 
   useEffect(() => {
     let active = true;
-    void api.me()
+    void api
+      .me()
       .then((session) => {
         if (active) setMe(session);
       })
@@ -400,9 +401,13 @@ function AuthScreen({ onAuthed }: { onAuthed: () => void }) {
       <section className="delegation-auth-visual">
         <div className="delegation-auth-glow" aria-hidden="true" />
         <div className="delegation-auth-copy">
-          <p className="delegation-kicker">Official delegation registration portal</p>
+          <p className="delegation-kicker">
+            Official delegation registration portal
+          </p>
           <h1>
-            World Cup<br />Qualifiers <span>2026</span>
+            World Cup
+            <br />
+            Qualifiers <span>2026</span>
           </h1>
           <p className="delegation-auth-lead">
             One authorised team official creates the delegation account,
@@ -414,10 +419,31 @@ function AuthScreen({ onAuthed }: { onAuthed: () => void }) {
             <span>Players and officials managed together</span>
             <span>Accreditation-ready records</span>
           </div>
-          <ol className="delegation-auth-steps" aria-label="Registration process">
-            <li><b>01</b><span><strong>Register the authorised team account.</strong>Submit your association and primary delegation contact.</span></li>
-            <li><b>02</b><span><strong>Build the complete squad.</strong>Add players, coaches, medical staff, and other approved officials.</span></li>
-            <li><b>03</b><span><strong>Upload records for accreditation review.</strong>Track documents, approvals, and readiness from one dashboard.</span></li>
+          <ol
+            className="delegation-auth-steps"
+            aria-label="Registration process"
+          >
+            <li>
+              <b>01</b>
+              <span>
+                <strong>Register the authorised team account.</strong>Submit
+                your association and primary delegation contact.
+              </span>
+            </li>
+            <li>
+              <b>02</b>
+              <span>
+                <strong>Build the complete squad.</strong>Add players, coaches,
+                medical staff, and other approved officials.
+              </span>
+            </li>
+            <li>
+              <b>03</b>
+              <span>
+                <strong>Upload records for accreditation review.</strong>Track
+                documents, approvals, and readiness from one dashboard.
+              </span>
+            </li>
           </ol>
         </div>
       </section>
@@ -428,9 +454,7 @@ function AuthScreen({ onAuthed }: { onAuthed: () => void }) {
           <div className="mb-8 lg:hidden">
             <QualifierLogo className="h-14 w-auto" backed />
           </div>
-          <div
-            className={`${panel} delegation-auth-card min-w-0 p-5 sm:p-8`}
-          >
+          <div className={`${panel} delegation-auth-card min-w-0 p-5 sm:p-8`}>
             <div
               className="mb-6 flex gap-1 rounded-xl bg-bg-soft p-1.5"
               role="tablist"
@@ -597,14 +621,18 @@ function RegisterForm({ onAuthed }: { onAuthed: () => void }) {
         <h1 className="font-display text-lg font-bold text-ink">
           {closed.phase === "scheduled"
             ? "Registration opens soon"
-            : "Registration is unavailable"}
+            : closed.phase === "configuration"
+              ? "Registration is being configured"
+              : "Registration is unavailable"}
         </h1>
         <p className="text-sm text-ink-soft">
           {closed.phase === "scheduled" && closed.opensAt
             ? `Registration opens on ${new Date(closed.opensAt).toLocaleString()}.`
-            : closed.closesAt
+            : closed.phase === "closed" && closed.closesAt
               ? `Registration closed on ${new Date(closed.closesAt).toLocaleString()}.`
-              : "Registration is currently unavailable."}{" "}
+              : closed.phase === "configuration"
+                ? "Registration will become available after SportsBB publishes the tournament configuration."
+                : "Registration is currently unavailable."}{" "}
           Contact the Organising Committee at{" "}
           <a
             href="mailto:loc@netballamericas.org"
@@ -1570,7 +1598,11 @@ function RegistrationCorrectionForm({
   );
 }
 
-function MatchDayTeamSheets({ onError }: { onError: (error: unknown) => void }) {
+function MatchDayTeamSheets({
+  onError,
+}: {
+  onError: (error: unknown) => void;
+}) {
   const [matches, setMatches] = useState<TeamMatch[]>([]);
   const [selected, setSelected] = useState<TeamMatch | null>(null);
   const [detail, setDetail] = useState<TeamSheetDetail | null>(null);
@@ -1685,7 +1717,8 @@ function MatchDayTeamSheets({ onError }: { onError: (error: unknown) => void }) 
                     {match.teamBName}
                   </p>
                   <p className="mt-1 text-xs text-ink-muted">
-                    {match.roundLabel ?? "Fixture"} · {match.venue ?? "Venue TBC"}
+                    {match.roundLabel ?? "Fixture"} ·{" "}
+                    {match.venue ?? "Venue TBC"}
                     {match.court ? ` · ${match.court}` : ""}
                   </p>
                 </div>
@@ -1707,7 +1740,8 @@ function MatchDayTeamSheets({ onError }: { onError: (error: unknown) => void }) 
     );
   }
 
-  const editable = detail?.sheet.status === "draft" && selected.status === "scheduled";
+  const editable =
+    detail?.sheet.status === "draft" && selected.status === "scheduled";
   const selectedIds = new Set([...Object.values(positions), ...bench]);
   const valid =
     POSITIONS.every((position) => positions[position]) &&
@@ -1728,7 +1762,9 @@ function MatchDayTeamSheets({ onError }: { onError: (error: unknown) => void }) 
         <>
           <div className="grid gap-4 lg:grid-cols-2">
             <section className={`${panel} p-5`}>
-              <h2 className="font-display text-lg font-bold text-ink">Starting seven</h2>
+              <h2 className="font-display text-lg font-bold text-ink">
+                Starting seven
+              </h2>
               <div className="mt-4 space-y-3">
                 {POSITIONS.map((position) => (
                   <label key={position} className="block">
@@ -1737,7 +1773,9 @@ function MatchDayTeamSheets({ onError }: { onError: (error: unknown) => void }) 
                       className={inputCls}
                       value={positions[position] ?? ""}
                       disabled={!editable}
-                      onChange={(event) => setPosition(position, event.target.value)}
+                      onChange={(event) =>
+                        setPosition(position, event.target.value)
+                      }
                     >
                       <option value="">Select player…</option>
                       {detail.roster
@@ -1749,7 +1787,9 @@ function MatchDayTeamSheets({ onError }: { onError: (error: unknown) => void }) 
                         )
                         .map((player) => (
                           <option key={player.id} value={player.id}>
-                            {player.jerseyNumber ? `#${player.jerseyNumber} ` : ""}
+                            {player.jerseyNumber
+                              ? `#${player.jerseyNumber} `
+                              : ""}
                             {player.firstName} {player.lastName}
                           </option>
                         ))}
@@ -1759,13 +1799,19 @@ function MatchDayTeamSheets({ onError }: { onError: (error: unknown) => void }) 
               </div>
             </section>
             <section className={`${panel} p-5`}>
-              <h2 className="font-display text-lg font-bold text-ink">Match bench</h2>
-              <p className="mt-1 text-sm text-ink-muted">Select up to eight additional players.</p>
+              <h2 className="font-display text-lg font-bold text-ink">
+                Match bench
+              </h2>
+              <p className="mt-1 text-sm text-ink-muted">
+                Select up to eight additional players.
+              </p>
               <div className="mt-4 space-y-2">
                 {detail.roster
                   .filter((player) => player.accredited === "issued")
                   .map((player) => {
-                    const starting = Object.values(positions).includes(player.id);
+                    const starting = Object.values(positions).includes(
+                      player.id,
+                    );
                     return (
                       <label
                         key={player.id}
@@ -1774,14 +1820,20 @@ function MatchDayTeamSheets({ onError }: { onError: (error: unknown) => void }) 
                         <input
                           type="checkbox"
                           checked={bench.has(player.id)}
-                          disabled={!editable || starting || (!bench.has(player.id) && bench.size >= 8)}
+                          disabled={
+                            !editable ||
+                            starting ||
+                            (!bench.has(player.id) && bench.size >= 8)
+                          }
                           onChange={() => toggleBench(player.id)}
                         />
                         <span className="text-sm font-semibold text-ink">
                           {player.firstName} {player.lastName}
                         </span>
                         <span className="ml-auto text-xs text-ink-muted">
-                          {starting ? "Starting seven" : player.primaryPosition ?? "No preference"}
+                          {starting
+                            ? "Starting seven"
+                            : (player.primaryPosition ?? "No preference")}
                         </span>
                       </label>
                     );
@@ -1795,10 +1847,18 @@ function MatchDayTeamSheets({ onError }: { onError: (error: unknown) => void }) 
             </span>
             {editable && (
               <>
-                <button className={btnGhost} disabled={busy || !valid} onClick={() => save(false)}>
+                <button
+                  className={btnGhost}
+                  disabled={busy || !valid}
+                  onClick={() => save(false)}
+                >
                   Save draft
                 </button>
-                <button className={btnGold} disabled={busy || !valid} onClick={() => save(true)}>
+                <button
+                  className={btnGold}
+                  disabled={busy || !valid}
+                  onClick={() => save(true)}
+                >
                   Submit team sheet
                 </button>
               </>
