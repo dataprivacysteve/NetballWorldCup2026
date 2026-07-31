@@ -1110,6 +1110,7 @@ function StatusPill({ status }: { status: string }) {
   const map: Record<string, string> = {
     draft: "border-warn-line bg-warn-soft text-warn",
     submitted: "border-warn-line bg-warn-soft text-warn",
+    under_review: "border-navy/20 bg-navy/10 text-navy",
     approved: "border-ok-line bg-ok-soft text-ok",
     rejected: "border-bad-line bg-bad-soft text-bad",
   };
@@ -1410,7 +1411,7 @@ function Registration({
 }) {
   if (!delegation) return <LoadingBlock rows={4} />;
   const rows: [string, string | number | null][] = [
-    ["Country", delegation.name],
+    ["Country", delegation.countryName ?? delegation.countryCode],
     ["Association", delegation.associationName],
     ["Head of delegation", delegation.headOfDelegation],
     ["Head coach", delegation.headCoach],
@@ -1909,7 +1910,7 @@ function Roster({
       <PageHeading
         eyebrow="Players and officials"
         title="Build your roster"
-        description={`Add ${policy?.activePlayerMinimum ?? 10}–${policy?.activePlayerMaximum ?? 15} active players, up to ${policy?.reserveMaximum ?? 3} travelling reserves, and the required team officials.`}
+        description={`Add people progressively and send available records for early LOC review. Final accreditation requires ${policy?.activePlayerMinimum ?? 10}–${policy?.activePlayerMaximum ?? 15} active players, up to ${policy?.reserveMaximum ?? 3} travelling reserves, and the required team officials.`}
         action={
           !locked && !adding ? (
             <button onClick={() => setAdding(true)} className={btnPrimary}>
@@ -3224,7 +3225,6 @@ function Submit({
     "coach",
     "primary_care",
   ];
-  const allReady = total > 0 && players.every((p) => p.ready);
   const checks = [
     { done: approved, label: "Delegation approved by the OC" },
     { done: total > 0, label: `Roster has people (${total})` },
@@ -3281,7 +3281,9 @@ function Submit({
     },
   ];
   const submitted = delegation.status === "submitted";
+  const underReview = delegation.status === "under_review";
   const accredited = delegation.status === "approved";
+  const finalReady = checks.every((item) => item.done);
 
   async function submit() {
     setBusy(true);
@@ -3296,12 +3298,25 @@ function Submit({
     }
   }
 
+  async function submitPartial() {
+    setBusy(true);
+    onError(null);
+    try {
+      await api.submitPartialRoster();
+      onSubmitted();
+    } catch (err) {
+      onError(err);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="space-y-5">
       <PageHeading
         eyebrow="Final review"
-        title="Submit and status"
-        description="Confirm every roster requirement, then hand the delegation to the Organising Committee for accreditation review."
+        title="Review and submission status"
+        description="Send confirmed people for rolling LOC review as they become available, then make the final accreditation submission when the complete roster is ready."
         action={<StatusPill status={delegation.status} />}
       />
       {accredited ? (
@@ -3338,6 +3353,22 @@ function Submit({
             </p>
           </div>
         </div>
+      ) : underReview ? (
+        <div className="flex items-start gap-3 rounded-2xl border border-navy/20 bg-navy/5 p-4">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-navy">
+            <TeamIcon name="submit" className="h-5 w-5" />
+          </span>
+          <div>
+            <p className="font-display font-bold text-ink">
+              Partial roster available to the LOC
+            </p>
+            <p className="text-sm text-ink-soft">
+              Continue adding and updating people as they are confirmed. The LOC
+              can review current records now; final accreditation remains
+              unavailable until every roster requirement is complete.
+            </p>
+          </div>
+        </div>
       ) : null}
 
       {accredited ? (
@@ -3366,17 +3397,27 @@ function Submit({
             </ul>
           </div>
           <div className="flex flex-wrap items-center gap-3">
+            {!underReview && !submitted && (
+              <button
+                onClick={submitPartial}
+                className={btnGhost}
+                disabled={busy || !approved || total === 0 || locked}
+              >
+                {busy ? "Sending…" : "Send current records for LOC review"}
+              </button>
+            )}
             <button
               onClick={submit}
               className={btnGold}
-              disabled={busy || !approved || total === 0 || !allReady || locked}
+              disabled={busy || !approved || !finalReady || locked}
             >
               {busy ? "Submitting…" : "Submit roster for accreditation"}
             </button>
-            {!allReady && total > 0 && (
+            {!finalReady && total > 0 && (
               <span className="text-sm text-warn">
-                Complete every required photo, player identity and applicable
-                guardian consent before submission.
+                You can send partial records now. Final submission unlocks after
+                the complete roster and every accreditation requirement are
+                ready.
               </span>
             )}
           </div>

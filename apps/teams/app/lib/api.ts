@@ -75,6 +75,7 @@ export type Delegation = {
   id: string;
   name: string;
   countryCode: string;
+  countryName: string | null;
   registrationStatus: RegistrationStatus;
   status: "draft" | "submitted" | "under_review" | "approved" | "rejected";
   associationName: string | null;
@@ -246,10 +247,13 @@ export const api = {
     req<Me>("/login", { method: "POST", body: { email, password } }),
   logout: () => req<{ ok: boolean }>("/logout", { method: "POST" }),
   requestPasswordReset: (email: string) =>
-    req<{ accepted: boolean; devResetToken?: string }>("/password-reset/request", {
-      method: "POST",
-      body: { email },
-    }),
+    req<{ accepted: boolean; devResetToken?: string }>(
+      "/password-reset/request",
+      {
+        method: "POST",
+        body: { email },
+      },
+    ),
   completePasswordReset: (token: string, password: string) =>
     req<{ reset: boolean }>("/password-reset/complete", {
       method: "POST",
@@ -257,8 +261,7 @@ export const api = {
     }),
 
   eligibleCountries: () => req<Country[]>("/eligible-countries"),
-  registrationWindow: () =>
-    req<RegistrationWindow>("/registration-window"),
+  registrationWindow: () => req<RegistrationWindow>("/registration-window"),
   register: (b: {
     countryCode: string;
     teamName: string;
@@ -275,25 +278,28 @@ export const api = {
   }) => req<Me>("/register", { method: "POST", body: b }),
 
   getDelegation: () => req<Delegation>("/delegation"),
-  updateRegistration: (body: Partial<{
-    name: string;
-    countryCode: string;
-    associationName: string;
-    headOfDelegation: string;
-    headCoach: string;
-    contactName: string;
-    contactPhone: string;
-    contactRoleTitle: string;
-    expectedSquadSize: number;
-    travellingParty: number;
-    arrivalDate: string;
-    departureDate: string;
-    notes: string;
-  }>) => req<Delegation>("/delegation", { method: "PATCH", body }),
+  updateRegistration: (
+    body: Partial<{
+      name: string;
+      countryCode: string;
+      associationName: string;
+      headOfDelegation: string;
+      headCoach: string;
+      contactName: string;
+      contactPhone: string;
+      contactRoleTitle: string;
+      expectedSquadSize: number;
+      travellingParty: number;
+      arrivalDate: string;
+      departureDate: string;
+      notes: string;
+    }>,
+  ) => req<Delegation>("/delegation", { method: "PATCH", body }),
   resubmitRegistration: () =>
     req<Delegation>("/delegation/registration/submit", { method: "POST" }),
-  submitRoster: () =>
-    req<Delegation>("/delegation/submit", { method: "POST" }),
+  submitRoster: () => req<Delegation>("/delegation/submit", { method: "POST" }),
+  submitPartialRoster: () =>
+    req<Delegation>("/delegation/submit-partial", { method: "POST" }),
 
   listPlayers: () => req<Person[]>("/players"),
   teamMatches: () => req<TeamMatch[]>("/team-matches"),
@@ -324,8 +330,7 @@ export const api = {
   deletePerson: (id: string) =>
     req<{ deleted: boolean }>(`/players/${id}`, { method: "DELETE" }),
 
-  listConsents: (id: string) =>
-    req<Consent[]>(`/players/${id}/consents`),
+  listConsents: (id: string) => req<Consent[]>(`/players/${id}/consents`),
   addConsent: (
     id: string,
     b: {

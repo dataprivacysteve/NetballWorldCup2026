@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>LOC Platform Spacing Fix — Installation</title>
+  <style>
+    :root{--navy:#11183f;--gold:#e8bc45;--ink:#182038;--muted:#667087;--paper:#f5f3ed;--line:#dde1e9;--ok:#176b49;--bad:#a43131}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}.hero{padding:42px 22px;background:linear-gradient(135deg,#090d21,var(--navy));color:#fff;border-bottom:5px solid var(--gold)}.wrap{max-width:980px;margin:auto}.eyebrow{color:var(--gold);font:700 12px ui-monospace,monospace;letter-spacing:.16em;text-transform:uppercase}h1{font:700 clamp(30px,5vw,48px)/1.1 Georgia,serif;margin:8px 0}h2{font:700 25px/1.2 Georgia,serif;margin:0 0 12px}main{padding:28px 18px 50px}.card{background:#fff;border:1px solid var(--line);border-radius:15px;padding:23px;margin-bottom:18px;box-shadow:0 6px 18px #1820380c}.callout{padding:13px 15px;border-left:4px solid var(--gold);background:#fff9e6;border-radius:7px}.ok{border-color:var(--ok);background:#eef9f3}.bad{border-color:var(--bad);background:#fff1f1}pre{overflow:auto;background:#090d1f;color:#eef1fa;border-radius:10px;padding:16px;font:13px/1.55 ui-monospace,Consolas,monospace;white-space:pre}code{font-family:ui-monospace,Consolas,monospace}p code,li code{background:#edf0f5;padding:2px 5px;border-radius:4px}ol{padding-left:22px}.footer{text-align:center;color:var(--muted);font-size:12px}@media print{body{background:#fff}.card{box-shadow:none;break-inside:avoid}pre{white-space:pre-wrap}}
+  </style>
+</head>
+<body>
+  <header class="hero"><div class="wrap"><div class="eyebrow">GameDay · LOC Platform</div><h1>Approval-card spacing fix</h1><p>Installation and rollback guide for the responsive registration-details layout correction.</p></div></header>
+  <main class="wrap">
+    <section class="card"><h2>Package scope</h2><p>This package changes only <code>apps/platform/app/page.tsx</code>. It prevents contact email and phone values from overlapping, adds responsive columns and permits long values to wrap. It contains no database migration, credentials or environment file.</p></section>
+    <section class="card"><div class="eyebrow">Step 1</div><h2>Set deployment variables</h2><pre>export SITE_USER=web6
+export SITE_GROUP=client0
+export SOURCE_ROOT=/var/www/clients/client0/web6/web/gameday/source
+export CACHE_ROOT=/var/www/clients/client0/web6/web/gameday/.cache
+export PACKAGE=/tmp/platform-spacing-fix.zip
+
+test -f "$SOURCE_ROOT/apps/platform/app/page.tsx" || { echo "Wrong source path"; exit 1; }</pre></section>
+    <section class="card"><div class="eyebrow">Step 2</div><h2>Back up and install</h2><pre>cp "$SOURCE_ROOT/apps/platform/app/page.tsx" \
+  "$SOURCE_ROOT/apps/platform/app/page.tsx.before-spacing-fix"
+
+export WORK_DIR="$(mktemp -d /tmp/platform-spacing.XXXXXX)"
+unzip -q "$PACKAGE" -d "$WORK_DIR"
+test -f "$WORK_DIR/platform-spacing-fix/apps/platform/app/page.tsx" \
+  || { echo "Invalid package"; exit 1; }
+
+cp "$WORK_DIR/platform-spacing-fix/apps/platform/app/page.tsx" \
+  "$SOURCE_ROOT/apps/platform/app/page.tsx"
+chown "$SITE_USER:$SITE_GROUP" "$SOURCE_ROOT/apps/platform/app/page.tsx"</pre></section>
+    <section class="card"><div class="eyebrow">Step 3</div><h2>Build as the ISPConfig site user</h2><pre>test ! -d "$SOURCE_ROOT/apps/platform/.next" || \
+  chown -R "$SITE_USER:$SITE_GROUP" "$SOURCE_ROOT/apps/platform/.next"
+
+cd "$SOURCE_ROOT"
+sudo -u "$SITE_USER" -H env \
+  XDG_CACHE_HOME="$CACHE_ROOT" \
+  COREPACK_HOME="$CACHE_ROOT/corepack" \
+  PNPM_HOME="$CACHE_ROOT/pnpm" \
+  pnpm --filter platform build</pre><div class="callout bad"><strong>Stop if the build fails.</strong> Do not restart the currently working Platform service with an incomplete build.</div></section>
+    <section class="card"><div class="eyebrow">Step 4</div><h2>Restart and verify</h2><pre>supervisorctl restart gameday-platform
+sleep 8
+supervisorctl status gameday-platform
+ss -lntp | grep ':3003'
+tail -n 40 /var/log/gameday/platform-error.log</pre><div class="callout ok"><strong>Expected:</strong> <code>gameday-platform RUNNING</code>. Hard-refresh the browser, open Registrations and verify that email and phone no longer overlap at desktop and tablet widths.</div></section>
+    <section class="card"><div class="eyebrow">Rollback</div><h2>Restore the previous page</h2><pre>cp "$SOURCE_ROOT/apps/platform/app/page.tsx.before-spacing-fix" \
+  "$SOURCE_ROOT/apps/platform/app/page.tsx"
+chown "$SITE_USER:$SITE_GROUP" "$SOURCE_ROOT/apps/platform/app/page.tsx"
+
+cd "$SOURCE_ROOT"
+sudo -u "$SITE_USER" -H env \
+  XDG_CACHE_HOME="$CACHE_ROOT" COREPACK_HOME="$CACHE_ROOT/corepack" PNPM_HOME="$CACHE_ROOT/pnpm" \
+  pnpm --filter platform build
+supervisorctl restart gameday-platform
+sleep 8
+supervisorctl status gameday-platform</pre></section>
+    <p class="footer">LOC Platform spacing-fix package · 30 July 2026</p>
+  </main>
+</body>
+</html>

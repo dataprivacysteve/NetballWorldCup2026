@@ -49,4 +49,9 @@ export class DelegationController {
   submit(@Req() req: Request & { user: { userId: string } }) {
     return this.delegation.submit(req.user.userId);
   }
+
+  @Post('submit-partial')
+  submitPartial(@Req() req: Request & { user: { userId: string } }) {
+    return this.delegation.submitPartial(req.user.userId);
+  }
 }

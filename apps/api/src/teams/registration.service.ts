@@ -5,6 +5,7 @@ import {
   ForbiddenException,
   Inject,
   Injectable,
+  Logger,
 } from '@nestjs/common';
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
@@ -15,10 +16,16 @@ import { hashPassword } from '../auth/password.util';
 import type { SessionUser } from '../auth/auth.service';
 import { RegisterDelegationDto } from './dto';
 import { registrationWindowState } from './registration-window';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class RegistrationService {
-  constructor(@Inject(PG_POOL) private readonly pool: Pool) {}
+  private readonly logger = new Logger(RegistrationService.name);
+
+  constructor(
+    @Inject(PG_POOL) private readonly pool: Pool,
+    private readonly mail: MailService,
+  ) {}
 
   // Public country picker. eligible_country is not RLS-scoped, so gameday_app
   // reads it freely with no tenant context.
@@ -163,6 +170,12 @@ export class RegistrationService {
       });
 
       await client.query('COMMIT');
+      await this.notifyLoc(dto, country.name).catch((error: unknown) => {
+        this.logger.error(
+          `LOC registration notification failed for ${delegationId}`,
+          error instanceof Error ? error.stack : String(error),
+        );
+      });
       return {
         userId: user.id,
         delegationId: created.id,
@@ -184,6 +197,34 @@ export class RegistrationService {
     } finally {
       client.release();
     }
+  }
+
+  private async notifyLoc(
+    dto: RegisterDelegationDto,
+    countryName: string,
+  ): Promise<void> {
+    const recipient = process.env.LOC_NOTIFICATION_EMAIL?.trim();
+    if (!recipient) {
+      this.logger.warn(
+        'LOC_NOTIFICATION_EMAIL is not configured; registration notification skipped',
+      );
+      return;
+    }
+    const platformUrl = process.env.PLATFORM_BASE_URL ?? '';
+    await this.mail.send({
+      to: recipient,
+      subject: `Delegation registration awaiting approval: ${dto.teamName.trim()}`,
+      text: [
+        'A new delegation registration is awaiting LOC approval.',
+        `Country: ${countryName}`,
+        `Team: ${dto.teamName.trim()}`,
+        `Association: ${dto.associationName.trim()}`,
+        `Contact: ${dto.contactName.trim()} <${dto.contactEmail.toLowerCase()}>`,
+        platformUrl ? `Review: ${platformUrl}/` : '',
+      ]
+        .filter(Boolean)
+        .join('\n'),
+    });
   }
 }
 

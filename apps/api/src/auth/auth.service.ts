@@ -14,6 +14,7 @@ import { and, eq, gt, isNull, sql } from 'drizzle-orm';
 import { PRIVILEGED_POOL } from '../db/db.tokens';
 import * as schema from '../db/schema';
 import { hashPassword, verifyPassword } from './password.util';
+import { MailService } from '../mail/mail.service';
 
 export interface SessionUser {
   userId: string;
@@ -43,6 +44,7 @@ export class AuthService {
     @Inject(PRIVILEGED_POOL) private readonly pool: Pool,
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
+    private readonly mail: MailService,
   ) {
     this.db = drizzle(pool, { schema });
   }
@@ -131,31 +133,20 @@ export class AuthService {
     });
 
     const resetUrl = `${this.config.get<string>('TEAMS_BASE_URL', 'https://teams.netballamericas.test')}/reset-password?token=${encodeURIComponent(token)}`;
-    const webhook = this.config.get<string>('EMAIL_WEBHOOK_URL');
-    if (webhook) {
-      const response = await fetch(webhook, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          to: user.email,
-          template: 'gameday-password-reset',
-          subject: 'Reset your GameDay password',
-          variables: { resetUrl, expiresInMinutes: 30 },
-        }),
+    try {
+      await this.mail.send({
+        to: user.email,
+        template: 'gameday-password-reset',
+        subject: 'Reset your GameDay password',
+        text: `Reset your GameDay password using this link: ${resetUrl}\n\nThis link expires in 30 minutes.`,
+        html: `<p>Reset your GameDay password using the link below.</p><p><a href="${resetUrl}">Reset password</a></p><p>This link expires in 30 minutes.</p>`,
+        variables: { resetUrl, expiresInMinutes: 30 },
       });
-      if (!response.ok) {
-        throw new ServiceUnavailableException(
-          'Password-reset delivery is temporarily unavailable',
-        );
-      }
       return { accepted: true };
+    } catch (error) {
+      if (this.config.get<string>('NODE_ENV') === 'production') throw error;
+      return { accepted: true, devResetToken: token };
     }
-    if (this.config.get<string>('NODE_ENV') === 'production') {
-      throw new ServiceUnavailableException(
-        'Password-reset delivery is not configured',
-      );
-    }
-    return { accepted: true, devResetToken: token };
   }
 
   async completePasswordReset(token: string, password: string) {

@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { eq, getTableColumns } from 'drizzle-orm';
 import { getTenant } from '../tenant/tenant-context';
 import * as schema from '../db/schema';
 import { isMinor } from './age';
@@ -17,8 +17,15 @@ export class DelegationService {
   async getCurrent() {
     const { db, delegationId } = getTenant();
     const [row] = await db
-      .select()
+      .select({
+        ...getTableColumns(schema.delegation),
+        countryName: schema.eligibleCountry.name,
+      })
       .from(schema.delegation)
+      .leftJoin(
+        schema.eligibleCountry,
+        eq(schema.eligibleCountry.code, schema.delegation.countryCode),
+      )
       .where(eq(schema.delegation.id, delegationId));
     if (!row) throw new NotFoundException('Delegation not found');
     return row;
@@ -131,12 +138,47 @@ export class DelegationService {
   // Submit for committee review. Recoverable up to this point (everything is
   // a persisted draft); submitting validates consent completeness and locks
   // editing. The committee's review/approval is Module 2.
+  async submitPartial(actorUserId: string) {
+    const { db, delegationId } = getTenant();
+    const current = await this.getCurrent();
+    if (!['draft', 'rejected', 'under_review'].includes(current.status)) {
+      throw new BadRequestException(
+        'Only a roster that is still being assembled can be sent for preliminary review',
+      );
+    }
+    const people = await db.select().from(schema.player);
+    if (people.length === 0) {
+      throw new BadRequestException(
+        'Add at least one player or official before requesting preliminary review',
+      );
+    }
+    const [row] = await db
+      .update(schema.delegation)
+      .set({
+        status: 'under_review',
+        submittedAt: new Date(),
+        reviewNote: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(schema.delegation.id, delegationId))
+      .returning();
+    await db.insert(schema.teamAuditEvent).values({
+      delegationId,
+      actorUserId,
+      action: 'roster.partial_review_requested',
+      targetType: 'delegation',
+      targetId: delegationId,
+      details: { people: people.length },
+    });
+    return row;
+  }
+
   async submit(actorUserId: string) {
     const { db, delegationId } = getTenant();
     // Registration approval is already enforced by the interceptor for this
     // route. Personnel amendments reopen submitted/accredited rosters as draft.
     const current = await this.getCurrent();
-    if (!['draft', 'rejected'].includes(current.status)) {
+    if (!['draft', 'rejected', 'under_review'].includes(current.status)) {
       throw new BadRequestException(
         current.status === 'approved'
           ? 'Accredited roster has no pending personnel amendment to submit'

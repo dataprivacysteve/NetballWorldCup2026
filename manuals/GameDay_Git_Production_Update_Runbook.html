@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>GameDay Git Production Update Runbook</title>
+  <style>
+    :root{--navy:#10183f;--blue:#26357b;--gold:#e4b942;--ink:#182038;--muted:#657087;--paper:#f4f2ec;--card:#fff;--line:#dde2eb;--ok:#116846;--warn:#8c4c09;--bad:#a42d35}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.62 system-ui,-apple-system,"Segoe UI",sans-serif}.hero{padding:50px 22px;background:radial-gradient(circle at 85% 10%,#29367a 0,transparent 35%),linear-gradient(135deg,#070b1e,var(--navy));color:#fff;border-bottom:5px solid var(--gold)}.wrap{max-width:1060px;margin:auto}.eyebrow{color:var(--gold);font:700 12px/1.2 ui-monospace,Consolas,monospace;letter-spacing:.17em;text-transform:uppercase}h1{font:700 clamp(34px,6vw,57px)/1.06 Georgia,serif;margin:10px 0 15px}h2{font:700 27px/1.18 Georgia,serif;margin:0 0 12px}h3{margin:24px 0 8px;font-size:17px}.lead{max-width:780px;color:#dce2f6;font-size:18px}.meta{display:flex;flex-wrap:wrap;gap:9px;margin-top:25px}.pill{border:1px solid #465283;border-radius:999px;padding:6px 11px;font-size:12px}main{padding:30px 18px 58px}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:25px;margin-bottom:18px;box-shadow:0 7px 21px rgba(24,32,56,.055)}.toc{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px}.toc a{display:block;padding:10px 12px;border:1px solid var(--line);border-radius:9px;color:var(--blue);text-decoration:none;background:#fafbfe}.toc a:hover{border-color:var(--gold)}.step{display:grid;grid-template-columns:44px 1fr;gap:14px}.num{display:grid;place-items:center;width:40px;height:40px;border-radius:11px;background:var(--navy);color:#fff;font-weight:800}.callout{padding:14px 16px;border-left:4px solid var(--gold);border-radius:8px;background:#fff9e7;margin:15px 0}.callout.ok{border-color:var(--ok);background:#eefaf4}.callout.bad{border-color:var(--bad);background:#fff1f2}.callout strong{display:block;margin-bottom:2px}pre{overflow:auto;background:#080c1d;color:#edf1fb;border-radius:11px;padding:17px 18px;font:13px/1.58 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}p code,li code,td code{background:#edf0f5;border-radius:5px;padding:2px 5px}ol,ul{padding-left:22px}.gate{width:100%;border-collapse:collapse;margin-top:12px}.gate th,.gate td{text-align:left;padding:11px;border-bottom:1px solid var(--line);vertical-align:top}.gate th{font:700 11px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}.status{font-weight:800}.pass{color:var(--ok)}.stop{color:var(--bad)}.footer{text-align:center;color:var(--muted);font-size:12px;margin-top:28px}@media print{body{background:#fff}.hero{padding:25px}.card{box-shadow:none;break-inside:avoid}.toc{display:none}pre{white-space:pre-wrap}}
+  </style>
+</head>
+<body>
+  <header class="hero"><div class="wrap"><div class="eyebrow">SportsBB · Controlled Production Operations</div><h1>GameDay Git Production Update Runbook</h1><p class="lead">The repeatable process for safely moving verified GameDay changes from the Windows development workspace into the Debian 13, ISPConfig-managed production environment.</p><div class="meta"><span class="pill">GitHub</span><span class="pill">Debian 13</span><span class="pill">ISPConfig</span><span class="pill">Supervisor</span><span class="pill">Node.js 22</span><span class="pill">pnpm monorepo</span></div></div></header>
+  <main class="wrap">
+    <section class="card"><h2>Operating rule</h2><div class="callout"><strong>Git is the standard deployment channel.</strong> ZIP packages are reserved for bounded emergency hotfixes. Production secrets, uploads, logs, database dumps and server-generated files never enter Git.</div><div class="toc"><a href="#local">1. Verify locally</a><a href="#maintenance">2. Open maintenance window</a><a href="#backup">3. Back up</a><a href="#pull">4. Pull release</a><a href="#ownership">5. Correct ownership</a><a href="#dependencies">6. Install dependencies</a><a href="#migrations">7. Migration gate</a><a href="#build">8. Build</a><a href="#restart">9. Restart</a><a href="#smoke">10. Smoke test</a><a href="#record">11. Record release</a><a href="#rollback">Rollback</a></div></section>
+
+    <section class="card" id="local"><div class="step"><div class="num">1</div><div><div class="eyebrow">Development workstation</div><h2>Prepare and verify locally</h2></div></div><p>Review the worktree and ensure only intentional changes enter the release.</p><pre>git status --short
+git diff</pre><p>Run the application builds and focused tests:</p><pre>pnpm --filter api build
+pnpm --filter teams build
+pnpm --filter platform build
+pnpm --filter api exec jest roster-rules.spec.ts --runInBand</pre><p>Stage only intended source and dependency files:</p><pre>git add apps/api
+git add apps/teams
+git add apps/platform
+git add package.json pnpm-lock.yaml .env.example
+
+git diff --cached --stat
+git diff --cached</pre><div class="callout bad"><strong>Stop condition</strong>Do not commit <code>.env</code>, credentials, private documents, exports, logs, backups, uploaded identity evidence or unrelated worktree changes.</div><p>Commit and push the reviewed release:</p><pre>git commit -m "Add rolling LOC roster review and production fixes"
+git push origin main</pre></section>
+
+    <section class="card" id="maintenance"><div class="step"><div class="num">2</div><div><div class="eyebrow">Production server</div><h2>Begin a short maintenance window</h2></div></div><pre>export SITE_USER=web6
+export SITE_GROUP=client0
+export SOURCE_ROOT=/var/www/clients/client0/web6/web/gameday/source
+export CACHE_ROOT=/var/www/clients/client0/web6/web/gameday/.cache
+
+cd "$SOURCE_ROOT"
+git status --short
+git branch --show-current
+git remote -v</pre><div class="callout bad"><strong>Stop condition</strong>If production contains unexpected modifications, do not pull. Preserve and reconcile them first. Never use <code>git reset --hard</code> as a routine deployment shortcut.</div></section>
+
+    <section class="card" id="backup"><div class="step"><div class="num">3</div><div><div class="eyebrow">Recovery gate</div><h2>Back up the active release</h2></div></div><pre>export BACKUP_ROOT=/var/www/clients/client0/web6/web/gameday/backups
+export RELEASE_TIME="$(date +%Y%m%d-%H%M%S)"
+
+install -d -o "$SITE_USER" -g "$SITE_GROUP" -m 0750 "$BACKUP_ROOT"
+git rev-parse HEAD &gt; "$BACKUP_ROOT/commit-before-$RELEASE_TIME.txt"
+
+tar -C "$SOURCE_ROOT" \
+  -czf "$BACKUP_ROOT/source-before-$RELEASE_TIME.tar.gz" \
+  apps package.json pnpm-lock.yaml</pre><p>When the release includes database migrations, create a verified database dump before migrating:</p><pre>install -d -m 0700 /secure/backup
+pg_dump -h 127.0.0.1 -U cogameday -Fc gameday \
+  -f "/secure/backup/gameday-$RELEASE_TIME.dump"
+
+test -s "/secure/backup/gameday-$RELEASE_TIME.dump" \
+  &amp;&amp; echo "Database backup created" \
+  || { echo "Database backup failed"; exit 1; }</pre><div class="callout ok"><strong>Current rolling-review update</strong>No database migration is required for the partial-roster workflow.</div></section>
+
+    <section class="card" id="pull"><div class="step"><div class="num">4</div><div><div class="eyebrow">Release intake</div><h2>Pull the approved commit</h2></div></div><pre>cd "$SOURCE_ROOT"
+git fetch origin
+git pull --ff-only origin main
+git log -1 --oneline</pre><p>Record the new commit shown by <code>git log</code>. A non-fast-forward result is a stop condition requiring investigation.</p></section>
+
+    <section class="card" id="ownership"><div class="step"><div class="num">5</div><div><div class="eyebrow">ISPConfig filesystem</div><h2>Correct build ownership</h2></div></div><p>Earlier root-run builds caused recurring <code>EACCES</code> failures. Dependencies and build outputs must be writable by <code>web6:client0</code>.</p><pre>chown "$SITE_USER:$SITE_GROUP" "$SOURCE_ROOT"
+
+find "$SOURCE_ROOT" -type d -name node_modules -prune \
+  -exec chown -R "$SITE_USER:$SITE_GROUP" {} +
+
+test ! -d "$SOURCE_ROOT/apps/api/dist" || \
+  chown -R "$SITE_USER:$SITE_GROUP" "$SOURCE_ROOT/apps/api/dist"
+test ! -d "$SOURCE_ROOT/apps/teams/.next" || \
+  chown -R "$SITE_USER:$SITE_GROUP" "$SOURCE_ROOT/apps/teams/.next"
+test ! -d "$SOURCE_ROOT/apps/platform/.next" || \
+  chown -R "$SITE_USER:$SITE_GROUP" "$SOURCE_ROOT/apps/platform/.next"
+
+install -d -o "$SITE_USER" -g "$SITE_GROUP" -m 0750 \
+  "$CACHE_ROOT" "$CACHE_ROOT/corepack" "$CACHE_ROOT/pnpm"</pre><div class="callout"><strong>Permanent practice</strong>Run every pnpm install and build as <code>web6</code>, never as root. ISPConfig’s parent directory remains root-owned; the application cache stays under <code>web/gameday/.cache</code>.</div></section>
+
+    <section class="card" id="dependencies"><div class="step"><div class="num">6</div><div><div class="eyebrow">Deterministic install</div><h2>Install locked dependencies</h2></div></div><pre>cd "$SOURCE_ROOT"
+sudo -u "$SITE_USER" -H env \
+  CI=true \
+  XDG_CACHE_HOME="$CACHE_ROOT" \
+  COREPACK_HOME="$CACHE_ROOT/corepack" \
+  PNPM_HOME="$CACHE_ROOT/pnpm" \
+  pnpm install --frozen-lockfile</pre><div class="callout bad"><strong>Stop condition</strong>If dependency installation fails, do not restart any working service. Correct ownership, network, cache or lockfile problems first.</div></section>
+
+    <section class="card" id="migrations"><div class="step"><div class="num">7</div><div><div class="eyebrow">Database change gate</div><h2>Run migrations only when included</h2></div></div><pre>git diff HEAD^ --name-only | grep '^apps/api/drizzle/' \
+  || echo "No database migrations"</pre><p>If migration files are present and the backup passed:</p><pre>sudo -u "$SITE_USER" -H env \
+  XDG_CACHE_HOME="$CACHE_ROOT" \
+  COREPACK_HOME="$CACHE_ROOT/corepack" \
+  PNPM_HOME="$CACHE_ROOT/pnpm" \
+  pnpm --filter api db:migrate</pre><p>After role-related migrations, explicitly verify production capabilities such as the approved <code>gameday_platform BYPASSRLS</code> requirement.</p></section>
+
+    <section class="card" id="build"><div class="step"><div class="num">8</div><div><div class="eyebrow">Release compilation</div><h2>Build affected applications</h2></div></div><p>For an update affecting the API, Team Portal and LOC Platform:</p><pre>sudo -u "$SITE_USER" -H env \
+  XDG_CACHE_HOME="$CACHE_ROOT" COREPACK_HOME="$CACHE_ROOT/corepack" PNPM_HOME="$CACHE_ROOT/pnpm" \
+  pnpm --filter api build
+
+sudo -u "$SITE_USER" -H env \
+  XDG_CACHE_HOME="$CACHE_ROOT" COREPACK_HOME="$CACHE_ROOT/corepack" PNPM_HOME="$CACHE_ROOT/pnpm" \
+  pnpm --filter teams build
+
+sudo -u "$SITE_USER" -H env \
+  XDG_CACHE_HOME="$CACHE_ROOT" COREPACK_HOME="$CACHE_ROOT/corepack" PNPM_HOME="$CACHE_ROOT/pnpm" \
+  pnpm --filter platform build</pre><div class="callout bad"><strong>Stop condition</strong>Do not restart services unless every required build completes successfully.</div></section>
+
+    <section class="card" id="restart"><div class="step"><div class="num">9</div><div><div class="eyebrow">Controlled cutover</div><h2>Restart affected services</h2></div></div><pre>supervisorctl restart gameday-api
+sleep 5
+supervisorctl restart gameday-teams gameday-platform
+sleep 8
+
+supervisorctl status gameday-api gameday-teams gameday-platform
+ss -lntp | grep -E ':3000|:3002|:3003'</pre><table class="gate"><thead><tr><th>Service</th><th>Expected state</th><th>Port</th></tr></thead><tbody><tr><td>gameday-api</td><td class="status pass">RUNNING</td><td>3000</td></tr><tr><td>gameday-teams</td><td class="status pass">RUNNING</td><td>3002</td></tr><tr><td>gameday-platform</td><td class="status pass">RUNNING</td><td>3003</td></tr></tbody></table><p>If the API reports <code>EADDRINUSE</code>, identify the process on port 3000 before terminating it; do not kill an unknown process blindly.</p></section>
+
+    <section class="card" id="smoke"><div class="step"><div class="num">10</div><div><div class="eyebrow">Acceptance gate</div><h2>Perform production smoke tests</h2></div></div><h3>API availability</h3><pre>curl -sS -o /dev/null -w 'API HTTP %{http_code}\n' \
+  https://api.netballamericas.org/registration-window</pre><p>Expected response: <code>API HTTP 200</code>.</p><h3>Functional checks</h3><ol><li>Team and LOC sign-in both work; <code>/me</code> returns HTTP 200.</li><li>A pending team registration appears for LOC approval.</li><li>A team can add one person.</li><li>The team can use <strong>Send current records for LOC review</strong>.</li><li>The partial roster appears under LOC <strong>Roster review</strong>.</li><li>The team can continue adding and updating people during preliminary review.</li><li>Final accreditation submission remains disabled until the complete roster is ready.</li><li>The LOC cannot approve an incomplete roster for accreditation.</li><li>Country displays the selected country name, not the team name.</li><li>Password-reset email reaches the requesting account.</li><li>New-registration notification reaches <code>loc@netballamericas.org</code>.</li><li>LOC approval-card email and phone values do not overlap.</li></ol><h3>Logs</h3><pre>tail -n 100 /var/log/gameday/api-error.log
+tail -n 100 /var/log/gameday/teams-error.log
+tail -n 100 /var/log/gameday/platform-error.log</pre><div class="callout bad"><strong>Release failure</strong>A service not running, API response other than 200, login regression, missing registration, cross-team visibility failure or broken critical workflow requires correction or rollback before closing the maintenance window.</div></section>
+
+    <section class="card" id="record"><div class="step"><div class="num">11</div><div><div class="eyebrow">Deployment evidence</div><h2>Record the deployed version</h2></div></div><pre>cd "$SOURCE_ROOT"
+git rev-parse HEAD
+git log -1 --oneline
+date --iso-8601=seconds</pre><p>Record the commit hash, operator, deployment time, migration status, service status and smoke-test result. This creates a deterministic audit and rollback point.</p></section>
+
+    <section class="card" id="rollback"><div class="eyebrow">Recovery procedure</div><h2>Rollback the application release</h2><p>Use the exact pre-release commit recorded in Step 3. Prefer a Git revert/new corrective commit for normal operations. During an urgent failed cutover, restore the timestamped application archive:</p><pre>supervisorctl stop gameday-api gameday-teams gameday-platform
+
+tar -xzf "$BACKUP_ROOT/source-before-$RELEASE_TIME.tar.gz" \
+  -C "$SOURCE_ROOT"
+
+find "$SOURCE_ROOT" -type d -name node_modules -prune \
+  -exec chown -R "$SITE_USER:$SITE_GROUP" {} +
+
+cd "$SOURCE_ROOT"
+sudo -u "$SITE_USER" -H env \
+  CI=true XDG_CACHE_HOME="$CACHE_ROOT" COREPACK_HOME="$CACHE_ROOT/corepack" PNPM_HOME="$CACHE_ROOT/pnpm" \
+  pnpm install --frozen-lockfile
+
+sudo -u "$SITE_USER" -H env XDG_CACHE_HOME="$CACHE_ROOT" COREPACK_HOME="$CACHE_ROOT/corepack" PNPM_HOME="$CACHE_ROOT/pnpm" pnpm --filter api build
+sudo -u "$SITE_USER" -H env XDG_CACHE_HOME="$CACHE_ROOT" COREPACK_HOME="$CACHE_ROOT/corepack" PNPM_HOME="$CACHE_ROOT/pnpm" pnpm --filter teams build
+sudo -u "$SITE_USER" -H env XDG_CACHE_HOME="$CACHE_ROOT" COREPACK_HOME="$CACHE_ROOT/corepack" PNPM_HOME="$CACHE_ROOT/pnpm" pnpm --filter platform build
+
+supervisorctl start gameday-api gameday-teams gameday-platform
+sleep 8
+supervisorctl status gameday-api gameday-teams gameday-platform</pre><div class="callout bad"><strong>Database warning</strong>Application rollback does not automatically reverse database migrations. Restore or reverse a database migration only through a migration-specific, reviewed recovery plan.</div></section>
+
+    <section class="card"><h2>Release decision checklist</h2><table class="gate"><thead><tr><th>Gate</th><th>Required result</th></tr></thead><tbody><tr><td>Local builds and tests</td><td class="status pass">PASS</td></tr><tr><td>Staged diff reviewed</td><td class="status pass">PASS</td></tr><tr><td>Production worktree clean</td><td class="status pass">PASS</td></tr><tr><td>Source/database backup as applicable</td><td class="status pass">PASS</td></tr><tr><td>Dependency installation</td><td class="status pass">PASS</td></tr><tr><td>Migrations, when present</td><td class="status pass">PASS</td></tr><tr><td>All affected builds</td><td class="status pass">PASS</td></tr><tr><td>Supervisor services</td><td class="status pass">RUNNING</td></tr><tr><td>Smoke tests</td><td class="status pass">PASS</td></tr><tr><td>Commit and evidence recorded</td><td class="status pass">COMPLETE</td></tr></tbody></table></section>
+    <p class="footer">GameDay Git Production Update Runbook · Version 1.0 · 30 July 2026</p>
+  </main>
+</body>
+</html>

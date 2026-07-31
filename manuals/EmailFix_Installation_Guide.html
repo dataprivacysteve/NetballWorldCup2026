@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>GameDay Email Fix — Installation Guide</title>
+  <style>
+    :root{--navy:#11183f;--blue:#243276;--gold:#e3b748;--ink:#182038;--muted:#5f6880;--paper:#f5f3ed;--card:#fff;--line:#dfe3eb;--ok:#126744;--warn:#8a4b08;--bad:#a72d2d}
+    *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}.hero{background:linear-gradient(135deg,#080c20,var(--navy));color:#fff;padding:48px 24px;border-bottom:5px solid var(--gold)}.wrap{max-width:1050px;margin:auto}.eyebrow{color:var(--gold);font:700 12px/1.2 ui-monospace,monospace;letter-spacing:.16em;text-transform:uppercase}h1{font:700 clamp(30px,5vw,52px)/1.08 Georgia,serif;margin:10px 0 14px}h2{font:700 27px/1.2 Georgia,serif;margin:0 0 12px}h3{margin:24px 0 8px}.summary{max-width:760px;color:#dce2f5;font-size:17px}.meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}.pill{border:1px solid #445080;border-radius:999px;padding:6px 11px;font-size:12px}main{padding:30px 20px 60px}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:24px;margin:0 0 18px;box-shadow:0 6px 20px rgba(24,32,56,.05)}.callout{border-left:4px solid var(--gold);background:#fff9e8;padding:14px 16px;border-radius:8px;margin:16px 0}.danger{border-color:var(--bad);background:#fff2f2}.success{border-color:var(--ok);background:#eefaf4}.step{display:grid;grid-template-columns:42px 1fr;gap:14px;margin-top:20px}.num{display:grid;place-items:center;width:38px;height:38px;background:var(--navy);color:#fff;border-radius:10px;font-weight:800}pre{position:relative;overflow:auto;background:#090d1e;color:#e8ecfa;border-radius:11px;padding:17px 18px;font:13px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}p code,li code{background:#eef0f5;border-radius:5px;padding:2px 5px}table{width:100%;border-collapse:collapse;margin-top:12px}th,td{text-align:left;padding:10px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}ol,ul{padding-left:22px}.check{color:var(--ok);font-weight:700}.stop{color:var(--bad);font-weight:700}.toc a{color:var(--blue);text-decoration:none}.footer{text-align:center;color:var(--muted);font-size:12px;margin-top:28px}@media print{body{background:#fff}.hero{padding:24px}.card{box-shadow:none;break-inside:avoid}pre{white-space:pre-wrap}.toc{display:none}}
+  </style>
+</head>
+<body>
+  <header class="hero"><div class="wrap"><div class="eyebrow">SportsBB · Production Deployment</div><h1>GameDay Email Fix</h1><p class="summary">Step-by-step installation guide for direct SMTP delivery, LOC registration notifications, password-reset email, and the team-country display correction.</p><div class="meta"><span class="pill">Debian 13</span><span class="pill">ISPConfig</span><span class="pill">Supervisor</span><span class="pill">Node.js 22 / pnpm</span><span class="pill">Package: emailfix.zip</span></div></div></header>
+  <main class="wrap">
+    <section class="card toc"><h2>Deployment sequence</h2><ol><li><a href="#precheck">Pre-check and backup</a></li><li><a href="#install">Install the files</a></li><li><a href="#env">Configure SMTP</a></li><li><a href="#build">Install, build and restart</a></li><li><a href="#test">Test delivery</a></li><li><a href="#trouble">Troubleshoot</a></li><li><a href="#rollback">Rollback</a></li></ol></section>
+
+    <section class="card" id="precheck"><div class="eyebrow">Step 1</div><h2>Pre-check and backup</h2><div class="callout danger"><strong>Do not copy a development <code>.env</code> to production.</strong> The ZIP contains only <code>.env.example</code>. Production secrets stay in the server's protected environment file.</div><p>Run as <code>root</code>. Confirm the deployed source location and derive the real ISPConfig group instead of assuming that a group named <code>web6</code> exists.</p><pre>export SITE_USER=web6
+export SITE_GROUP="$(id -gn "$SITE_USER")"
+export SOURCE_ROOT=/var/www/clients/client0/web6/web/gameday/source
+export CACHE_ROOT=/var/www/clients/client0/web6/web/gameday/.cache
+
+test -d "$SOURCE_ROOT/apps/api" || { echo "Wrong SOURCE_ROOT"; exit 1; }
+echo "User: $SITE_USER  Group: $SITE_GROUP"
+supervisorctl status gameday-api gameday-teams</pre><p>Create a timestamped code backup before overlaying the package:</p><pre>export BACKUP_ROOT=/var/www/clients/client0/web6/web/gameday/backups
+install -d -o "$SITE_USER" -g "$SITE_GROUP" -m 0750 "$BACKUP_ROOT"
+tar -C "$SOURCE_ROOT" -czf "$BACKUP_ROOT/emailfix-before-$(date +%Y%m%d-%H%M%S).tar.gz" \
+  apps/api apps/teams .env.example pnpm-lock.yaml</pre></section>
+
+    <section class="card" id="install"><div class="eyebrow">Step 2</div><h2>Install the package files</h2><p>Upload <code>emailfix.zip</code> to a temporary server location such as <code>/tmp/emailfix.zip</code>. The archive contains a top-level <code>emailfix</code> directory and preserves repository paths.</p><pre>export PACKAGE=/tmp/emailfix.zip
+export WORK_DIR="$(mktemp -d /tmp/gameday-emailfix.XXXXXX)"
+
+unzip -q "$PACKAGE" -d "$WORK_DIR"
+test -f "$WORK_DIR/emailfix/apps/api/src/mail/mail.service.ts" \
+  || { echo "Package structure is invalid"; exit 1; }
+
+cp -a "$WORK_DIR/emailfix/." "$SOURCE_ROOT/"
+chown -R "$SITE_USER:$SITE_GROUP" \
+  "$SOURCE_ROOT/apps/api" "$SOURCE_ROOT/apps/teams" \
+  "$SOURCE_ROOT/pnpm-lock.yaml" "$SOURCE_ROOT/.env.example"</pre><div class="callout"><strong>Expected code additions:</strong> <code>apps/api/src/mail/mail.module.ts</code> and <code>mail.service.ts</code>. The package also updates authentication, registration, delegation display, API dependencies and the lockfile.</div></section>
+
+    <section class="card" id="env"><div class="eyebrow">Step 3</div><h2>Configure production SMTP</h2><p>Edit the production <code>.env</code> used by Supervisor. If <code>$SOURCE_ROOT/.env</code> is a symlink, edit its target. Do not place secrets in Git.</p><pre>cd "$SOURCE_ROOT"
+readlink -f .env
+sudoedit "$(readlink -f .env)"</pre><p>Add or update these values:</p><pre>EMAIL_WEBHOOK_URL=
+
+SMTP_HOST=mail.netballamericas.org
+SMTP_PORT=25
+SMTP_SECURE=false
+SMTP_REQUIRE_TLS=false
+SMTP_TLS_REJECT_UNAUTHORIZED=true
+SMTP_FROM=GameDay &lt;loc@netballamericas.org&gt;
+
+LOC_NOTIFICATION_EMAIL=loc@netballamericas.org
+
+# Set these only if mail.netballamericas.org requires authentication.
+SMTP_USER=
+SMTP_PASSWORD=</pre><div class="callout danger"><strong>Important:</strong> <code>EMAIL_WEBHOOK_URL</code> must be empty or removed. A non-empty webhook takes precedence over SMTP.</div><table><thead><tr><th>Setting</th><th>Meaning</th></tr></thead><tbody><tr><td><code>SMTP_FROM</code></td><td>Sender shown on outgoing mail. The mail server must permit it.</td></tr><tr><td><code>LOC_NOTIFICATION_EMAIL</code></td><td>Recipient for new delegation-registration alerts.</td></tr><tr><td>Password resets</td><td>Always go to the email address of the account requesting the reset—not automatically to the LOC.</td></tr></tbody></table><p>Protect and verify the environment file:</p><pre>chown root:"$SITE_GROUP" "$(readlink -f .env)"
+chmod 0640 "$(readlink -f .env)"
+sudo -u "$SITE_USER" test -r .env \
+  &amp;&amp; echo "Environment readable" \
+  || { echo "Environment NOT readable"; exit 1; }</pre></section>
+
+    <section class="card" id="build"><div class="eyebrow">Step 4</div><h2>Install, build and restart</h2><p>Use the ISPConfig-safe cache location. This prevents Corepack from trying to create <code>/var/www/clients/client0/web6/.cache</code>, which is owned by root.</p><pre>install -d -o "$SITE_USER" -g "$SITE_GROUP" -m 0750 \
+  "$CACHE_ROOT" "$CACHE_ROOT/corepack" "$CACHE_ROOT/pnpm"
+
+cd "$SOURCE_ROOT"
+sudo -u "$SITE_USER" -H env \
+  XDG_CACHE_HOME="$CACHE_ROOT" \
+  COREPACK_HOME="$CACHE_ROOT/corepack" \
+  PNPM_HOME="$CACHE_ROOT/pnpm" \
+  pnpm install --frozen-lockfile
+
+sudo -u "$SITE_USER" -H env \
+  XDG_CACHE_HOME="$CACHE_ROOT" \
+  COREPACK_HOME="$CACHE_ROOT/corepack" \
+  PNPM_HOME="$CACHE_ROOT/pnpm" \
+  pnpm --filter api build
+
+sudo -u "$SITE_USER" -H env \
+  XDG_CACHE_HOME="$CACHE_ROOT" \
+  COREPACK_HOME="$CACHE_ROOT/corepack" \
+  PNPM_HOME="$CACHE_ROOT/pnpm" \
+  pnpm --filter teams build</pre><p>Restart and verify the two affected services:</p><pre>supervisorctl restart gameday-api gameday-teams
+sleep 8
+supervisorctl status gameday-api gameday-teams
+ss -lntp | grep -E ':3000|:3002'
+tail -n 60 /var/log/gameday/api-error.log</pre><div class="callout success"><strong>Proceed only when both services show <code>RUNNING</code>.</strong></div></section>
+
+    <section class="card" id="test"><div class="eyebrow">Step 5</div><h2>Verify the fix</h2><h3>A. Confirm the SMTP port is reachable</h3><pre>timeout 10 bash -c '&lt;/dev/tcp/mail.netballamericas.org/25' \
+  &amp;&amp; echo "SMTP port reachable" \
+  || echo "SMTP port blocked or unreachable"</pre><h3>B. Test password recovery</h3><ol><li>Open the portal's <strong>Forgot password</strong> screen.</li><li>Enter a known test account email.</li><li>Confirm the message reaches that account.</li><li>Open the link and set a test password.</li><li>Confirm the old password/session no longer works.</li></ol><p>Watch the API log while testing:</p><pre>tail -f /var/log/gameday/api-error.log</pre><h3>C. Test LOC registration notification</h3><ol><li>Create one controlled test delegation using an unused eligible country.</li><li>Confirm <code>loc@netballamericas.org</code> receives the “awaiting approval” message.</li><li>Confirm the new registration still exists if email delivery fails; mail failure must appear in the API log.</li></ol><h3>D. Verify the country correction</h3><ol><li>Sign in to the new test team account.</li><li>Open <strong>Team registration</strong>.</li><li>Confirm “Country” shows the selected country name, not the team name.</li></ol></section>
+
+    <section class="card" id="trouble"><div class="eyebrow">Troubleshooting</div><h2>Common failures</h2><table><thead><tr><th>Symptom</th><th>Likely cause / action</th></tr></thead><tbody><tr><td>Webhook error or example domain appears</td><td><code>EMAIL_WEBHOOK_URL</code> is still non-empty. Clear it and restart the API.</td></tr><tr><td><code>ECONNREFUSED</code> or timeout</td><td>DNS, firewall, outbound port 25, or mail service availability. Test TCP reachability from the production host.</td></tr><tr><td><code>Relay access denied</code></td><td>The server does not permit anonymous relay. Obtain SMTP credentials or allow the production server IP.</td></tr><tr><td><code>Authentication failed</code></td><td>Check <code>SMTP_USER</code>/<code>SMTP_PASSWORD</code> and permitted sender address.</td></tr><tr><td>Certificate verification error</td><td>Correct the mail server certificate. Do not permanently disable verification. A temporary diagnostic can set <code>SMTP_TLS_REJECT_UNAUTHORIZED=false</code>.</td></tr><tr><td>No registration email and no API error</td><td>Confirm <code>LOC_NOTIFICATION_EMAIL</code> is set and the new API build is running.</td></tr><tr><td>Old behaviour remains</td><td>Rebuild both affected apps, restart both Supervisor processes, then hard-refresh the browser.</td></tr></tbody></table><p>Safe configuration check without printing secrets:</p><pre>cd "$SOURCE_ROOT"
+grep -qE '^EMAIL_WEBHOOK_URL=$' .env &amp;&amp; echo "Webhook disabled" || echo "Check webhook"
+grep -qE '^SMTP_HOST=mail\.netballamericas\.org$' .env &amp;&amp; echo "SMTP host set" || echo "SMTP host missing"
+grep -qE '^LOC_NOTIFICATION_EMAIL=loc@netballamericas\.org$' .env &amp;&amp; echo "LOC recipient set" || echo "LOC recipient missing"</pre></section>
+
+    <section class="card" id="rollback"><div class="eyebrow">Rollback</div><h2>Restore the previous application files</h2><p>Use the timestamped archive created in Step 1. Substitute the actual backup filename:</p><pre>supervisorctl stop gameday-api gameday-teams
+cd "$SOURCE_ROOT"
+tar -xzf "$BACKUP_ROOT/emailfix-before-YYYYMMDD-HHMMSS.tar.gz" -C "$SOURCE_ROOT"
+chown -R "$SITE_USER:$SITE_GROUP" "$SOURCE_ROOT/apps/api" "$SOURCE_ROOT/apps/teams"
+
+sudo -u "$SITE_USER" -H env \
+  XDG_CACHE_HOME="$CACHE_ROOT" COREPACK_HOME="$CACHE_ROOT/corepack" PNPM_HOME="$CACHE_ROOT/pnpm" \
+  pnpm install --frozen-lockfile
+sudo -u "$SITE_USER" -H env \
+  XDG_CACHE_HOME="$CACHE_ROOT" COREPACK_HOME="$CACHE_ROOT/corepack" PNPM_HOME="$CACHE_ROOT/pnpm" \
+  pnpm --filter api build
+sudo -u "$SITE_USER" -H env \
+  XDG_CACHE_HOME="$CACHE_ROOT" COREPACK_HOME="$CACHE_ROOT/corepack" PNPM_HOME="$CACHE_ROOT/pnpm" \
+  pnpm --filter teams build
+
+supervisorctl start gameday-api gameday-teams
+sleep 8
+supervisorctl status gameday-api gameday-teams</pre><div class="callout"><strong>No database migration is included in this package.</strong> Rollback affects application files and dependencies only.</div></section>
+    <p class="footer">GameDay Email Fix Installation Guide · Generated 30 July 2026 · Keep production credentials outside Git and deployment packages.</p>
+  </main>
+</body>
+</html>

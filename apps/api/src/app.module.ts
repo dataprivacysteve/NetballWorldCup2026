@@ -11,6 +11,7 @@ import { PublicModule } from './public/public.module';
 import { ControlModule } from './control/control.module';
 import { GameDayModule } from './gameday/gameday.module';
 import { EdgeModule } from './edge/edge.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { EdgeModule } from './edge/edge.module';
       envFilePath: [resolve(process.cwd(), '../../.env')],
     }),
     DatabaseModule,
+    MailModule,
     AuthModule,
     AdminModule,
     TeamsModule,

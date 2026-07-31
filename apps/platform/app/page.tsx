@@ -2366,9 +2366,9 @@ function GroupsManager({
 
 function Field({ k, v }: { k: string; v: string | number | null }) {
   return (
-    <div>
+    <div className="min-w-0">
       <dt className={labelCls + " mb-0.5"}>{k}</dt>
-      <dd className="text-sm text-ink">{v ?? "—"}</dd>
+      <dd className="break-words text-sm text-ink">{v ?? "—"}</dd>
     </div>
   );
 }
@@ -2505,7 +2505,7 @@ function Registrations() {
                   </button>
                 </div>
               </div>
-              <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-4">
+              <dl className="mt-4 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
                 <Field k="Head of delegation" v={d.headOfDelegation} />
                 <Field k="Team contact" v={d.contactName} />
                 <Field k="Contact email" v={d.contactEmail} />
