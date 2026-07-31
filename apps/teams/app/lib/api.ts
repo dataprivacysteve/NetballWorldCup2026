@@ -1,7 +1,22 @@
+import { showSuccessToast } from "../components/toast";
+
 // Client for the GameDay teams API. Auth is a session cookie (httpOnly, set by
 // the API on login/register), so every request uses credentials:"include" and
 // there is no client-managed tenant header — tenancy comes from the session.
 const BASE = process.env.NEXT_PUBLIC_API_BASE_URL as string;
+
+function successMessage(path: string): string {
+  if (path === "/register") return "Your team registration was received and is awaiting LOC approval.";
+  if (path.includes("submit-partial")) return "Your available team information was received for rolling LOC review.";
+  if (path.includes("submit")) return path.includes("team-sheet") ? "The match team sheet was submitted." : "Your team was submitted for accreditation review.";
+  if (path.includes("identity")) return "The restricted identity document was received for LOC verification.";
+  if (path.includes("photo")) return "The profile photograph was uploaded.";
+  if (path.includes("consent")) return "The consent record was saved.";
+  if (path.includes("team-sheet")) return "The match team sheet was saved.";
+  if (path.includes("players")) return "The team member information was saved.";
+  if (path.includes("registration")) return "The team registration information was saved.";
+  return "Your changes were saved successfully.";
+}
 
 export class ApiError extends Error {
   constructor(
@@ -38,6 +53,9 @@ async function req<T>(
   const text = await res.text();
   const data = text ? JSON.parse(text) : null;
   if (!res.ok) throw new ApiError(res.status, data);
+  if ((opts.method ?? "GET").toUpperCase() !== "GET" && path !== "/login" && path !== "/logout") {
+    showSuccessToast(successMessage(path));
+  }
   return data as T;
 }
 

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
+import { CountrySelect } from "./components/country-select";
 import {
   api,
   ApiError,
@@ -690,7 +691,7 @@ function RegisterForm({ onAuthed }: { onAuthed: () => void }) {
       </div>
       <p className="text-sm leading-6 text-ink-muted sm:col-span-2">
         Submitted to the Organising Committee for approval. You can build your
-        roster once approved.
+        team once approved.
       </p>
       <div className="sm:col-span-2">
         <ErrorBanner error={error} />
@@ -785,14 +786,15 @@ function RegisterForm({ onAuthed }: { onAuthed: () => void }) {
         />
       </label>
       <label className="block">
-        <span className={labelCls}>Expected squad size</span>
+        <span className={labelCls}>Expected delegation size</span>
         <input
-          type="number"
-          min={10}
-          max={18}
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]+"
           className={inputCls}
           value={form.expectedSquadSize}
           onChange={(e) => set("expectedSquadSize", e.target.value)}
+          placeholder="Enter the expected total delegation size"
           required
         />
       </label>
@@ -1037,10 +1039,10 @@ function Portal({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
                   : launch.phase === "closed" && launch.closesAt
                     ? ` — the window closed on ${new Date(launch.closesAt).toLocaleString()}`
                     : ""}{" "}
-                — this existing delegation can continue roster amendments.
+                — this existing delegation can continue team amendments.
                 Primary positions are preferences and remain editable. A
                 personnel, identity, eligibility or accreditation change returns
-                the roster to LOC review and invalidates previous credentials.
+                the team to LOC review and invalidates previous credentials.
               </p>
             </div>
           )}
@@ -1133,7 +1135,7 @@ function Overview({
   const stats = [
     {
       n: players.length,
-      l: "Roster records",
+      l: "Team records",
       detail: "Players and officials",
       icon: "users" as TeamIconName,
       tone: "bg-navy-tint text-navy",
@@ -1164,7 +1166,7 @@ function Overview({
     ? {
         title: "Accreditation complete",
         detail:
-          "The LOC has approved the roster and issued credentials for the travelling delegation.",
+          "The LOC has approved the team and issued credentials for the travelling delegation.",
         tab: "submit" as Tab,
         label: "View credentials",
       }
@@ -1172,13 +1174,13 @@ function Overview({
       ? {
           title: "Await LOC approval",
           detail:
-            "The roster workspace unlocks after the Organising Committee approves the delegation.",
+            "The team workspace unlocks after the Organising Committee approves the delegation.",
           tab: "registration" as Tab,
           label: "View registration",
         }
       : players.length === 0
         ? {
-            title: "Start building your roster",
+            title: "Start building your team",
             detail:
               "Add the players and officials travelling with your delegation.",
             tab: "roster" as Tab,
@@ -1187,9 +1189,9 @@ function Overview({
         : ready < players.length
           ? {
               title: "Complete outstanding records",
-              detail: `${players.length - ready} roster record${players.length - ready === 1 ? " is" : "s are"} missing required information or verification.`,
+              detail: `${players.length - ready} team record${players.length - ready === 1 ? " is" : "s are"} missing required information or verification.`,
               tab: "roster" as Tab,
-              label: "Review roster",
+              label: "Review team",
             }
           : {
               title: "Submit for accreditation",
@@ -1203,7 +1205,7 @@ function Overview({
       <PageHeading
         eyebrow="Delegation overview"
         title={delegation.name}
-        description="Track registration, roster completeness, document verification and accreditation readiness."
+        description="Track registration, team completeness, document verification and accreditation readiness."
         action={
           <StatusPill
             status={
@@ -1225,7 +1227,7 @@ function Overview({
               Delegation approved
             </p>
             <p className="text-sm text-ink-soft">
-              You&apos;re cleared to build and submit your roster for
+              You&apos;re cleared to build and submit your team for
               accreditation.
             </p>
           </div>
@@ -1240,7 +1242,7 @@ function Overview({
               Registration submitted — awaiting OC approval
             </p>
             <p className="text-sm text-ink-soft">
-              Your delegation is on the list. The roster unlocks once the
+              Your delegation is on the list. The team workspace unlocks once the
               Organising Committee approves.
             </p>
           </div>
@@ -1284,14 +1286,14 @@ function Overview({
             />
             <CheckItem
               done={players.length > 0}
-              title="Build your roster"
+              title="Build your team"
               sub="Add players and officials with photos and dates of birth"
               action={approved ? () => onGoto("roster") : undefined}
             />
             <CheckItem
               done={delegation.status === "submitted"}
               title="Submit for accreditation"
-              sub="Hand the roster to the committee for credential review"
+              sub="Submit the team to the committee for credential review"
             />
           </ul>
         </div>
@@ -1310,7 +1312,7 @@ function Overview({
               <div className="mt-5">
                 <div className="mb-2 flex items-center justify-between text-xs">
                   <span className="font-semibold text-ink">
-                    Roster readiness
+                    Team readiness
                   </span>
                   <span className="font-mono text-ink-muted">
                     {completion}%
@@ -1397,8 +1399,8 @@ function Registration({
     ["Team manager", delegation.contactName ?? delegation.headOfDelegation],
     ["Contact email", delegation.contactEmail],
     ["Contact phone", delegation.contactPhone],
-    ["Expected squad size", delegation.expectedSquadSize],
-    ["Travelling party", delegation.travellingParty],
+    ["Expected delegation size", delegation.expectedSquadSize],
+    ["Confirmed delegation size", delegation.travellingParty],
   ];
   return (
     <div className="space-y-5">
@@ -1532,25 +1534,31 @@ function RegistrationCorrectionForm({
           ["Association name", "associationName"],
           ["Team manager", "teamManager"],
           ["Contact phone", "contactPhone"],
-          ["Expected squad size", "expectedSquadSize"],
-          ["Travelling party", "travellingParty"],
+          ["Expected delegation size", "expectedSquadSize"],
+          ["Confirmed delegation size", "travellingParty"],
         ] as const
       ).map(([label, key]) => (
         <label key={key} className="block">
           <span className={labelCls}>{label}</span>
-          <input
-            className={inputCls}
-            type={
-              key === "expectedSquadSize" || key === "travellingParty"
-                ? "number"
-                : "text"
-            }
-            min={key === "expectedSquadSize" ? 10 : undefined}
-            max={key === "expectedSquadSize" ? 18 : undefined}
-            value={form[key]}
-            onChange={(event) => set(key, event.target.value)}
-            required={key !== "travellingParty"}
-          />
+          {key === "expectedSquadSize" || key === "travellingParty" ? (
+            <input
+              className={inputCls}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]+"
+              value={form[key]}
+              onChange={(event) => set(key, event.target.value)}
+              required={key === "expectedSquadSize"}
+            />
+          ) : (
+            <input
+              className={inputCls}
+              type="text"
+              value={form[key]}
+              onChange={(event) => set(key, event.target.value)}
+              required
+            />
+          )}
         </label>
       ))}
       <label className="block sm:col-span-2">
@@ -1674,7 +1682,7 @@ function MatchDayTeamSheets({
         <PageHeading
           eyebrow="Match day"
           title="Match team sheets"
-          description="Select the travelling players, assign the starting seven, and submit each match team sheet. Positions here are match assignments—not permanent roster positions."
+          description="Select the travelling players, assign the starting seven, and submit each match team sheet. Positions here are match assignments—not permanent team positions."
         />
         <div className={`${panel} divide-y divide-line`}>
           {matches.length ? (
@@ -1866,12 +1874,12 @@ function Roster({
       <>
         <PageHeading
           eyebrow="Players and officials"
-          title="Build your roster"
-          description="Your roster workspace will unlock after the Organising Committee approves the delegation."
+          title="Build your team"
+          description="Your team workspace will unlock after the Organising Committee approves the delegation."
         />
         <EmptyState
           icon="shield"
-          title="Roster locked pending approval"
+          title="Team locked pending approval"
           description="The LOC must approve your delegation registration before players and officials can be added."
         />
       </>
@@ -1881,7 +1889,7 @@ function Roster({
     <div className="space-y-5">
       <PageHeading
         eyebrow="Players and officials"
-        title="Build your roster"
+        title="Build your team"
         description={`Add people progressively and send available records for early LOC review. Final accreditation requires ${policy?.activePlayerMinimum ?? 10}–${policy?.activePlayerMaximum ?? 15} active players, up to ${policy?.reserveMaximum ?? 3} travelling reserves, and the required team officials.`}
         action={
           !locked && !adding ? (
@@ -1919,7 +1927,7 @@ function Roster({
         {players.length === 0 && (
           <EmptyState
             icon="roster"
-            title="Your roster is empty"
+            title="Your team is empty"
             description="Add the first player or team official to begin building the travelling delegation."
             action={
               !locked ? (
@@ -2045,7 +2053,7 @@ function AddPerson({
     >
       <div className="sm:col-span-2 xl:col-span-3">
         <p className="font-mono text-[0.62rem] font-bold uppercase tracking-[0.12em] text-navy">
-          New roster record
+          New team member
         </p>
         <h2 className="mt-1 font-display text-xl font-bold text-ink">
           Add a player or official
@@ -2081,18 +2089,7 @@ function AddPerson({
           required
         />
       </label>
-      <label className="block">
-        <span className={labelCls}>Nationality code</span>
-        <input
-          className={inputCls}
-          value={form.nationality}
-          onChange={(e) => set("nationality", e.target.value.toUpperCase())}
-          minLength={2}
-          maxLength={3}
-          placeholder="e.g. BRB"
-          required
-        />
-      </label>
+      <CountrySelect label="Nationality" className={inputCls} value={form.nationality} onChange={(code) => set("nationality", code)} />
       <label className="block">
         <span className={labelCls}>Category</span>
         <select
@@ -2234,15 +2231,20 @@ function AddPerson({
             Eligibility criteria met and proof will be presented
           </label>
           <label className="block sm:col-span-2 xl:col-span-3">
-            <span className={labelCls}>
-              World Netball eligibility reference
-            </span>
+            <span className={labelCls}>Eligibility basis/reference</span>
             <input
               className={inputCls}
               value={form.eligibilityReference}
               onChange={(e) => set("eligibilityReference", e.target.value)}
+              placeholder="e.g. Eligible through a parent born in Barbados"
               required
             />
+            <span className="mt-1 block text-xs leading-5 text-ink-muted">
+              Briefly state the eligibility basis—for example birth,
+              parent/grandparent, residency or citizenship. Include the
+              applicable World Netball rule if known. Supporting evidence must
+              be available to the LOC.
+            </span>
           </label>
         </>
       )}
@@ -2251,7 +2253,7 @@ function AddPerson({
           Cancel
         </button>
         <button className={btnPrimary} disabled={busy}>
-          {busy ? "Adding…" : "Add to roster"}
+          {busy ? "Adding…" : "Add to team"}
         </button>
       </div>
     </form>
@@ -2369,19 +2371,7 @@ function PersonEditor({
           required
         />
       </label>
-      <label>
-        <span className={labelCls}>Nationality code</span>
-        <input
-          className={inputCls}
-          value={form.nationality}
-          onChange={(event) =>
-            set("nationality", event.target.value.toUpperCase())
-          }
-          minLength={2}
-          maxLength={3}
-          required
-        />
-      </label>
+      <CountrySelect label="Nationality" className={inputCls} value={form.nationality} onChange={(code) => set("nationality", code)} />
       <label>
         <span className={labelCls}>
           {isPlayer ? "Primary position (not fixed)" : "Role"}
@@ -2517,17 +2507,22 @@ function PersonEditor({
             Eligibility criteria met
           </label>
           <label className="sm:col-span-2 xl:col-span-3">
-            <span className={labelCls}>
-              World Netball eligibility reference
-            </span>
+            <span className={labelCls}>Eligibility basis/reference</span>
             <input
               className={inputCls}
               value={form.eligibilityReference}
               onChange={(event) =>
                 set("eligibilityReference", event.target.value)
               }
+              placeholder="e.g. Eligible through a parent born in Barbados"
               required
             />
+            <span className="mt-1 block text-xs leading-5 text-ink-muted">
+              Briefly state the eligibility basis—for example birth,
+              parent/grandparent, residency or citizenship. Include the
+              applicable World Netball rule if known. Supporting evidence must
+              be available to the LOC.
+            </span>
           </label>
         </>
       )}
@@ -2752,7 +2747,7 @@ function PersonCard({
               </span>
             </div>
             <div>
-              <span className={labelCls}>Roster classification</span>
+              <span className={labelCls}>Team classification</span>
               <span className="text-ink-soft">
                 {person.rosterType ??
                   person.officialRole?.replaceAll("_", " ") ??
@@ -3114,18 +3109,7 @@ function IdentityUpload({
           <option value="national_id">National ID</option>
         </select>
       </label>
-      <label>
-        <span className={labelCls}>Issuing country</span>
-        <input
-          className={inputCls}
-          value={issuingCountry}
-          onChange={(e) => setIssuingCountry(e.target.value.toUpperCase())}
-          minLength={2}
-          maxLength={3}
-          placeholder="e.g. BRB"
-          required
-        />
-      </label>
+      <CountrySelect label="Issuing country" className={inputCls} value={issuingCountry} onChange={setIssuingCountry} />
       <label>
         <span className={labelCls}>Expiry date</span>
         <input
@@ -3199,7 +3183,7 @@ function Submit({
   ];
   const checks = [
     { done: approved, label: "Delegation approved by the OC" },
-    { done: total > 0, label: `Roster has people (${total})` },
+    { done: total > 0, label: `Team has people (${total})` },
     {
       done:
         activePlayers.length >= (policy?.activePlayerMinimum ?? 10) &&
@@ -3288,7 +3272,7 @@ function Submit({
       <PageHeading
         eyebrow="Final review"
         title="Review and submission status"
-        description="Send confirmed people for rolling LOC review as they become available, then make the final accreditation submission when the complete roster is ready."
+        description="Send confirmed people for rolling LOC review as they become available, then make the final accreditation submission when the complete team is ready."
         action={<StatusPill status={delegation.status} />}
       />
       {accredited ? (
@@ -3301,7 +3285,7 @@ function Submit({
               Accredited — credentials issued
             </p>
             <p className="text-sm text-ink-soft">
-              The Organising Committee has accredited your roster. Credentials
+              The Organising Committee has accredited your team. Credentials
               are shown below for confirmation; the OC prints and distributes
               the physical badges.
             </p>
@@ -3314,7 +3298,7 @@ function Submit({
           </span>
           <div>
             <p className="font-display font-bold text-ink">
-              Roster submitted for accreditation
+              Team submitted for accreditation
             </p>
             <p className="text-sm text-ink-soft">
               Submitted{" "}
@@ -3332,12 +3316,12 @@ function Submit({
           </span>
           <div>
             <p className="font-display font-bold text-ink">
-              Partial roster available to the LOC
+              Partial team information available to the LOC
             </p>
             <p className="text-sm text-ink-soft">
               Continue adding and updating people as they are confirmed. The LOC
               can review current records now; final accreditation remains
-              unavailable until every roster requirement is complete.
+              unavailable until every team requirement is complete.
             </p>
           </div>
         </div>
@@ -3383,12 +3367,12 @@ function Submit({
               className={btnGold}
               disabled={busy || !approved || !finalReady || locked}
             >
-              {busy ? "Submitting…" : "Submit roster for accreditation"}
+              {busy ? "Submitting…" : "Submit team for accreditation"}
             </button>
             {!finalReady && total > 0 && (
               <span className="text-sm text-warn">
                 You can send partial records now. Final submission unlocks after
-                the complete roster and every accreditation requirement are
+                the complete team and every accreditation requirement are
                 ready.
               </span>
             )}

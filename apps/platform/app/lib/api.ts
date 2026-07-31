@@ -1,7 +1,22 @@
+import { showSuccessToast } from "../components/toast";
+
 // Client for the OC operations console. Cookie-based auth shared with the API
 // (the session cookie is scoped to .netballamericas.test), so an admin signed
 // in here is recognised by the API's AdminGuard.
 const BASE = process.env.NEXT_PUBLIC_API_BASE_URL as string;
+
+function successMessage(path: string): string {
+  if (path.includes("/admin/review/") && path.endsWith("/approve")) return "The team was approved and accreditation status was updated.";
+  if (path.includes("approve")) return "The delegation registration was approved.";
+  if (path.includes("reject")) return "The delegation registration was returned with the recorded reason.";
+  if (path.includes("return")) return "The record was returned to the team with your review note.";
+  if (path.includes("verify") || path.includes("identity")) return "Verification was recorded successfully.";
+  if (path.includes("registration-window")) return "The registration window settings were saved.";
+  if (path.includes("credential")) return "The credential action was completed.";
+  if (path.includes("match")) return "The match information was saved.";
+  if (path.includes("country")) return "The eligible-country list was updated.";
+  return "Your changes were saved successfully.";
+}
 
 export class ApiError extends Error {
   constructor(
@@ -36,6 +51,9 @@ async function req<T>(
   const text = await res.text();
   const data = text ? JSON.parse(text) : null;
   if (!res.ok) throw new ApiError(res.status, data);
+  if ((opts.method ?? "GET").toUpperCase() !== "GET" && path !== "/login" && path !== "/logout" && !path.startsWith("/gameday/") && !path.startsWith("/admin/scan/")) {
+    showSuccessToast(successMessage(path));
+  }
   return data as T;
 }
 

@@ -505,7 +505,7 @@ function ConfigurationForm({
         className={`${panel} grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-5`}
       >
         <SectionTitle
-          title="Roster policy"
+          title="Team policy"
           description="Server-enforced limits used by registration and LOC approval."
         />
         <Field

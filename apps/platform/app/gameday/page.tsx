@@ -285,7 +285,7 @@ export default function GameDayPage() {
               {role === "stats_lineup" && (
                 <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
                   <h2 className="font-display text-xl font-bold">Lineup and position capture</h2>
-                  <p className="mt-1 text-sm text-white/50">Changes are match-specific and never overwrite a player’s primary roster preference.</p>
+                  <p className="mt-1 text-sm text-white/50">Changes are match-specific and never overwrite a player’s primary position preference.</p>
                   <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-3">
                     <label className="font-mono text-[0.62rem] uppercase tracking-[0.12em] text-white/50">Statistic to record</label>
                     <select className="rounded-lg border border-white/15 bg-[#11183b] px-3 py-2 text-xs" value={statType} onChange={(event) => setStatType(event.target.value as typeof statType)}>

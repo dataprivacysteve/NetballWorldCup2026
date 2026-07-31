@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Manrope, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { ToastViewport } from "./components/toast";
 
 // Three brand faces (DESIGN-SYSTEM.md §3): Fraunces (display serif) is the
 // signature — never fall back to system-only. Manrope for body, JetBrains Mono
@@ -23,7 +24,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "GameDay · Delegations",
-  description: "NetballAmericas delegation registration & roster",
+  description: "NetballAmericas delegation registration and team management",
 };
 
 export default function RootLayout({
@@ -36,7 +37,7 @@ export default function RootLayout({
       lang="en"
       className={`${fraunces.variable} ${manrope.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">{children}<ToastViewport /></body>
     </html>
   );
 }

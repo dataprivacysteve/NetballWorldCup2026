@@ -20,6 +20,7 @@ import {
   type ReviewQueueItem,
   type Stage,
 } from "./lib/api";
+import { countryLabel } from "./lib/countries";
 
 const labelCls =
   "mb-1 block font-mono text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-ink-muted";
@@ -595,7 +596,7 @@ function Console({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
     },
     {
       id: "review",
-      label: "Roster review",
+      label: "Team review",
       description: "People and documents",
       icon: "review",
     },
@@ -843,12 +844,12 @@ function Overview({
             />
             <MetricCard
               icon="review"
-              label="Roster reviews"
+              label="Team reviews"
               value={data.reviews.length}
               detail={
                 data.reviews.length
                   ? "Submitted for accreditation"
-                  : "No submitted rosters"
+                  : "No submitted teams"
               }
               tone={data.reviews.length ? "warning" : "neutral"}
               onClick={() => onNavigate("review")}
@@ -903,7 +904,7 @@ function Overview({
                     No immediate actions
                   </p>
                   <p className="mt-1 text-sm text-ink-muted">
-                    New registrations and roster submissions will appear here.
+                    New registrations and team submissions will appear here.
                   </p>
                 </div>
               ) : (
@@ -949,7 +950,7 @@ function Overview({
                             {item.name}
                           </span>
                           <span className="mt-0.5 block truncate text-xs text-ink-muted">
-                            Roster and identity checks require review
+                            Team and identity checks require review
                           </span>
                         </span>
                         <StatusPill tone="warning">
@@ -1268,7 +1269,7 @@ function Settings() {
               LOC audit history
             </h2>
             <p className="mt-1 text-sm text-ink-soft">
-              Append-only record of registration, roster, and restricted
+              Append-only record of registration, team, and restricted
               identity actions performed through the single LOC officer account.
             </p>
           </div>
@@ -1557,7 +1558,7 @@ function Badges() {
         <EmptyState
           icon="badges"
           title="No accredited delegations yet"
-          description="Accredit a roster in Roster review to make its credentials available here."
+          description="Accredit a team in Team review to make its credentials available here."
         />
       ) : (
         <div className="grid gap-3 xl:grid-cols-2">
@@ -2691,7 +2692,7 @@ function Registrations() {
       <PageHeading
         eyebrow="Registration intake"
         title="Delegation approvals"
-        description="Confirm each national association and its authorised contact before roster access is granted."
+        description="Confirm each national association and its authorised contact before team access is granted."
         action={
           pending ? (
             <StatusPill tone={pending.length ? "warning" : "success"}>
@@ -2870,7 +2871,7 @@ function Registrations() {
                   <th className="px-5 py-3">Contact</th>
                   <th className="px-5 py-3">Submitted</th>
                   <th className="px-5 py-3">Status</th>
-                  <th className="px-5 py-3">Roster</th>
+                  <th className="px-5 py-3">Team</th>
                   <th className="px-5 py-3">Accreditation</th>
                   <th className="px-5 py-3">Review note</th>
                 </tr>
@@ -2967,7 +2968,7 @@ function ReviewQueue({ onSelect }: { onSelect: (id: string) => void }) {
     <div>
       <PageHeading
         eyebrow="Accreditation"
-        title="Roster review"
+        title="Team review"
         description="Review personnel, eligibility evidence and restricted identity documents before issuing credentials."
         action={
           queue ? (
@@ -2983,8 +2984,8 @@ function ReviewQueue({ onSelect }: { onSelect: (id: string) => void }) {
       ) : queue.length === 0 ? (
         <EmptyState
           icon="review"
-          title="No rosters awaiting review"
-          description="Submitted delegation rosters will appear here for accreditation review."
+          title="No teams awaiting review"
+          description="Submitted delegation teams will appear here for accreditation review."
         />
       ) : (
         <div className="grid gap-3 xl:grid-cols-2">
@@ -3162,7 +3163,7 @@ function ReviewDetailView({ id, onBack }: { id: string; onBack: () => void }) {
             {detail.people.length - verifiedCount - returnedCount} pending
           </StatusPill>
           <span className="text-ink-muted">
-            Verify complete people now; final accreditation remains locked until the roster requirements are met.
+            Verify complete people now; final accreditation remains locked until the team requirements are met.
           </span>
         </div>
       )}
@@ -3199,7 +3200,7 @@ function ReviewDetailView({ id, onBack }: { id: string; onBack: () => void }) {
         >
           <Icon name="check" className="mt-0.5 h-5 w-5 shrink-0" />
           <span>
-            <strong>Roster accredited.</strong> Credentials have been issued and
+            <strong>Team accredited.</strong> Credentials have been issued and
             each person’s QR is available below.
           </span>
         </div>
@@ -3462,10 +3463,10 @@ function PersonRow({
               .join(" ")}
           />
           <Field k="Date of birth" v={person.dateOfBirth} />
-          <Field k="Nationality" v={person.nationality} />
+          <Field k="Nationality" v={countryLabel(person.nationality)} />
           <Field k="Category" v={person.category.replaceAll("_", " ")} />
           <Field
-            k="Roster classification / role"
+            k="Team classification / role"
             v={
               person.rosterType ??
               person.officialRole?.replaceAll("_", " ") ??
@@ -3527,8 +3528,8 @@ function PersonRow({
               <p className={labelCls}>Restricted identity verification</p>
               <p className="text-sm text-ink-soft">
                 {person.identityDocument.documentType.replace("_", " ")} ·
-                issued by {person.identityDocument.issuingCountry} · nationality{" "}
-                {person.identityDocument.nationality}
+                issued by {countryLabel(person.identityDocument.issuingCountry)} · nationality{" "}
+                {countryLabel(person.identityDocument.nationality)}
                 {person.identityDocument.expiresOn
                   ? ` · expires ${person.identityDocument.expiresOn}`
                   : ""}

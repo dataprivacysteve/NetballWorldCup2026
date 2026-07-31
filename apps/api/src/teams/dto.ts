@@ -1,4 +1,5 @@
 import { Type } from 'class-transformer';
+import countries from 'i18n-iso-countries';
 import {
   IsBoolean,
   IsDateString,
@@ -7,16 +8,16 @@ import {
   IsInt,
   IsOptional,
   IsString,
-  Length,
   Min,
-  Max,
   MinLength,
   ValidateIf,
 } from 'class-validator';
 
+const ISO_ALPHA3_CODES = Object.keys(countries.getAlpha3Codes());
+
 export class RegisterDelegationDto {
   // Chosen from GET /eligible-countries.
-  @IsString() @Length(2, 3) countryCode!: string;
+  @IsString() @IsIn(ISO_ALPHA3_CODES) countryCode!: string;
   @IsString() @MinLength(2) teamName!: string;
   @IsString() @MinLength(2) associationName!: string;
   @IsString() @MinLength(2) teamManager!: string;
@@ -28,8 +29,7 @@ export class RegisterDelegationDto {
   @IsString() @MinLength(5) contactPhone!: string;
   @Type(() => Number)
   @IsInt()
-  @Min(10)
-  @Max(18)
+  @Min(1)
   expectedSquadSize!: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) travellingParty?: number;
   @IsOptional() @IsDateString() arrivalDate?: string;
@@ -41,7 +41,7 @@ export class RegisterDelegationDto {
 
 export class UpdateDelegationDto {
   @IsOptional() @IsString() @MinLength(2) name?: string;
-  @IsOptional() @IsString() @Length(2, 3) countryCode?: string;
+  @IsOptional() @IsString() @IsIn(ISO_ALPHA3_CODES) countryCode?: string;
   @IsOptional() @IsString() @MinLength(2) associationName?: string;
   @IsOptional() @IsString() @MinLength(2) headOfDelegation?: string;
   @IsOptional() @IsString() headCoach?: string;
@@ -51,8 +51,7 @@ export class UpdateDelegationDto {
   @IsOptional()
   @Type(() => Number)
   @IsInt()
-  @Min(10)
-  @Max(18)
+  @Min(1)
   expectedSquadSize?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) travellingParty?: number;
   @IsOptional() @IsDateString() arrivalDate?: string;
@@ -64,7 +63,7 @@ export class CreatePlayerDto {
   @IsString() @MinLength(1) firstName!: string;
   @IsOptional() @IsString() middleNames?: string;
   @IsString() @MinLength(1) lastName!: string;
-  @IsString() @Length(2, 3) nationality!: string;
+  @IsString() @IsIn(ISO_ALPHA3_CODES) nationality!: string;
   @IsString() @MinLength(1) biography!: string;
   // YYYY-MM-DD. Required for players so under-18 consent can be derived.
   // Officials do not provide DOB unless a future configured category requires it.
@@ -98,7 +97,7 @@ export class UpdatePlayerDto {
   @IsOptional() @IsString() @MinLength(1) firstName?: string;
   @IsOptional() @IsString() middleNames?: string;
   @IsOptional() @IsString() @MinLength(1) lastName?: string;
-  @IsOptional() @IsString() @Length(2, 3) nationality?: string;
+  @IsOptional() @IsString() @IsIn(ISO_ALPHA3_CODES) nationality?: string;
   @IsOptional() @IsString() @MinLength(1) biography?: string;
   @IsOptional() @IsDateString() dateOfBirth?: string;
   @IsOptional()
@@ -137,8 +136,8 @@ export class CreateConsentDto {
 export class IdentityUploadDto {
   @IsIn(['passport', 'national_id'])
   documentType!: 'passport' | 'national_id';
-  @IsString() @Length(2, 3) issuingCountry!: string;
-  @IsString() @Length(2, 3) nationality!: string;
+  @IsString() @IsIn(ISO_ALPHA3_CODES) issuingCountry!: string;
+  @IsString() @IsIn(ISO_ALPHA3_CODES) nationality!: string;
   @ValidateIf(
     (dto: IdentityUploadDto) =>
       dto.documentType === 'passport' || dto.expiresOn !== undefined,

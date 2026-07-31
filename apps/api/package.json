@@ -38,6 +38,7 @@
     "class-validator": "^0.15.1",
     "cookie-parser": "^1.4.7",
     "drizzle-orm": "^0.45.2",
+    "i18n-iso-countries": "^7.14.0",
     "nodemailer": "^9.0.3",
     "pg": "^8.21.0",
     "qrcode": "^1.5.4",
