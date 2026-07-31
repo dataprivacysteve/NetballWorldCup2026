@@ -92,6 +92,9 @@ export class RegistrationService {
         'The data-processing acknowledgement must be confirmed to register.',
       );
     }
+    if (dto.password !== dto.confirmPassword) {
+      throw new BadRequestException('Password confirmation does not match.');
+    }
 
     const delegationId = randomUUID();
     const email = dto.contactEmail.toLowerCase();
@@ -139,12 +142,12 @@ export class RegistrationService {
           registrationStatus: 'submitted',
           registrationSubmittedAt: new Date(),
           associationName: dto.associationName,
-          headOfDelegation: dto.headOfDelegation,
-          headCoach: dto.headCoach,
-          contactName: dto.contactName,
+          headOfDelegation: dto.teamManager.trim(),
+          headCoach: null,
+          contactName: dto.teamManager.trim(),
           contactEmail: email,
           contactPhone: dto.contactPhone,
-          contactRoleTitle: dto.contactRoleTitle,
+          contactRoleTitle: 'Team Manager',
           expectedSquadSize: dto.expectedSquadSize,
           travellingParty: dto.travellingParty,
           arrivalDate: dto.arrivalDate,
@@ -158,7 +161,7 @@ export class RegistrationService {
         .insert(schema.appUser)
         .values({
           email,
-          displayName: dto.headOfDelegation,
+          displayName: dto.teamManager.trim(),
           passwordHash,
         })
         .returning();
@@ -219,7 +222,7 @@ export class RegistrationService {
         `Country: ${countryName}`,
         `Team: ${dto.teamName.trim()}`,
         `Association: ${dto.associationName.trim()}`,
-        `Contact: ${dto.contactName.trim()} <${dto.contactEmail.toLowerCase()}>`,
+        `Team manager: ${dto.teamManager.trim()} <${dto.contactEmail.toLowerCase()}>`,
         platformUrl ? `Review: ${platformUrl}/` : '',
       ]
         .filter(Boolean)

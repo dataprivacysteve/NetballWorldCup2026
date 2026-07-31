@@ -19,15 +19,13 @@ export class RegisterDelegationDto {
   @IsString() @Length(2, 3) countryCode!: string;
   @IsString() @MinLength(2) teamName!: string;
   @IsString() @MinLength(2) associationName!: string;
-  @IsString() @MinLength(2) headOfDelegation!: string;
-  @IsOptional() @IsString() headCoach?: string;
-  @IsString() @MinLength(2) contactName!: string;
+  @IsString() @MinLength(2) teamManager!: string;
   // The HOD's login + primary contact, and the password that unlocks roster
   // access once the OC approves.
   @IsEmail() contactEmail!: string;
   @IsString() @MinLength(8) password!: string;
+  @IsString() @MinLength(8) confirmPassword!: string;
   @IsString() @MinLength(5) contactPhone!: string;
-  @IsString() @MinLength(2) contactRoleTitle!: string;
   @Type(() => Number)
   @IsInt()
   @Min(10)

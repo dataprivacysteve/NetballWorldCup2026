@@ -266,13 +266,11 @@ export const api = {
     countryCode: string;
     teamName: string;
     associationName: string;
-    headOfDelegation: string;
-    headCoach?: string;
-    contactName: string;
+    teamManager: string;
     contactEmail: string;
     password: string;
+    confirmPassword: string;
     contactPhone: string;
-    contactRoleTitle: string;
     expectedSquadSize: number;
     dpaConsent: boolean;
   }) => req<Me>("/register", { method: "POST", body: b }),

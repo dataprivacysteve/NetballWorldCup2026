@@ -304,7 +304,8 @@ export default function Page() {
   const refresh = useCallback(async () => setMe(await api.me()), []);
   useEffect(() => {
     let active = true;
-    void api.me()
+    void api
+      .me()
       .then((session) => {
         if (active) setMe(session);
       })
@@ -368,7 +369,10 @@ function GameDayRedirect() {
     window.location.replace("/gameday");
   }, []);
   return (
-    <div className="flex min-h-screen items-center justify-center" role="status">
+    <div
+      className="flex min-h-screen items-center justify-center"
+      role="status"
+    >
       <p className="font-mono text-xs uppercase tracking-[0.12em] text-ink-muted">
         Opening GameDay console…
       </p>
@@ -1784,7 +1788,9 @@ function Matches() {
   const [stages, setStages] = useState<Stage[] | null>(null);
   const [venues, setVenues] = useState<MatchVenue[] | null>(null);
   const [matches, setMatches] = useState<AdminMatch[] | null>(null);
-  const [gameDayAccounts, setGameDayAccounts] = useState<GameDayAccount[] | null>(null);
+  const [gameDayAccounts, setGameDayAccounts] = useState<
+    GameDayAccount[] | null
+  >(null);
   const [error, setError] = useState<unknown>(null);
 
   const reload = useCallback(async () => {
@@ -1815,14 +1821,16 @@ function Matches() {
       api.matches(),
       api.gameDayAccounts(),
     ])
-      .then(([nextNations, nextStages, nextVenues, nextMatches, nextAccounts]) => {
-        if (!active) return;
-        setNations(nextNations);
-        setStages(nextStages);
-        setVenues(nextVenues);
-        setMatches(nextMatches);
-        setGameDayAccounts(nextAccounts);
-      })
+      .then(
+        ([nextNations, nextStages, nextVenues, nextMatches, nextAccounts]) => {
+          if (!active) return;
+          setNations(nextNations);
+          setStages(nextStages);
+          setVenues(nextVenues);
+          setMatches(nextMatches);
+          setGameDayAccounts(nextAccounts);
+        },
+      )
       .catch((reason: unknown) => {
         if (active) setError(reason);
       });
@@ -1865,7 +1873,14 @@ function Matches() {
               />
             </div>
           ) : (
-            matches.map((m) => <MatchRow key={m.id} m={m} venues={venues ?? []} onChange={reload} />)
+            matches.map((m) => (
+              <MatchRow
+                key={m.id}
+                m={m}
+                venues={venues ?? []}
+                onChange={reload}
+              />
+            ))
           )}
         </div>
       </section>
@@ -1884,7 +1899,13 @@ function Matches() {
   );
 }
 
-function VenueManager({ venues, onChange }: { venues: MatchVenue[]; onChange: () => void }) {
+function VenueManager({
+  venues,
+  onChange,
+}: {
+  venues: MatchVenue[];
+  onChange: () => void;
+}) {
   const [venueName, setVenueName] = useState("");
   const [address, setAddress] = useState("");
   const [venueId, setVenueId] = useState("");
@@ -1892,33 +1913,105 @@ function VenueManager({ venues, onChange }: { venues: MatchVenue[]; onChange: ()
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
   async function addVenue(e: React.FormEvent) {
-    e.preventDefault(); if (!venueName.trim()) return;
-    setBusy(true); setError(null);
-    try { await api.createMatchVenue({ name: venueName.trim(), address: address.trim() || undefined, timezone: "America/Barbados" }); setVenueName(""); setAddress(""); onChange(); }
-    catch (reason) { setError(reason); } finally { setBusy(false); }
+    e.preventDefault();
+    if (!venueName.trim()) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await api.createMatchVenue({
+        name: venueName.trim(),
+        address: address.trim() || undefined,
+        timezone: "America/Barbados",
+      });
+      setVenueName("");
+      setAddress("");
+      onChange();
+    } catch (reason) {
+      setError(reason);
+    } finally {
+      setBusy(false);
+    }
   }
   async function addCourt(e: React.FormEvent) {
-    e.preventDefault(); if (!venueId || !courtName.trim()) return;
-    setBusy(true); setError(null);
-    try { await api.createMatchCourt(venueId, courtName.trim()); setCourtName(""); onChange(); }
-    catch (reason) { setError(reason); } finally { setBusy(false); }
+    e.preventDefault();
+    if (!venueId || !courtName.trim()) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await api.createMatchCourt(venueId, courtName.trim());
+      setCourtName("");
+      onChange();
+    } catch (reason) {
+      setError(reason);
+    } finally {
+      setBusy(false);
+    }
   }
   return (
     <section className="space-y-3">
       <h2 className={labelCls}>Venues &amp; courts</h2>
       <ErrorBanner error={error} />
       <div className="grid gap-4 lg:grid-cols-2">
-        <form onSubmit={addVenue} className={`${panel} grid gap-3 p-5 sm:grid-cols-2`}>
-          <h3 className="font-display text-lg font-bold text-ink sm:col-span-2">Add venue</h3>
-          <input className={inputCls} required placeholder="Venue name" value={venueName} onChange={(e) => setVenueName(e.target.value)} />
-          <input className={inputCls} placeholder="Address (optional)" value={address} onChange={(e) => setAddress(e.target.value)} />
-          <button className={`${btnGold} sm:col-span-2`} disabled={busy || !venueName.trim()}>Add venue</button>
+        <form
+          onSubmit={addVenue}
+          className={`${panel} grid gap-3 p-5 sm:grid-cols-2`}
+        >
+          <h3 className="font-display text-lg font-bold text-ink sm:col-span-2">
+            Add venue
+          </h3>
+          <input
+            className={inputCls}
+            required
+            placeholder="Venue name"
+            value={venueName}
+            onChange={(e) => setVenueName(e.target.value)}
+          />
+          <input
+            className={inputCls}
+            placeholder="Address (optional)"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+          />
+          <button
+            className={`${btnGold} sm:col-span-2`}
+            disabled={busy || !venueName.trim()}
+          >
+            Add venue
+          </button>
         </form>
-        <form onSubmit={addCourt} className={`${panel} grid gap-3 p-5 sm:grid-cols-2`}>
-          <h3 className="font-display text-lg font-bold text-ink sm:col-span-2">Add court</h3>
-          <select className={inputCls} required value={venueId} onChange={(e) => setVenueId(e.target.value)}><option value="">Select venue…</option>{venues.map((venue) => <option key={venue.id} value={venue.id}>{venue.name}</option>)}</select>
-          <input className={inputCls} required placeholder="Court name" value={courtName} onChange={(e) => setCourtName(e.target.value)} />
-          <button className={`${btnGold} sm:col-span-2`} disabled={busy || !venueId || !courtName.trim()}>Add court</button>
+        <form
+          onSubmit={addCourt}
+          className={`${panel} grid gap-3 p-5 sm:grid-cols-2`}
+        >
+          <h3 className="font-display text-lg font-bold text-ink sm:col-span-2">
+            Add court
+          </h3>
+          <select
+            className={inputCls}
+            required
+            value={venueId}
+            onChange={(e) => setVenueId(e.target.value)}
+          >
+            <option value="">Select venue…</option>
+            {venues.map((venue) => (
+              <option key={venue.id} value={venue.id}>
+                {venue.name}
+              </option>
+            ))}
+          </select>
+          <input
+            className={inputCls}
+            required
+            placeholder="Court name"
+            value={courtName}
+            onChange={(e) => setCourtName(e.target.value)}
+          />
+          <button
+            className={`${btnGold} sm:col-span-2`}
+            disabled={busy || !venueId || !courtName.trim()}
+          >
+            Add court
+          </button>
         </form>
       </div>
     </section>
@@ -1954,10 +2047,17 @@ function GameDayStaffing({
   useEffect(() => {
     if (!matchId) return;
     let active = true;
-    void api.gameDayAssignments(matchId)
-      .then((rows) => { if (active) setAssignments(rows); })
-      .catch((reason: unknown) => { if (active) setError(reason); });
-    return () => { active = false; };
+    void api
+      .gameDayAssignments(matchId)
+      .then((rows) => {
+        if (active) setAssignments(rows);
+      })
+      .catch((reason: unknown) => {
+        if (active) setError(reason);
+      });
+    return () => {
+      active = false;
+    };
   }, [matchId]);
 
   async function createAccount(e: React.FormEvent) {
@@ -1966,9 +2066,15 @@ function GameDayStaffing({
     setError(null);
     try {
       await api.createGameDayAccount({ displayName, email, password, role });
-      setDisplayName(""); setEmail(""); setPassword("");
+      setDisplayName("");
+      setEmail("");
+      setPassword("");
       onChange();
-    } catch (reason) { setError(reason); } finally { setBusy(false); }
+    } catch (reason) {
+      setError(reason);
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function assign(nextRole: GameDayRole, appUserId: string) {
@@ -1976,10 +2082,15 @@ function GameDayStaffing({
     setBusy(true);
     setError(null);
     try {
-      if (appUserId) await api.assignGameDayOfficial(matchId, appUserId, nextRole);
+      if (appUserId)
+        await api.assignGameDayOfficial(matchId, appUserId, nextRole);
       else await api.unassignGameDayOfficial(matchId, nextRole);
       setAssignments(await api.gameDayAssignments(matchId));
-    } catch (reason) { setError(reason); } finally { setBusy(false); }
+    } catch (reason) {
+      setError(reason);
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -1988,38 +2099,111 @@ function GameDayStaffing({
       <ErrorBanner error={error} />
       <div className="grid gap-4 lg:grid-cols-2">
         <form onSubmit={createAccount} className={`${panel} space-y-3 p-5`}>
-          <h3 className="font-display text-lg font-bold text-ink">Create role account</h3>
-          <p className="text-sm text-ink-muted">Each operator signs in separately and only receives their assigned match function.</p>
-          <input className={inputCls} required placeholder="Operator name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
-          <input className={inputCls} required type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} />
-          <input className={inputCls} required minLength={12} type="password" placeholder="Temporary password (12+ characters)" value={password} onChange={(e) => setPassword(e.target.value)} />
-          <select className={inputCls} value={role} onChange={(e) => setRole(e.target.value as GameDayRole)}>
-            {GAME_DAY_ROLES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+          <h3 className="font-display text-lg font-bold text-ink">
+            Create role account
+          </h3>
+          <p className="text-sm text-ink-muted">
+            Each operator signs in separately and only receives their assigned
+            match function.
+          </p>
+          <input
+            className={inputCls}
+            required
+            placeholder="Operator name"
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+          />
+          <input
+            className={inputCls}
+            required
+            type="email"
+            placeholder="Email address"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <input
+            className={inputCls}
+            required
+            minLength={12}
+            type="password"
+            placeholder="Temporary password (12+ characters)"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <select
+            className={inputCls}
+            value={role}
+            onChange={(e) => setRole(e.target.value as GameDayRole)}
+          >
+            {GAME_DAY_ROLES.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
           </select>
-          <button className={btnGold} disabled={busy}>Create account</button>
+          <button className={btnGold} disabled={busy}>
+            Create account
+          </button>
         </form>
         <div className={`${panel} space-y-3 p-5`}>
-          <h3 className="font-display text-lg font-bold text-ink">Assign match crew</h3>
-          <select className={inputCls} value={matchId} onChange={(e) => { setMatchId(e.target.value); setAssignments([]); }}>
+          <h3 className="font-display text-lg font-bold text-ink">
+            Assign match crew
+          </h3>
+          <select
+            className={inputCls}
+            value={matchId}
+            onChange={(e) => {
+              setMatchId(e.target.value);
+              setAssignments([]);
+            }}
+          >
             <option value="">Select fixture…</option>
-            {matches.filter((match) => ["scheduled", "postponed"].includes(match.status)).map((match) => (
-              <option key={match.id} value={match.id}>{whenLabel(match.scheduledAt)} · {match.teamAName} vs {match.teamBName}</option>
-            ))}
+            {matches
+              .filter((match) =>
+                ["scheduled", "postponed"].includes(match.status),
+              )
+              .map((match) => (
+                <option key={match.id} value={match.id}>
+                  {whenLabel(match.scheduledAt)} · {match.teamAName} vs{" "}
+                  {match.teamBName}
+                </option>
+              ))}
           </select>
           {GAME_DAY_ROLES.map((item) => {
             const assigned = assignments.find((row) => row.role === item.value);
-            const eligible = accounts.filter((account) => account.role === item.value);
+            const eligible = accounts.filter(
+              (account) => account.role === item.value,
+            );
             return (
-              <div key={item.value} className="grid grid-cols-[10rem_1fr] items-center gap-3">
-                <label className="text-sm font-semibold text-ink">{item.label}</label>
-                <select className={inputCls} disabled={!matchId || busy} value={assigned?.appUserId ?? ""} onChange={(e) => void assign(item.value, e.target.value)}>
+              <div
+                key={item.value}
+                className="grid grid-cols-[10rem_1fr] items-center gap-3"
+              >
+                <label className="text-sm font-semibold text-ink">
+                  {item.label}
+                </label>
+                <select
+                  className={inputCls}
+                  disabled={!matchId || busy}
+                  value={assigned?.appUserId ?? ""}
+                  onChange={(e) => void assign(item.value, e.target.value)}
+                >
                   <option value="">Not assigned</option>
-                  {eligible.map((account) => <option key={account.id} value={account.id}>{account.displayName} · {account.email}</option>)}
+                  {eligible.map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {account.displayName} · {account.email}
+                    </option>
+                  ))}
                 </select>
               </div>
             );
           })}
-          {matchId && <p className="text-xs text-ink-muted">{assignments.length}/5 required roles assigned. The supervisor cannot mark the match ready until all five are present.</p>}
+          {matchId && (
+            <p className="text-xs text-ink-muted">
+              {assignments.length}/5 required roles assigned. The supervisor
+              cannot mark the match ready until all five are present.
+            </p>
+          )}
         </div>
       </div>
     </section>
@@ -2170,15 +2354,41 @@ function NewMatchForm({
   );
 }
 
-function MatchRow({ m, venues, onChange }: { m: AdminMatch; venues: MatchVenue[]; onChange: () => void }) {
+function MatchRow({
+  m,
+  venues,
+  onChange,
+}: {
+  m: AdminMatch;
+  venues: MatchVenue[];
+  onChange: () => void;
+}) {
   const [status, setStatus] = useState<AdminMatch["status"]>(m.status);
   const [courtId, setCourtId] = useState(m.courtId ?? "");
   const [scheduledAt, setScheduledAt] = useState(
-    m.scheduledAt ? new Date(new Date(m.scheduledAt).getTime() - new Date(m.scheduledAt).getTimezoneOffset() * 60_000).toISOString().slice(0, 16) : "",
+    m.scheduledAt
+      ? new Date(
+          new Date(m.scheduledAt).getTime() -
+            new Date(m.scheduledAt).getTimezoneOffset() * 60_000,
+        )
+          .toISOString()
+          .slice(0, 16)
+      : "",
   );
   const [busy, setBusy] = useState(false);
 
-  const dirty = status !== m.status || courtId !== (m.courtId ?? "") || scheduledAt !== (m.scheduledAt ? new Date(new Date(m.scheduledAt).getTime() - new Date(m.scheduledAt).getTimezoneOffset() * 60_000).toISOString().slice(0, 16) : "");
+  const dirty =
+    status !== m.status ||
+    courtId !== (m.courtId ?? "") ||
+    scheduledAt !==
+      (m.scheduledAt
+        ? new Date(
+            new Date(m.scheduledAt).getTime() -
+              new Date(m.scheduledAt).getTimezoneOffset() * 60_000,
+          )
+            .toISOString()
+            .slice(0, 16)
+        : "");
 
   async function save() {
     setBusy(true);
@@ -2234,16 +2444,37 @@ function MatchRow({ m, venues, onChange }: { m: AdminMatch; venues: MatchVenue[]
         onChange={(e) => setStatus(e.target.value as AdminMatch["status"])}
         className="rounded-md border border-line-strong bg-white px-2 py-1 text-xs font-semibold uppercase text-ink"
       >
-        {(MATCH_STATUSES.includes(m.status) ? MATCH_STATUSES : [m.status]).map((s) => (
-          <option key={s} value={s}>
-            {s}
-          </option>
-        ))}
+        {(MATCH_STATUSES.includes(m.status) ? MATCH_STATUSES : [m.status]).map(
+          (s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ),
+        )}
       </select>
-      <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} disabled={!MATCH_STATUSES.includes(m.status)} className="rounded-md border border-line-strong bg-white px-2 py-1 text-xs text-ink disabled:opacity-50" aria-label={`Schedule ${m.teamAName} versus ${m.teamBName}`} />
-      <select value={courtId} onChange={(e) => setCourtId(e.target.value)} disabled={!MATCH_STATUSES.includes(m.status)} className="rounded-md border border-line-strong bg-white px-2 py-1 text-xs text-ink disabled:opacity-50" aria-label={`Court ${m.teamAName} versus ${m.teamBName}`}>
+      <input
+        type="datetime-local"
+        value={scheduledAt}
+        onChange={(e) => setScheduledAt(e.target.value)}
+        disabled={!MATCH_STATUSES.includes(m.status)}
+        className="rounded-md border border-line-strong bg-white px-2 py-1 text-xs text-ink disabled:opacity-50"
+        aria-label={`Schedule ${m.teamAName} versus ${m.teamBName}`}
+      />
+      <select
+        value={courtId}
+        onChange={(e) => setCourtId(e.target.value)}
+        disabled={!MATCH_STATUSES.includes(m.status)}
+        className="rounded-md border border-line-strong bg-white px-2 py-1 text-xs text-ink disabled:opacity-50"
+        aria-label={`Court ${m.teamAName} versus ${m.teamBName}`}
+      >
         <option value="">Court TBC</option>
-        {venues.flatMap((venue) => venue.courts.map((court) => <option key={court.id} value={court.id}>{venue.name} · {court.name}</option>))}
+        {venues.flatMap((venue) =>
+          venue.courts.map((court) => (
+            <option key={court.id} value={court.id}>
+              {venue.name} · {court.name}
+            </option>
+          )),
+        )}
       </select>
       <button
         onClick={save}
@@ -2383,6 +2614,9 @@ function Registrations() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
+  const [view, setView] = useState<"queue" | "registry">("queue");
+  const [statusFilter, setStatusFilter] = useState<"all" | RegistrationRecord["registrationStatus"]>("all");
+  const [search, setSearch] = useState("");
 
   const load = useCallback(async () => {
     setError(null);
@@ -2410,6 +2644,26 @@ function Registrations() {
   const pending =
     registrations?.filter((item) => item.registrationStatus === "submitted") ??
     null;
+  const statusCounts = registrations?.reduce(
+    (counts, item) => {
+      counts[item.registrationStatus] += 1;
+      return counts;
+    },
+    { draft: 0, submitted: 0, approved: 0, rejected: 0 },
+  );
+  const visibleRegistrations = registrations?.filter((item) => {
+    if (statusFilter !== "all" && item.registrationStatus !== statusFilter)
+      return false;
+    const query = search.trim().toLowerCase();
+    if (!query) return true;
+    return [
+      item.name,
+      item.countryCode,
+      item.associationName,
+      item.contactName,
+      item.contactEmail,
+    ].some((value) => value?.toLowerCase().includes(query));
+  });
 
   async function act(d: PendingDelegation, action: "approve" | "reject") {
     const reason = action === "reject" ? rejectReason.trim() : undefined;
@@ -2456,7 +2710,28 @@ function Registrations() {
           <span className="font-semibold">{note}</span>
         </div>
       )}
-      {pending === null ? (
+      <div className="mb-6 flex flex-wrap gap-2 rounded-2xl border border-line bg-white p-2 shadow-sm">
+        <button
+          type="button"
+          onClick={() => setView("queue")}
+          className={`${view === "queue" ? btnPrimary : btnGhost} flex items-center gap-2`}
+        >
+          Awaiting approval
+          {pending && pending.length > 0 && (
+            <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">
+              {pending.length}
+            </span>
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={() => setView("registry")}
+          className={view === "registry" ? btnPrimary : btnGhost}
+        >
+          All registered teams {registrations ? `(${registrations.length})` : ""}
+        </button>
+      </div>
+      {view === "queue" && (pending === null ? (
         <LoadingBlock rows={4} />
       ) : pending.length === 0 ? (
         <EmptyState
@@ -2506,11 +2781,12 @@ function Registrations() {
                 </div>
               </div>
               <dl className="mt-4 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-                <Field k="Head of delegation" v={d.headOfDelegation} />
-                <Field k="Team contact" v={d.contactName} />
+                <Field
+                  k="Team manager"
+                  v={d.contactName ?? d.headOfDelegation}
+                />
                 <Field k="Contact email" v={d.contactEmail} />
                 <Field k="Contact phone" v={d.contactPhone} />
-                <Field k="Contact role/title" v={d.contactRoleTitle} />
                 <Field k="Expected squad" v={d.expectedSquadSize} />
               </dl>
               {rejectingId === d.id && (
@@ -2547,9 +2823,9 @@ function Registrations() {
             </div>
           ))}
         </div>
-      )}
-      {registrations && registrations.length > 0 && (
-        <section className={`${panel} mt-6 overflow-hidden`}>
+      ))}
+      {view === "registry" && registrations && (
+        <section className={`${panel} overflow-hidden`}>
           <div className="border-b border-line px-5 py-4 sm:px-6">
             <p className="font-mono text-[0.62rem] font-bold uppercase tracking-[0.12em] text-navy">
               Complete registry
@@ -2557,9 +2833,36 @@ function Registrations() {
             <h2 className="mt-1 font-display text-xl font-bold text-ink">
               All delegation registrations
             </h2>
+            <p className="mt-1 text-sm text-ink-muted">
+              A permanent record of every team that has registered, including approved and returned submissions.
+            </p>
+            <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(220px,1fr)_auto]">
+              <input
+                className={inputCls}
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search team, country, association or contact…"
+                aria-label="Search registered teams"
+              />
+              <div className="flex flex-wrap gap-2">
+                {(["all", "submitted", "approved", "rejected", "draft"] as const).map((status) => (
+                  <button
+                    key={status}
+                    type="button"
+                    onClick={() => setStatusFilter(status)}
+                    className={statusFilter === status ? btnPrimary : btnGhost}
+                  >
+                    {status === "all" ? "All" : status === "submitted" ? "Pending" : status}
+                    {status === "all"
+                      ? ` ${registrations.length}`
+                      : ` ${statusCounts?.[status] ?? 0}`}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
           <div className="enterprise-table-scroll overflow-x-auto">
-            <table className="w-full min-w-[760px] text-left text-sm">
+            <table className="w-full min-w-[1050px] text-left text-sm">
               <thead className="bg-bg-soft font-mono text-[0.58rem] uppercase tracking-[0.08em] text-ink-muted">
                 <tr>
                   <th className="px-5 py-3">Team</th>
@@ -2567,11 +2870,13 @@ function Registrations() {
                   <th className="px-5 py-3">Contact</th>
                   <th className="px-5 py-3">Submitted</th>
                   <th className="px-5 py-3">Status</th>
+                  <th className="px-5 py-3">Roster</th>
+                  <th className="px-5 py-3">Accreditation</th>
                   <th className="px-5 py-3">Review note</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
-                {registrations.map((record) => (
+                {visibleRegistrations?.map((record) => (
                   <tr key={record.id}>
                     <td className="px-5 py-3 font-semibold text-ink">
                       {record.name}{" "}
@@ -2610,6 +2915,19 @@ function Registrations() {
                         {record.registrationStatus}
                       </StatusPill>
                     </td>
+                    <td className="px-5 py-3">
+                      <span className="block font-semibold text-ink">
+                        {record.playerCount} players · {record.officialCount} officials
+                      </span>
+                      <span className="text-xs capitalize text-ink-muted">
+                        {record.rosterStatus}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3">
+                      <StatusPill tone={record.accreditedAt ? "success" : record.rosterSubmittedAt ? "warning" : "neutral"}>
+                        {record.accreditedAt ? "Accredited" : record.rosterSubmittedAt ? "Under review" : "Not submitted"}
+                      </StatusPill>
+                    </td>
                     <td className="max-w-xs px-5 py-3 text-xs text-ink-muted">
                       {record.registrationReviewNote ?? "—"}
                     </td>
@@ -2617,6 +2935,11 @@ function Registrations() {
                 ))}
               </tbody>
             </table>
+            {visibleRegistrations?.length === 0 && (
+              <div className="p-8 text-center text-sm text-ink-muted">
+                No registered teams match this search or status filter.
+              </div>
+            )}
           </div>
         </section>
       )}
@@ -2770,6 +3093,14 @@ function ReviewDetailView({ id, onBack }: { id: string; onBack: () => void }) {
   const accredited = d.status === "approved";
   const allReady =
     detail.people.length > 0 && detail.people.every((p) => p.ready);
+  const verifiedCount = detail.people.filter(
+    (person) => person.verificationStatus === "verified",
+  ).length;
+  const returnedCount = detail.people.filter(
+    (person) => person.verificationStatus === "returned",
+  ).length;
+  const allVerified =
+    detail.people.length > 0 && verifiedCount === detail.people.length;
 
   return (
     <div>
@@ -2797,13 +3128,15 @@ function ReviewDetailView({ id, onBack }: { id: string; onBack: () => void }) {
           <div className="flex gap-2">
             <button
               onClick={approve}
-              disabled={busy || !allReady}
+              disabled={busy || !allReady || !allVerified}
               className={btnGold}
               title={
-                allReady ? "" : "All people must pass the checks before issuing"
+                allReady && allVerified
+                  ? ""
+                  : "Every person must pass the checks and be individually verified"
               }
             >
-              Approve &amp; issue
+              Finalise team accreditation
             </button>
             <button
               onClick={() => setReturning((v) => !v)}
@@ -2817,6 +3150,22 @@ function ReviewDetailView({ id, onBack }: { id: string; onBack: () => void }) {
       </div>
 
       <ErrorBanner error={error} />
+
+      {!accredited && (
+        <div className={`${panel} mb-5 flex flex-wrap items-center gap-3 p-4 text-sm`}>
+          <strong className="text-ink">Rolling LOC review:</strong>
+          <StatusPill tone="success">{verifiedCount} verified</StatusPill>
+          <StatusPill tone={returnedCount ? "danger" : "neutral"}>
+            {returnedCount} returned
+          </StatusPill>
+          <StatusPill tone="warning">
+            {detail.people.length - verifiedCount - returnedCount} pending
+          </StatusPill>
+          <span className="text-ink-muted">
+            Verify complete people now; final accreditation remains locked until the roster requirements are met.
+          </span>
+        </div>
+      )}
 
       {returning && !accredited && (
         <div className={`${panel} mb-4 p-4`}>
@@ -2861,6 +3210,7 @@ function ReviewDetailView({ id, onBack }: { id: string; onBack: () => void }) {
           <PersonRow
             key={p.id}
             person={p}
+            delegationId={id}
             accredited={accredited}
             onChanged={load}
             onError={setError}
@@ -2885,11 +3235,13 @@ function Tick({ ok, label }: { ok: boolean; label: string }) {
 
 function PersonRow({
   person,
+  delegationId,
   accredited,
   onChanged,
   onError,
 }: {
   person: ReviewPerson;
+  delegationId: string;
   accredited: boolean;
   onChanged: () => void;
   onError: (error: unknown) => void;
@@ -2899,6 +3251,28 @@ function PersonRow({
   const [documentUrl, setDocumentUrl] = useState<string | null>(null);
   const [identityNote, setIdentityNote] = useState("");
   const [identityBusy, setIdentityBusy] = useState(false);
+  const [reviewBusy, setReviewBusy] = useState(false);
+  const [returningPerson, setReturningPerson] = useState(false);
+  const [personNote, setPersonNote] = useState("");
+
+  async function decidePerson(status: "verified" | "returned") {
+    setReviewBusy(true);
+    onError(null);
+    try {
+      if (status === "verified") {
+        await api.verifyPerson(delegationId, person.id);
+      } else {
+        await api.returnPerson(delegationId, person.id, personNote);
+      }
+      setReturningPerson(false);
+      setPersonNote("");
+      onChanged();
+    } catch (error) {
+      onError(error);
+    } finally {
+      setReviewBusy(false);
+    }
+  }
 
   useEffect(() => {
     let revoke: string | null = null;
@@ -2976,7 +3350,9 @@ function PersonRow({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className="font-display text-base font-bold text-ink">
-              {person.firstName.charAt(0)}. {person.lastName}
+              {[person.firstName, person.middleNames, person.lastName]
+                .filter(Boolean)
+                .join(" ")}
             </span>
             <span
               className={`rounded px-1.5 py-0.5 font-mono text-[0.55rem] font-bold uppercase tracking-[0.04em] ${
@@ -3007,6 +3383,34 @@ function PersonRow({
             />
           </div>
         </div>
+        {!accredited && (
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            {person.verificationStatus === "verified" ? (
+              <StatusPill tone="success">LOC verified</StatusPill>
+            ) : person.verificationStatus === "returned" ? (
+              <StatusPill tone="danger">Returned</StatusPill>
+            ) : (
+              <StatusPill tone="warning">Pending review</StatusPill>
+            )}
+            <button
+              type="button"
+              onClick={() => decidePerson("verified")}
+              disabled={reviewBusy || !person.ready || person.verificationStatus === "verified"}
+              className={btnGold}
+              title={person.ready ? "Verify this individual record" : "Complete this person’s required checks first"}
+            >
+              Verify person
+            </button>
+            <button
+              type="button"
+              onClick={() => setReturningPerson((value) => !value)}
+              disabled={reviewBusy}
+              className={`${btnGhost} text-bad`}
+            >
+              Return
+            </button>
+          </div>
+        )}
         {accredited && qrUrl && (
           <a
             href={qrUrl}
@@ -3023,22 +3427,98 @@ function PersonRow({
           </a>
         )}
       </div>
-      <div className="mt-3 grid gap-3 border-t border-line pt-3 text-sm sm:grid-cols-3">
-        <div>
-          <p className={labelCls}>Registration details</p>
-          <p className="text-ink-soft">
-            {person.nationality} ·{" "}
-            {person.rosterType ??
-              person.officialRole?.replaceAll("_", " ") ??
-              person.category}
-            {person.isHeadOfDelegation ? " · Head of Delegation" : ""}
-            {person.benchEligible ? " · Bench" : ""}
-          </p>
+      {returningPerson && !accredited && (
+        <div className="mt-3 rounded-xl border border-bad-line bg-bad-soft p-3">
+          <label className={labelCls}>Correction required for this person</label>
+          <textarea
+            className={inputCls}
+            rows={2}
+            value={personNote}
+            onChange={(event) => setPersonNote(event.target.value)}
+            placeholder="Explain exactly what the team must correct."
+          />
+          <div className="mt-2 flex gap-2">
+            <button
+              type="button"
+              onClick={() => decidePerson("returned")}
+              disabled={reviewBusy || !personNote.trim()}
+              className={btnPrimary}
+            >
+              Return this person
+            </button>
+            <button type="button" onClick={() => setReturningPerson(false)} className={btnGhost}>
+              Cancel
+            </button>
+          </div>
         </div>
-        <div className="sm:col-span-2">
+      )}
+      <div className="mt-3 border-t border-line pt-3 text-sm">
+        <p className={labelCls}>Submitted registration information</p>
+        <dl className="mt-2 grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Field
+            k="Full registered name"
+            v={[person.firstName, person.middleNames, person.lastName]
+              .filter(Boolean)
+              .join(" ")}
+          />
+          <Field k="Date of birth" v={person.dateOfBirth} />
+          <Field k="Nationality" v={person.nationality} />
+          <Field k="Category" v={person.category.replaceAll("_", " ")} />
+          <Field
+            k="Roster classification / role"
+            v={
+              person.rosterType ??
+              person.officialRole?.replaceAll("_", " ") ??
+              person.category
+            }
+          />
+          <Field k="Primary position" v={person.role} />
+          <Field
+            k="Bench allocation"
+            v={person.benchEligible ? "Included" : "Not included"}
+          />
+          <Field
+            k="Head of delegation/delegate"
+            v={person.isHeadOfDelegation ? "Yes" : "No"}
+          />
+          <Field
+            k="Nationality matches team"
+            v={person.nationalityMatchesTeam ? "Yes" : "No"}
+          />
+          {!person.nationalityMatchesTeam && (
+            <>
+              <Field
+                k="Eligibility confirmed"
+                v={person.eligibilityConfirmed ? "Yes" : "No"}
+              />
+              <Field
+                k="Eligibility reference"
+                v={person.eligibilityReference}
+              />
+            </>
+          )}
+        </dl>
+        <div className="mt-4">
           <p className={labelCls}>Biography</p>
           <p className="text-ink-soft">{person.biography}</p>
         </div>
+        {person.consentRecord && (
+          <div className="mt-4 rounded-lg border border-line bg-bg-soft p-3">
+            <p className={labelCls}>Consent record</p>
+            <p className="text-ink-soft">
+              {person.consentRecord.type === "guardian"
+                ? "Guardian consent"
+                : "Participant consent"}{" "}
+              · {person.consentRecord.consentingPartyName}
+              {person.consentRecord.relationship
+                ? ` (${person.consentRecord.relationship})`
+                : ""}
+              {person.consentRecord.consentedAt
+                ? ` · ${new Date(person.consentRecord.consentedAt).toLocaleString()}`
+                : ""}
+            </p>
+          </div>
+        )}
       </div>
       {person.identityDocument ? (
         <div className="mt-3 rounded-xl border border-line-strong bg-bg-soft p-3">

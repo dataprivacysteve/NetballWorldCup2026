@@ -129,6 +129,31 @@ export class AdminController {
     return this.admin.approveRoster(id, req.user.userId);
   }
 
+  @Post('review/:id/people/:playerId/verify')
+  verifyPerson(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('playerId', ParseUUIDPipe) playerId: string,
+    @Req() req: Request & { user: { userId: string } },
+  ) {
+    return this.admin.reviewPerson(id, playerId, 'verified', req.user.userId);
+  }
+
+  @Post('review/:id/people/:playerId/return')
+  returnPerson(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('playerId', ParseUUIDPipe) playerId: string,
+    @Body() dto: ReturnRosterDto,
+    @Req() req: Request & { user: { userId: string } },
+  ) {
+    return this.admin.reviewPerson(
+      id,
+      playerId,
+      'returned',
+      req.user.userId,
+      dto.note,
+    );
+  }
+
   @Post('review/:id/return')
   returnRoster(
     @Param('id', ParseUUIDPipe) id: string,

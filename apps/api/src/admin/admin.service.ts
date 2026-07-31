@@ -15,7 +15,7 @@ import {
 } from '@aws-sdk/client-s3';
 import { Pool } from 'pg';
 import { drizzle, NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { asc, desc, eq, inArray } from 'drizzle-orm';
+import { asc, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm';
 import { PRIVILEGED_POOL } from '../db/db.tokens';
 import * as schema from '../db/schema';
 import { isMinor } from '../teams/age';
@@ -92,8 +92,22 @@ export class AdminService {
         registrationReviewNote: schema.delegation.registrationReviewNote,
         registrationSubmittedAt: schema.delegation.registrationSubmittedAt,
         approvedAt: schema.delegation.approvedAt,
+        rosterStatus: schema.delegation.status,
+        rosterSubmittedAt: schema.delegation.submittedAt,
+        accreditedAt: schema.delegation.accreditedAt,
+        playerCount: sql<number>`(
+          select count(*)::int from "player" roster_person
+          where roster_person."delegation_id" = "delegation"."id"
+            and roster_person."category" = 'player'
+        )`,
+        officialCount: sql<number>`(
+          select count(*)::int from "player" roster_person
+          where roster_person."delegation_id" = "delegation"."id"
+            and roster_person."category" <> 'player'
+        )`,
       })
       .from(schema.delegation)
+      .where(isNotNull(schema.delegation.registrationSubmittedAt))
       .orderBy(asc(schema.delegation.name));
   }
 
@@ -156,7 +170,7 @@ export class AdminService {
       .where(eq(schema.delegation.id, delegationId));
     if (!del) throw new NotFoundException('Delegation not found');
 
-    const [players, photos, consents, creds, identityDocuments, event] =
+    const [players, photos, consents, creds, identityDocuments, reviews, event] =
       await Promise.all([
         this.db
           .select()
@@ -179,6 +193,10 @@ export class AdminService {
           .select()
           .from(schema.identityDocument)
           .where(eq(schema.identityDocument.delegationId, delegationId)),
+        this.db
+          .select()
+          .from(schema.personAccreditationReview)
+          .where(eq(schema.personAccreditationReview.delegationId, delegationId)),
         this.db
           .select({
             eligibilityDate: schema.tournament.eligibilityDate,
@@ -206,6 +224,7 @@ export class AdminService {
     const identityByPlayer = new Map(
       identityDocuments.map((document) => [document.playerId, document]),
     );
+    const reviewByPlayer = new Map(reviews.map((review) => [review.playerId, review]));
 
     const people = players.map((p) => {
       const minor = isMinor(p.dateOfBirth, event?.eligibilityDate);
@@ -217,10 +236,23 @@ export class AdminService {
         consents.some(
           (c) => c.playerId === p.id && c.consentGiven && c.type === 'guardian',
         );
+      const consentRecord = consents.find(
+        (record) => record.playerId === p.id && record.consentGiven,
+      );
       const identity = identityByPlayer.get(p.id);
       const identityRequired =
         event?.identityRequiredCategories.includes(p.category) ?? false;
       const dobReady = p.category !== 'player' || !!p.dateOfBirth;
+      const review = reviewByPlayer.get(p.id);
+      const evidenceDates = [
+        p.updatedAt,
+        ...photos.filter((item) => item.playerId === p.id).map((item) => item.uploadedAt),
+        ...consents.filter((item) => item.playerId === p.id).map((item) => item.consentedAt),
+        identity?.uploadedAt,
+        identity?.verifiedAt,
+      ].filter((value): value is Date => value instanceof Date);
+      const reviewCurrent =
+        !!review && evidenceDates.every((changedAt) => changedAt <= review.reviewedAt);
       return {
         id: p.id,
         firstName: p.firstName,
@@ -261,11 +293,22 @@ export class AdminService {
               verifiedAt: identity.verifiedAt,
             }
           : null,
+        consentRecord: consentRecord
+          ? {
+              type: consentRecord.type,
+              consentingPartyName: consentRecord.consentingPartyName,
+              relationship: consentRecord.relationship,
+              consentedAt: consentRecord.consentedAt,
+            }
+          : null,
         ready:
           photo &&
           dobReady &&
           consent &&
           (!identityRequired || identity?.status === 'verified'),
+        verificationStatus: reviewCurrent ? review?.status ?? 'pending' : 'pending',
+        verificationNote: reviewCurrent ? review?.note ?? null : null,
+        reviewedAt: reviewCurrent ? review?.reviewedAt ?? null : null,
         credentialId: credByPlayer.get(p.id)?.id ?? null,
         credentialStatus: credByPlayer.get(p.id)?.status ?? null,
       };
@@ -290,10 +333,65 @@ export class AdminService {
     };
   }
 
+  async reviewPerson(
+    delegationId: string,
+    playerId: string,
+    status: 'verified' | 'returned',
+    actorUserId: string,
+    note?: string,
+  ) {
+    const detail = await this.reviewDetail(delegationId);
+    const person = detail.people.find((item) => item.id === playerId);
+    if (!person) throw new NotFoundException('Person is not on this delegation');
+    if (status === 'verified' && !person.ready) {
+      throw new BadRequestException('Complete and verify this person’s required record first');
+    }
+    if (status === 'returned' && !note?.trim()) {
+      throw new BadRequestException('A correction note is required');
+    }
+    const [review] = await this.db
+      .insert(schema.personAccreditationReview)
+      .values({
+        playerId,
+        delegationId,
+        status,
+        note: status === 'returned' ? note!.trim() : null,
+        reviewedBy: actorUserId,
+        reviewedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: schema.personAccreditationReview.playerId,
+        set: {
+          status,
+          note: status === 'returned' ? note!.trim() : null,
+          reviewedBy: actorUserId,
+          reviewedAt: new Date(),
+        },
+      })
+      .returning();
+    await this.audit(actorUserId, `person.${status}`, 'player', playerId, {
+      delegationId,
+      note: review.note,
+    });
+    return review;
+  }
+
   // Approval and credential issuance are one transaction. The delegation row
   // is locked to serialize concurrent approval attempts, and the database
   // uniqueness constraint remains the final duplicate-credential backstop.
   async approveRoster(delegationId: string, actorUserId: string) {
+    const currentReview = await this.reviewDetail(delegationId);
+    const unverified = currentReview.people.filter(
+      (person) => person.verificationStatus !== 'verified',
+    );
+    if (unverified.length) {
+      throw new BadRequestException({
+        message: 'Every current roster member must be individually verified',
+        problems: unverified.map(
+          (person) => `${person.firstName} ${person.lastName}: not verified`,
+        ),
+      });
+    }
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');

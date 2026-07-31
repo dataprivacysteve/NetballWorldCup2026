@@ -72,6 +72,11 @@ export type RegistrationRecord = PendingDelegation & {
   registrationStatus: "draft" | "submitted" | "approved" | "rejected";
   registrationReviewNote: string | null;
   approvedAt: string | null;
+  rosterStatus: "draft" | "submitted" | "approved" | "rejected";
+  rosterSubmittedAt: string | null;
+  accreditedAt: string | null;
+  playerCount: number;
+  officialCount: number;
 };
 
 export type RegWindow = {
@@ -250,7 +255,16 @@ export type ReviewPerson = {
     hasFile: boolean;
     verifiedAt: string | null;
   } | null;
+  consentRecord: {
+    type: "player" | "guardian";
+    consentingPartyName: string;
+    relationship: string | null;
+    consentedAt: string | null;
+  } | null;
   ready: boolean;
+  verificationStatus: "pending" | "verified" | "returned";
+  verificationNote: string | null;
+  reviewedAt: string | null;
   credentialId: string | null;
   credentialStatus: "issued" | "revoked" | null;
 };
@@ -518,17 +532,21 @@ export const api = {
   controlAudit: () => req<AuditEvent[]>("/control/audit"),
   publicExperience: () =>
     req<PublicExperienceResponse>("/control/public-experience"),
-  updatePublicExperience: (body: Partial<Omit<PublicExperienceConfig, "tournamentId" | "updatedAt">>) =>
+  updatePublicExperience: (
+    body: Partial<Omit<PublicExperienceConfig, "tournamentId" | "updatedAt">>,
+  ) =>
     req<PublicExperienceConfig>("/control/public-experience", {
       method: "PATCH",
       body,
     }),
-  saveSponsor: (body: Partial<SponsorConfig> & Pick<SponsorConfig, "name" | "tier">) =>
-    req<SponsorConfig>("/control/sponsors", { method: "POST", body }),
+  saveSponsor: (
+    body: Partial<SponsorConfig> & Pick<SponsorConfig, "name" | "tier">,
+  ) => req<SponsorConfig>("/control/sponsors", { method: "POST", body }),
   deleteSponsor: (id: string) =>
     req<{ ok: boolean }>(`/control/sponsors/${id}`, { method: "DELETE" }),
-  saveNews: (body: Partial<NewsConfig> & Pick<NewsConfig, "slug" | "title" | "summary">) =>
-    req<NewsConfig>("/control/news", { method: "POST", body }),
+  saveNews: (
+    body: Partial<NewsConfig> & Pick<NewsConfig, "slug" | "title" | "summary">,
+  ) => req<NewsConfig>("/control/news", { method: "POST", body }),
   deleteNews: (id: string) =>
     req<{ ok: boolean }>(`/control/news/${id}`, { method: "DELETE" }),
 
@@ -537,8 +555,7 @@ export const api = {
   verifyScan: (token: string) =>
     req<ScanResult>("/admin/scan/verify", { method: "POST", body: { token } }),
   gateHistory: () => req<GateScanEvent[]>("/admin/scan/history"),
-  offlineGateBundle: () =>
-    req<OfflineGateBundle>("/admin/scan/offline-bundle"),
+  offlineGateBundle: () => req<OfflineGateBundle>("/admin/scan/offline-bundle"),
   syncOfflineScans: (events: OfflineScanEvent[]) =>
     req<{
       accepted: number;
@@ -567,6 +584,15 @@ export const api = {
       `/admin/review/${id}/approve`,
       { method: "POST" },
     ),
+  verifyPerson: (delegationId: string, playerId: string) =>
+    req(`/admin/review/${delegationId}/people/${playerId}/verify`, {
+      method: "POST",
+    }),
+  returnPerson: (delegationId: string, playerId: string, note: string) =>
+    req(`/admin/review/${delegationId}/people/${playerId}/return`, {
+      method: "POST",
+      body: { note },
+    }),
   returnRoster: (id: string, note: string) =>
     req<{ id: string; status: string }>(`/admin/review/${id}/return`, {
       method: "POST",
@@ -586,13 +612,19 @@ export const api = {
   // Match centre (fixtures / results / standings writer)
   matchNations: () => req<MatchNation[]>("/admin/match/nations"),
   matchVenues: () => req<MatchVenue[]>("/admin/match/venues"),
-  createMatchVenue: (body: { name: string; address?: string; timezone?: string }) =>
-    req<MatchVenue>("/admin/match/venues", { method: "POST", body }),
+  createMatchVenue: (body: {
+    name: string;
+    address?: string;
+    timezone?: string;
+  }) => req<MatchVenue>("/admin/match/venues", { method: "POST", body }),
   createMatchCourt: (venueId: string, name: string) =>
-    req<{ id: string; name: string; venueId: string }>(`/admin/match/venues/${venueId}/courts`, {
-      method: "POST",
-      body: { name },
-    }),
+    req<{ id: string; name: string; venueId: string }>(
+      `/admin/match/venues/${venueId}/courts`,
+      {
+        method: "POST",
+        body: { name },
+      },
+    ),
   stages: () => req<Stage[]>("/admin/match/stages"),
   createStage: (name: string, kind: "group" | "knockout", sortOrder: number) =>
     req<Stage>("/admin/match/stages", {
@@ -618,7 +650,10 @@ export const api = {
     req<{ ok: boolean }>(`/admin/match/matches/${id}`, { method: "DELETE" }),
   matchBroadcast: (id: string) =>
     req<MatchBroadcast>(`/admin/match/matches/${id}/broadcast`),
-  updateMatchBroadcast: (id: string, body: Omit<MatchBroadcast, "matchId" | "updatedAt">) =>
+  updateMatchBroadcast: (
+    id: string,
+    body: Omit<MatchBroadcast, "matchId" | "updatedAt">,
+  ) =>
     req<MatchBroadcast>(`/admin/match/matches/${id}/broadcast`, {
       method: "PATCH",
       body,
@@ -640,15 +675,22 @@ export const api = {
   }) => req<GameDayAccount>("/admin/match/officials", { method: "POST", body }),
   gameDayAssignments: (matchId: string) =>
     req<GameDayAssignment[]>(`/admin/match/matches/${matchId}/assignments`),
-  assignGameDayOfficial: (matchId: string, appUserId: string, role: GameDayRole) =>
+  assignGameDayOfficial: (
+    matchId: string,
+    appUserId: string,
+    role: GameDayRole,
+  ) =>
     req<GameDayAssignment>(`/admin/match/matches/${matchId}/assignments`, {
       method: "POST",
       body: { appUserId, role },
     }),
   unassignGameDayOfficial: (matchId: string, role: GameDayRole) =>
-    req<{ ok: boolean }>(`/admin/match/matches/${matchId}/assignments/${role}`, {
-      method: "DELETE",
-    }),
+    req<{ ok: boolean }>(
+      `/admin/match/matches/${matchId}/assignments/${role}`,
+      {
+        method: "DELETE",
+      },
+    ),
 
   gameDayMatches: () => req<GameDayMatch[]>("/gameday/matches"),
   gameDayRuntime: () => req<GameDayRuntime>("/gameday/runtime"),
@@ -668,7 +710,12 @@ export const api = {
       method: "POST",
       body: { expectedVersion, teamSide, playerId },
     }),
-  correctGoal: (id: string, expectedVersion: number, eventId: string, reason: string) =>
+  correctGoal: (
+    id: string,
+    expectedVersion: number,
+    eventId: string,
+    reason: string,
+  ) =>
     req(`/gameday/matches/${id}/goals/correct`, {
       method: "POST",
       body: { expectedVersion, eventId, reason },
@@ -685,11 +732,17 @@ export const api = {
     note: string,
     teamSide?: "A" | "B",
     playerId?: string,
-  ) => req(`/gameday/matches/${id}/incidents`, {
-    method: "POST",
-    body: { expectedVersion, incidentType, note, teamSide, playerId },
-  }),
-  clockCommand: (id: string, expectedVersion: number, action: string, reason?: string) =>
+  ) =>
+    req(`/gameday/matches/${id}/incidents`, {
+      method: "POST",
+      body: { expectedVersion, incidentType, note, teamSide, playerId },
+    }),
+  clockCommand: (
+    id: string,
+    expectedVersion: number,
+    action: string,
+    reason?: string,
+  ) =>
     req(`/gameday/matches/${id}/clock`, {
       method: "POST",
       body: { expectedVersion, action, reason },
@@ -709,12 +762,24 @@ export const api = {
     id: string,
     expectedVersion: number,
     playerId: string,
-    statisticType: "goal_attempt" | "intercept" | "gain" | "turnover" | "deflection" | "rebound" | "penalty",
-  ) => req(`/gameday/matches/${id}/statistics`, {
-    method: "POST",
-    body: { expectedVersion, playerId, statisticType },
-  }),
-  confirmResult: (id: string, expectedVersion: number, confirmationNote: string) =>
+    statisticType:
+      | "goal_attempt"
+      | "intercept"
+      | "gain"
+      | "turnover"
+      | "deflection"
+      | "rebound"
+      | "penalty",
+  ) =>
+    req(`/gameday/matches/${id}/statistics`, {
+      method: "POST",
+      body: { expectedVersion, playerId, statisticType },
+    }),
+  confirmResult: (
+    id: string,
+    expectedVersion: number,
+    confirmationNote: string,
+  ) =>
     req(`/gameday/matches/${id}/result/confirm`, {
       method: "POST",
       body: { expectedVersion, confirmationNote },

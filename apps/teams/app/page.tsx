@@ -580,13 +580,11 @@ function RegisterForm({ onAuthed }: { onAuthed: () => void }) {
     countryCode: "",
     teamName: "",
     associationName: "",
-    headOfDelegation: "",
-    headCoach: "",
-    contactName: "",
+    teamManager: "",
     contactEmail: "",
     password: "",
+    confirmPassword: "",
     contactPhone: "",
-    contactRoleTitle: "",
     expectedSquadSize: "",
     dpaConsent: false,
   });
@@ -661,13 +659,11 @@ function RegisterForm({ onAuthed }: { onAuthed: () => void }) {
         countryCode: form.countryCode,
         teamName: form.teamName,
         associationName: form.associationName,
-        headOfDelegation: form.headOfDelegation,
-        headCoach: form.headCoach || undefined,
-        contactName: form.contactName,
+        teamManager: form.teamManager,
         contactEmail: form.contactEmail,
         password: form.password,
+        confirmPassword: form.confirmPassword,
         contactPhone: form.contactPhone,
-        contactRoleTitle: form.contactRoleTitle,
         expectedSquadSize: Number(form.expectedSquadSize),
         dpaConsent: true,
       });
@@ -733,25 +729,16 @@ function RegisterForm({ onAuthed }: { onAuthed: () => void }) {
           required
         />
       </label>
-      <div className="contents">
-        <label className="block">
-          <span className={labelCls}>Head of delegation</span>
-          <input
-            className={inputCls}
-            value={form.headOfDelegation}
-            onChange={(e) => set("headOfDelegation", e.target.value)}
-            required
-          />
-        </label>
-        <label className="block">
-          <span className={labelCls}>Head coach</span>
-          <input
-            className={inputCls}
-            value={form.headCoach}
-            onChange={(e) => set("headCoach", e.target.value)}
-          />
-        </label>
-      </div>
+      <label className="block sm:col-span-2">
+        <span className={labelCls}>Team manager</span>
+        <input
+          className={inputCls}
+          value={form.teamManager}
+          onChange={(e) => set("teamManager", e.target.value)}
+          autoComplete="name"
+          required
+        />
+      </label>
       <label className="block sm:col-span-2">
         <span className={labelCls}>Contact email (your login)</span>
         <input
@@ -762,37 +749,41 @@ function RegisterForm({ onAuthed }: { onAuthed: () => void }) {
           required
         />
       </label>
-      <div className="contents">
-        <label className="block">
-          <span className={labelCls}>Team contact name</span>
-          <input
-            className={inputCls}
-            value={form.contactName}
-            onChange={(e) => set("contactName", e.target.value)}
-            required
-          />
-        </label>
-        <label className="block">
-          <span className={labelCls}>Password</span>
-          <input
-            type="password"
-            className={inputCls}
-            value={form.password}
-            onChange={(e) => set("password", e.target.value)}
-            minLength={8}
-            required
-          />
-        </label>
-        <label className="block">
-          <span className={labelCls}>Contact phone</span>
-          <input
-            className={inputCls}
-            value={form.contactPhone}
-            onChange={(e) => set("contactPhone", e.target.value)}
-            required
-          />
-        </label>
-      </div>
+      <label className="block">
+        <span className={labelCls}>Password</span>
+        <input
+          type="password"
+          className={inputCls}
+          value={form.password}
+          onChange={(e) => set("password", e.target.value)}
+          minLength={8}
+          autoComplete="new-password"
+          required
+        />
+      </label>
+      <label className="block">
+        <span className={labelCls}>Confirm password</span>
+        <input
+          type="password"
+          className={inputCls}
+          value={form.confirmPassword}
+          onChange={(e) => set("confirmPassword", e.target.value)}
+          minLength={8}
+          autoComplete="new-password"
+          required
+        />
+      </label>
+      <label className="block">
+        <span className={labelCls}>Contact phone</span>
+        <input
+          type="tel"
+          className={inputCls}
+          value={form.contactPhone}
+          onChange={(e) => set("contactPhone", e.target.value)}
+          autoComplete="tel"
+          required
+        />
+      </label>
       <label className="block">
         <span className={labelCls}>Expected squad size</span>
         <input
@@ -802,16 +793,6 @@ function RegisterForm({ onAuthed }: { onAuthed: () => void }) {
           className={inputCls}
           value={form.expectedSquadSize}
           onChange={(e) => set("expectedSquadSize", e.target.value)}
-          required
-        />
-      </label>
-      <label className="block">
-        <span className={labelCls}>Team contact role/title</span>
-        <input
-          className={inputCls}
-          value={form.contactRoleTitle}
-          onChange={(e) => set("contactRoleTitle", e.target.value)}
-          placeholder="e.g. Team Manager"
           required
         />
       </label>
@@ -1413,12 +1394,9 @@ function Registration({
   const rows: [string, string | number | null][] = [
     ["Country", delegation.countryName ?? delegation.countryCode],
     ["Association", delegation.associationName],
-    ["Head of delegation", delegation.headOfDelegation],
-    ["Head coach", delegation.headCoach],
-    ["Team contact", delegation.contactName],
+    ["Team manager", delegation.contactName ?? delegation.headOfDelegation],
     ["Contact email", delegation.contactEmail],
     ["Contact phone", delegation.contactPhone],
-    ["Contact role/title", delegation.contactRoleTitle],
     ["Expected squad size", delegation.expectedSquadSize],
     ["Travelling party", delegation.travellingParty],
   ];
@@ -1493,11 +1471,8 @@ function RegistrationCorrectionForm({
   const [form, setForm] = useState({
     name: delegation.name,
     associationName: delegation.associationName ?? "",
-    headOfDelegation: delegation.headOfDelegation ?? "",
-    headCoach: delegation.headCoach ?? "",
-    contactName: delegation.contactName ?? "",
+    teamManager: delegation.contactName ?? delegation.headOfDelegation ?? "",
     contactPhone: delegation.contactPhone ?? "",
-    contactRoleTitle: delegation.contactRoleTitle ?? "",
     expectedSquadSize: String(delegation.expectedSquadSize ?? ""),
     travellingParty: String(delegation.travellingParty ?? ""),
     notes: delegation.notes ?? "",
@@ -1514,11 +1489,11 @@ function RegistrationCorrectionForm({
       await api.updateRegistration({
         name: form.name,
         associationName: form.associationName,
-        headOfDelegation: form.headOfDelegation,
-        headCoach: form.headCoach,
-        contactName: form.contactName,
+        headOfDelegation: form.teamManager,
+        headCoach: "",
+        contactName: form.teamManager,
         contactPhone: form.contactPhone,
-        contactRoleTitle: form.contactRoleTitle,
+        contactRoleTitle: "Team Manager",
         expectedSquadSize: Number(form.expectedSquadSize),
         ...(form.travellingParty
           ? { travellingParty: Number(form.travellingParty) }
@@ -1555,11 +1530,8 @@ function RegistrationCorrectionForm({
         [
           ["Team name", "name"],
           ["Association name", "associationName"],
-          ["Head of delegation", "headOfDelegation"],
-          ["Head coach", "headCoach"],
-          ["Team contact name", "contactName"],
+          ["Team manager", "teamManager"],
           ["Contact phone", "contactPhone"],
-          ["Contact role/title", "contactRoleTitle"],
           ["Expected squad size", "expectedSquadSize"],
           ["Travelling party", "travellingParty"],
         ] as const
@@ -1577,7 +1549,7 @@ function RegistrationCorrectionForm({
             max={key === "expectedSquadSize" ? 18 : undefined}
             value={form[key]}
             onChange={(event) => set(key, event.target.value)}
-            required={!["headCoach", "travellingParty"].includes(key)}
+            required={key !== "travellingParty"}
           />
         </label>
       ))}

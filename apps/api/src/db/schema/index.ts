@@ -10,5 +10,6 @@ export * from './audit';
 export * from './user';
 export * from './password-reset';
 export * from './roster';
+export * from './person-review';
 export * from './match';
 export * from './operations';
