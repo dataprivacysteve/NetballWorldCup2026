@@ -67,7 +67,7 @@ export class UpdateLaunchConfigurationDto {
   @IsOptional()
   @Type(() => Number)
   @IsInt()
-  @Min(20)
+  @Min(700)
   @Max(2000)
   biographyMinimumCharacters?: number;
 

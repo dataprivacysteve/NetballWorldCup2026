@@ -51,7 +51,7 @@ export class TeamSheetService {
           eq(schema.matchTeamSheet.delegationId, delegationId),
         ),
       );
-    const [roster, selected] = await Promise.all([
+    const [roster, selected, approvedPeople] = await Promise.all([
       db
         .select({
           id: schema.player.id,
@@ -80,7 +80,36 @@ export class TeamSheetService {
             .from(schema.matchTeamSheetPlayer)
             .where(eq(schema.matchTeamSheetPlayer.teamSheetId, sheet.id))
         : Promise.resolve([]),
+      db.execute(sql`
+        SELECT p.id
+        FROM player p
+        JOIN person_accreditation_review review
+          ON review.player_id = p.id
+         AND review.status = 'verified'
+        WHERE p.delegation_id = ${delegationId}
+          AND p.category = 'player'
+          AND review.reviewed_at >= p.updated_at
+          AND NOT EXISTS (
+            SELECT 1 FROM player_photo photo
+            WHERE photo.player_id = p.id
+              AND photo.uploaded_at > review.reviewed_at
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM consent_record consent
+            WHERE consent.player_id = p.id
+              AND consent.consented_at > review.reviewed_at
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM identity_document identity
+            WHERE identity.player_id = p.id
+              AND (identity.uploaded_at > review.reviewed_at
+                OR identity.verified_at > review.reviewed_at)
+          )
+      `),
     ]);
+    const approvedIds = new Set(
+      approvedPeople.rows.map((row) => String((row as { id: string }).id)),
+    );
     return {
       match,
       side: match.teamADelegationId === delegationId ? 'A' : 'B',
@@ -91,7 +120,11 @@ export class TeamSheetService {
         version: 0,
         submittedAt: null,
       },
-      roster,
+      roster: roster.map((person) => ({
+        ...person,
+        eligible:
+          person.accredited === 'issued' || approvedIds.has(person.id),
+      })),
       players: selected,
     };
   }
@@ -111,23 +144,12 @@ export class TeamSheetService {
         problems,
       });
     }
-    const eligible = await db
-      .select({ id: schema.player.id })
-      .from(schema.player)
-      .innerJoin(
-        schema.credential,
-        and(
-          eq(schema.credential.playerId, schema.player.id),
-          eq(schema.credential.status, 'issued'),
-        ),
-      )
-      .where(
-        and(
-          eq(schema.player.delegationId, delegationId),
-          eq(schema.player.category, 'player'),
-        ),
-      );
-    const eligibleIds = new Set(eligible.map((player) => player.id));
+    const currentDetail = await this.detail(matchId);
+    const eligibleIds = new Set(
+      currentDetail.roster
+        .filter((player) => player.eligible)
+        .map((player) => player.id),
+    );
     if (dto.players.some((player) => !eligibleIds.has(player.playerId))) {
       throw new BadRequestException(
         'Every selected player must be accredited to this delegation',

@@ -9,6 +9,11 @@ describe('isMinor', () => {
     expect(isMinor('2008-10-18', eligibilityDate)).toBe(false);
   });
 
+  it('does not mark present-day adults as under 18', () => {
+    expect(isMinor('1989-09-29', eligibilityDate)).toBe(false);
+    expect(isMinor('2005-06-15', eligibilityDate)).toBe(false);
+  });
+
   it('does not guess when either date is missing or invalid', () => {
     expect(isMinor(null, eligibilityDate)).toBe(false);
     expect(isMinor('2008-01-01', null)).toBe(false);

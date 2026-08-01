@@ -99,11 +99,28 @@ export class PlayerService {
     }
   }
 
+  private async assertNoNewDraftProblems(
+    before: RosterRulePerson[],
+    after: RosterRulePerson[],
+  ) {
+    const config = await this.ruleConfig();
+    const existingProblems = new Set(rosterDraftProblems(before, config));
+    const introducedProblems = rosterDraftProblems(after, config).filter(
+      (problem) => !existingProblems.has(problem),
+    );
+    if (introducedProblems.length) {
+      throw new BadRequestException({
+        message: 'Roster entry does not meet the tournament requirements',
+        problems: introducedProblems,
+      });
+    }
+  }
+
   // All reads/writes below run on the tenant-bound db; RLS guarantees they
   // only ever touch the current delegation's rows.
   async list() {
     const { db } = getTenant();
-    const [rows, photos, consents, identityDocuments, config] =
+    const [rows, photos, consents, identityDocuments, reviews, config] =
       await Promise.all([
         db
           .select()
@@ -112,9 +129,14 @@ export class PlayerService {
         db.select().from(schema.playerPhoto),
         db.select().from(schema.consentRecord),
         db.select().from(schema.identityDocument),
+        db.select().from(schema.personAccreditationReview),
         this.ruleConfig(),
       ]);
-    const withPhoto = new Set(photos.map((p) => p.playerId));
+    const withPhoto = new Set(
+      photos
+        .filter((photo) => !photo.objectKey.endsWith('/seed.png'))
+        .map((photo) => photo.playerId),
+    );
     return rows.map((p) => {
       const minor = isMinor(p.dateOfBirth, config.eligibilityDate);
       const hasPhoto = withPhoto.has(p.id);
@@ -123,30 +145,57 @@ export class PlayerService {
       );
       const consentRequired =
         config.consentRequiredCategories.includes(p.category) && minor;
+      const hasRequiredConsent =
+        !consentRequired || hasGuardianConsent;
       const identityRequired = config.identityRequiredCategories.includes(
         p.category,
       );
       const dobReady = p.category !== 'player' || !!p.dateOfBirth;
+      const biographyReady =
+        p.biography.trim().length >= config.biographyMinimumCharacters;
       const verifiedIdentity = identityDocuments.some(
         (document) =>
           document.playerId === p.id && document.status === 'verified',
       );
       const ready =
+        biographyReady &&
         hasPhoto &&
         dobReady &&
-        (!consentRequired || hasGuardianConsent) &&
+        hasRequiredConsent &&
         (!identityRequired || verifiedIdentity);
       const identityStatus =
         identityDocuments.find((document) => document.playerId === p.id)
           ?.status ?? null;
+      const identity = identityDocuments.find(
+        (document) => document.playerId === p.id,
+      );
+      const review = reviews.find((item) => item.playerId === p.id);
+      const evidenceDates = [
+        p.updatedAt,
+        ...photos
+          .filter((item) => item.playerId === p.id)
+          .map((item) => item.uploadedAt),
+        ...consents
+          .filter((item) => item.playerId === p.id)
+          .map((item) => item.consentedAt),
+        identity?.uploadedAt,
+        identity?.verifiedAt,
+      ].filter((value): value is Date => value instanceof Date);
+      const reviewCurrent =
+        !!review && evidenceDates.every((changedAt) => changedAt <= review.reviewedAt);
       return {
         ...p,
         isMinor: minor,
         hasPhoto,
         dobRequired: p.category === 'player',
+        biographyReady,
         consentRequired,
+        hasRequiredConsent,
         identityRequired,
         identityStatus,
+        verificationStatus: reviewCurrent
+          ? review.status
+          : 'pending',
         ready,
       };
     });
@@ -161,6 +210,8 @@ export class PlayerService {
       nationality,
       await this.delegationCountry(),
     );
+    const eligibilityRequired =
+      dto.category === 'player' && !nationalityMatchesTeam;
     const values = {
       delegationId,
       firstName: dto.firstName.trim(),
@@ -179,15 +230,21 @@ export class PlayerService {
       isHeadOfDelegation: dto.isHeadOfDelegation ?? false,
       benchEligible: dto.benchEligible ?? true,
       nationalityMatchesTeam,
-      eligibilityConfirmed: nationalityMatchesTeam
-        ? true
-        : dto.eligibilityConfirmed,
-      eligibilityReference: nationalityMatchesTeam
-        ? null
-        : (dto.eligibilityReference?.trim() ?? null),
+      eligibilityConfirmed: eligibilityRequired
+        ? dto.eligibilityConfirmed
+        : true,
+      eligibilityReference: eligibilityRequired
+        ? (dto.eligibilityReference?.trim() ?? null)
+        : null,
     };
     const existing = await db.select().from(schema.player);
-    await this.assertDraftRules([...existing, { ...values, id: 'new' }]);
+    // Registration is progressive: existing incomplete records must not block
+    // another valid person from being added. Full-roster completeness remains
+    // enforced when the delegation submits for accreditation.
+    await this.assertNoNewDraftProblems(existing, [
+      ...existing,
+      { ...values, id: 'new' },
+    ]);
     const [row] = await db.insert(schema.player).values(values).returning();
     await this.audit(actorUserId, 'roster.person.created', row.id, {
       category: row.category,
@@ -215,11 +272,6 @@ export class PlayerService {
     const definedDto = Object.fromEntries(
       Object.entries(dto).filter(([, value]) => value !== undefined),
     ) as Partial<UpdatePlayerDto>;
-    const requiresLocReview = playerUpdateRequiresLocReview(
-      current.category,
-      Object.keys(definedDto),
-    );
-    await assertRosterEditable({ requiresLocReview });
     const teamCountry = await this.delegationCountry();
     const nextNationality = (
       dto.nationality ?? current.nationality
@@ -228,6 +280,8 @@ export class PlayerService {
       nextNationality,
       teamCountry,
     );
+    const eligibilityRequired =
+      current.category === 'player' && !nationalityMatchesTeam;
     const nationalityChanged = nextNationality !== current.nationality;
     const patch = {
       ...definedDto,
@@ -248,12 +302,12 @@ export class PlayerService {
         ? { otherOfficialTitle: dto.otherOfficialTitle.trim() || null }
         : {}),
       nationalityMatchesTeam,
-      eligibilityConfirmed: nationalityMatchesTeam
+      eligibilityConfirmed: !eligibilityRequired
         ? true
         : nationalityChanged && current.nationalityMatchesTeam
           ? (dto.eligibilityConfirmed ?? false)
           : (dto.eligibilityConfirmed ?? current.eligibilityConfirmed),
-      eligibilityReference: nationalityMatchesTeam
+      eligibilityReference: !eligibilityRequired
         ? null
         : nationalityChanged && current.nationalityMatchesTeam
           ? (dto.eligibilityReference?.trim() ?? null)
@@ -264,9 +318,24 @@ export class PlayerService {
     const candidate = { ...current, ...patch };
     validateRole(candidate.category, candidate.role);
     const people = await db.select().from(schema.player);
-    await this.assertDraftRules(
+    await this.assertNoNewDraftProblems(
+      people,
       people.map((person) => (person.id === playerId ? candidate : person)),
     );
+    const changedFields = Object.keys(definedDto).filter(
+      (field) =>
+        !Object.is(
+          candidate[field as keyof typeof candidate],
+          current[field as keyof typeof current],
+        ),
+    );
+    const requiresLocReview = playerUpdateRequiresLocReview(
+      current.category,
+      changedFields,
+    );
+    // Validate first so a rejected edit cannot reopen the roster or revoke
+    // credentials. Biography/position-only corrections do not require review.
+    await assertRosterEditable({ requiresLocReview });
     const [row] = await db
       .update(schema.player)
       .set({ ...patch, updatedAt: new Date() })
@@ -280,9 +349,7 @@ export class PlayerService {
       'dateOfBirth',
     ];
     if (
-      identitySensitiveFields.some((field) =>
-        Object.prototype.hasOwnProperty.call(definedDto, field),
-      )
+      identitySensitiveFields.some((field) => changedFields.includes(field))
     ) {
       await db
         .update(schema.identityDocument)
@@ -296,7 +363,7 @@ export class PlayerService {
         .where(eq(schema.identityDocument.playerId, playerId));
     }
     await this.audit(actorUserId, 'roster.person.updated', row.id, {
-      fields: Object.keys(definedDto),
+      fields: changedFields,
       requiresLocReview,
     });
     return withMinor(row, (await this.ruleConfig()).eligibilityDate);

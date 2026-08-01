@@ -140,7 +140,9 @@ export class PhotoService {
       .where(eq(schema.playerPhoto.playerId, playerId))
       .orderBy(desc(schema.playerPhoto.uploadedAt))
       .limit(1);
-    if (!photo) throw new NotFoundException('No photo for this player');
+    if (!photo || photo.objectKey.endsWith('/seed.png')) {
+      throw new NotFoundException('No usable photo for this player');
+    }
 
     const object = await this.s3.send(
       new GetObjectCommand({ Bucket: this.bucket, Key: photo.objectKey }),

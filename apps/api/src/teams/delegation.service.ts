@@ -215,7 +215,11 @@ export class DelegationService {
         .then((rows) => rows[0]),
     ]);
     if (!event) throw new BadRequestException('No tournament is configured');
-    const withPhoto = new Set(photos.map((p) => p.playerId));
+    const withPhoto = new Set(
+      photos
+        .filter((photo) => !photo.objectKey.endsWith('/seed.png'))
+        .map((photo) => photo.playerId),
+    );
 
     // Hard requirements for accreditation submission (non-negotiable): every
     // person has a photograph, and every under-18 has guardian consent.

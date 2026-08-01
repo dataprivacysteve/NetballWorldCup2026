@@ -3,7 +3,8 @@ import { delegation } from './delegation';
 import { player } from './roster';
 
 // LOC verification is deliberately separate from credential issuance. A
-// person may be reviewed while the delegation continues building its roster;
+// person may be reviewed while the delegation continues building its roster.
+// A current verified review makes a player match-selectable; printable
 // credentials are issued only when the completed delegation is accredited.
 export const personAccreditationReview = pgTable('person_accreditation_review', {
   playerId: uuid('player_id')

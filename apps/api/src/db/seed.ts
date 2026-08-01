@@ -8,16 +8,8 @@ import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { eq, sql } from 'drizzle-orm';
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import * as schema from './schema';
 import { hashPassword } from '../auth/password.util';
-
-// 1x1 PNG placeholder so seeded players have a photo on file (so Jamaica is a
-// fully review-ready submitted roster out of the box). Real uploads replace it.
-const PLACEHOLDER_PNG = Buffer.from(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR4nGNgYGAAAAAEAAH2FzhVAAAAAElFTkSuQmCC',
-  'base64',
-);
 
 const COUNTRIES = [
   ['JAM', 'Jamaica'],
@@ -205,36 +197,8 @@ async function main() {
       consentedAt: new Date(),
     });
 
-    // Give every Jamaica person a placeholder photo and SUBMIT the roster, so
-    // it lands in the committee's roster-review queue fully check-complete.
-    const s3 = new S3Client({
-      endpoint: process.env.S3_ENDPOINT!,
-      region: process.env.S3_REGION ?? 'us-east-1',
-      forcePathStyle: true,
-      credentials: {
-        accessKeyId: process.env.S3_ACCESS_KEY!,
-        secretAccessKey: process.env.S3_SECRET_KEY!,
-      },
-    });
-    for (const p of jamPlayers) {
-      const objectKey = `${jamId}/${p.id}/seed.png`;
-      await s3.send(
-        new PutObjectCommand({
-          Bucket: process.env.S3_BUCKET_PHOTOS!,
-          Key: objectKey,
-          Body: PLACEHOLDER_PNG,
-          ContentType: 'image/png',
-        }),
-      );
-      await db.insert(schema.playerPhoto).values({
-        playerId: p.id,
-        delegationId: jamId,
-        objectKey,
-        contentType: 'image/png',
-        status: 'uploaded',
-        uploadedAt: new Date(),
-      });
-    }
+    // Demo players deliberately start without photographs. A placeholder must
+    // never satisfy accreditation readiness or look like a real headshot.
     await db
       .update(schema.delegation)
       .set({ status: 'submitted', submittedAt: new Date() })

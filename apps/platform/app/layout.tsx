@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Fraunces, Manrope, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { ToastViewport } from "./components/toast";
+import { PrivacyNotice } from "./components/privacy-notice";
 
 const fraunces = Fraunces({
   variable: "--font-fraunces",
@@ -34,7 +35,7 @@ export default function RootLayout({
       lang="en"
       className={`${fraunces.variable} ${manrope.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full">{children}<ToastViewport /></body>
+      <body className="min-h-full">{children}<PrivacyNotice /><ToastViewport /></body>
     </html>
   );
 }

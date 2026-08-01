@@ -481,10 +481,11 @@ function ConfigurationForm({
         />
         <Field
           type="date"
-          labelText="Eligibility date"
+          labelText="Age assessment date"
           value={form.eligibilityDate}
           onChange={(v) => set("eligibilityDate", v)}
           required
+          hint="The date on which each player's age is calculated—normally the first tournament day. Do not enter the 18th-birthday cutoff year."
         />
         <Field
           type="datetime-local"
@@ -668,12 +669,14 @@ function Field({
   onChange,
   type = "text",
   required = false,
+  hint,
 }: {
   labelText: string;
   value: string;
   onChange: (value: string) => void;
   type?: string;
   required?: boolean;
+  hint?: string;
 }) {
   return (
     <label>
@@ -685,6 +688,11 @@ function Field({
         onChange={(e) => onChange(e.target.value)}
         required={required}
       />
+      {hint && (
+        <span className="mt-1 block text-xs leading-5 text-ink-muted">
+          {hint}
+        </span>
+      )}
     </label>
   );
 }

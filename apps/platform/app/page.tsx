@@ -34,11 +34,21 @@ const btnGhost =
   "enterprise-button inline-flex items-center justify-center gap-2 rounded-lg border border-line-strong bg-white px-4 py-2 text-sm font-semibold text-ink-soft hover:bg-bg-soft disabled:opacity-50";
 const panel = "enterprise-panel";
 
+function auditTarget(event: AuditEvent) {
+  if (event.countryCode) {
+    const country = countryLabel(event.countryCode);
+    return event.targetName && !country.toLowerCase().startsWith(event.targetName.toLowerCase())
+      ? `${event.targetName} · ${country}`
+      : country;
+  }
+  return `${event.targetType}${event.targetId ? ` · ${event.targetId}` : ""}`;
+}
+
 const CAT_CHIP: Record<string, string> = {
   player: "bg-[rgba(244,196,48,0.18)] text-gold-deep",
   official: "bg-[rgba(27,42,107,0.12)] text-navy",
   technical: "bg-[rgba(14,140,130,0.14)] text-teal",
-  media: "bg-[rgba(232,85,61,0.14)] text-coral",
+  media: "bg-[rgba(39,120,196,0.13)] text-[#1f5f9b]",
   broadcast: "bg-[rgba(107,75,168,0.14)] text-violet",
 };
 
@@ -513,13 +523,6 @@ function SignIn({ onAuthed }: { onAuthed: () => void }) {
             <button className={`${btnPrimary} w-full`} disabled={busy}>
               {busy ? "Signing in…" : "Sign in"}
             </button>
-            <div className="flex items-start gap-2 border-t border-line pt-4 text-xs leading-5 text-ink-muted">
-              <Icon name="shield" className="mt-0.5 h-4 w-4 shrink-0 text-ok" />
-              <p>
-                Restricted documents are available only during manual
-                verification and are deleted after a decision.
-              </p>
-            </div>
           </form>
         </div>
       </section>
@@ -1071,8 +1074,7 @@ function Overview({
                           .replaceAll(".", " · ")}
                       </p>
                       <p className="mt-0.5 text-xs text-ink-muted">
-                        {event.targetType}
-                        {event.targetId ? ` · ${event.targetId}` : ""}
+                        {auditTarget(event)}
                       </p>
                     </div>
                     <time className="font-mono text-[0.58rem] uppercase tracking-[0.04em] text-ink-muted">
@@ -1296,8 +1298,7 @@ function Settings() {
                       {event.action.replaceAll("_", " ").replaceAll(".", " · ")}
                     </p>
                     <p className="text-xs text-ink-muted">
-                      {event.targetType}
-                      {event.targetId ? ` · ${event.targetId}` : ""}
+                      {auditTarget(event)}
                     </p>
                   </div>
                   <span className="text-ink-soft">{event.actorName}</span>
@@ -2969,7 +2970,7 @@ function ReviewQueue({ onSelect }: { onSelect: (id: string) => void }) {
       <PageHeading
         eyebrow="Accreditation"
         title="Team review"
-        description="Review personnel, eligibility evidence and restricted identity documents before issuing credentials."
+        description="Review personnel, eligibility evidence and identity documents before issuing credentials."
         action={
           queue ? (
             <StatusPill tone={queue.length ? "warning" : "success"}>
@@ -3024,6 +3025,9 @@ function ReviewDetailView({ id, onBack }: { id: string; onBack: () => void }) {
   const [busy, setBusy] = useState(false);
   const [returning, setReturning] = useState(false);
   const [note, setNote] = useState("");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "verified" | "returned" | "pending"
+  >("all");
 
   const load = useCallback(async () => {
     setError(null);
@@ -3102,6 +3106,12 @@ function ReviewDetailView({ id, onBack }: { id: string; onBack: () => void }) {
   ).length;
   const allVerified =
     detail.people.length > 0 && verifiedCount === detail.people.length;
+  const visiblePeople =
+    statusFilter === "all"
+      ? detail.people
+      : detail.people.filter(
+          (person) => person.verificationStatus === statusFilter,
+        );
 
   return (
     <div>
@@ -3155,15 +3165,32 @@ function ReviewDetailView({ id, onBack }: { id: string; onBack: () => void }) {
       {!accredited && (
         <div className={`${panel} mb-5 flex flex-wrap items-center gap-3 p-4 text-sm`}>
           <strong className="text-ink">Rolling LOC review:</strong>
-          <StatusPill tone="success">{verifiedCount} verified</StatusPill>
-          <StatusPill tone={returnedCount ? "danger" : "neutral"}>
-            {returnedCount} returned
-          </StatusPill>
-          <StatusPill tone="warning">
-            {detail.people.length - verifiedCount - returnedCount} pending
-          </StatusPill>
+          {([
+            ["verified", verifiedCount, "approved", "border-ok-line bg-ok-soft text-ok"],
+            ["returned", returnedCount, "returned", returnedCount ? "border-bad-line bg-bad-soft text-bad" : "border-line bg-navy-tint text-navy"],
+            ["pending", detail.people.length - verifiedCount - returnedCount, "pending", "border-warn-line bg-warn-soft text-warn"],
+          ] as const).map(([status, count, label, colors]) => {
+            const active = statusFilter === status;
+            return (
+              <button
+                key={status}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setStatusFilter(active ? "all" : status)}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[0.62rem] font-bold uppercase tracking-[0.07em] transition ${colors} ${active ? "ring-2 ring-navy ring-offset-2" : "hover:brightness-95"}`}
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                {count} {label}
+              </button>
+            );
+          })}
+          {statusFilter !== "all" && (
+            <button type="button" className="text-xs font-semibold text-navy hover:underline" onClick={() => setStatusFilter("all")}>
+              Show all ({detail.people.length})
+            </button>
+          )}
           <span className="text-ink-muted">
-            Verify complete people now; final accreditation remains locked until the team requirements are met.
+            Approve complete people now so they can be selected on match sheets; final team accreditation remains locked until every team requirement is met.
           </span>
         </div>
       )}
@@ -3207,7 +3234,7 @@ function ReviewDetailView({ id, onBack }: { id: string; onBack: () => void }) {
       )}
 
       <div className="space-y-2.5">
-        {detail.people.map((p) => (
+        {visiblePeople.map((p) => (
           <PersonRow
             key={p.id}
             person={p}
@@ -3217,6 +3244,14 @@ function ReviewDetailView({ id, onBack }: { id: string; onBack: () => void }) {
             onError={setError}
           />
         ))}
+        {visiblePeople.length === 0 && (
+          <div className={`${panel} p-8 text-center`}>
+            <p className="font-display text-lg font-bold text-ink">No people in this status</p>
+            <button type="button" className="mt-2 text-sm font-semibold text-navy hover:underline" onClick={() => setStatusFilter("all")}>
+              Show all team members
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -3387,29 +3422,33 @@ function PersonRow({
         {!accredited && (
           <div className="flex shrink-0 flex-wrap items-center gap-2">
             {person.verificationStatus === "verified" ? (
-              <StatusPill tone="success">LOC verified</StatusPill>
-            ) : person.verificationStatus === "returned" ? (
-              <StatusPill tone="danger">Returned</StatusPill>
+              <StatusPill tone="success">LOC approved</StatusPill>
             ) : (
-              <StatusPill tone="warning">Pending review</StatusPill>
+              <>
+                {person.verificationStatus === "returned" ? (
+                  <StatusPill tone="danger">Returned</StatusPill>
+                ) : (
+                  <StatusPill tone="warning">Pending review</StatusPill>
+                )}
+                <button
+                  type="button"
+                  onClick={() => decidePerson("verified")}
+                  disabled={reviewBusy || !person.ready}
+                  className={btnGold}
+                  title={person.ready ? "Approve this individual for match selection" : "Complete this person’s required checks first"}
+                >
+                  Approve person
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReturningPerson((value) => !value)}
+                  disabled={reviewBusy}
+                  className={`${btnGhost} text-bad`}
+                >
+                  Return
+                </button>
+              </>
             )}
-            <button
-              type="button"
-              onClick={() => decidePerson("verified")}
-              disabled={reviewBusy || !person.ready || person.verificationStatus === "verified"}
-              className={btnGold}
-              title={person.ready ? "Verify this individual record" : "Complete this person’s required checks first"}
-            >
-              Verify person
-            </button>
-            <button
-              type="button"
-              onClick={() => setReturningPerson((value) => !value)}
-              disabled={reviewBusy}
-              className={`${btnGhost} text-bad`}
-            >
-              Return
-            </button>
           </div>
         )}
         {accredited && qrUrl && (
@@ -3482,11 +3521,11 @@ function PersonRow({
             k="Head of delegation/delegate"
             v={person.isHeadOfDelegation ? "Yes" : "No"}
           />
-          <Field
+          {person.category === "player" && <Field
             k="Nationality matches team"
             v={person.nationalityMatchesTeam ? "Yes" : "No"}
-          />
-          {!person.nationalityMatchesTeam && (
+          />}
+          {person.category === "player" && !person.nationalityMatchesTeam && (
             <>
               <Field
                 k="Eligibility confirmed"
@@ -3525,7 +3564,7 @@ function PersonRow({
         <div className="mt-3 rounded-xl border border-line-strong bg-bg-soft p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <p className={labelCls}>Restricted identity verification</p>
+              <p className={labelCls}>Identity verification</p>
               <p className="text-sm text-ink-soft">
                 {person.identityDocument.documentType.replace("_", " ")} ·
                 issued by {countryLabel(person.identityDocument.issuingCountry)} · nationality{" "}
@@ -3543,7 +3582,7 @@ function PersonRow({
             {person.identityDocument.status === "pending" &&
               person.identityDocument.hasFile && (
                 <button className={btnGhost} onClick={viewIdentity}>
-                  View restricted document
+                  View identity document
                 </button>
               )}
           </div>
