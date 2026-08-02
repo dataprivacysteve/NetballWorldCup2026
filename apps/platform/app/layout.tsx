@@ -35,7 +35,7 @@ export default function RootLayout({
       lang="en"
       className={`${fraunces.variable} ${manrope.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full">{children}<PrivacyNotice /><ToastViewport /></body>
+      <body className="min-h-full">{children}<PrivacyNotice manualLabel="LOC Platform user guide" /><ToastViewport /></body>
     </html>
   );
 }

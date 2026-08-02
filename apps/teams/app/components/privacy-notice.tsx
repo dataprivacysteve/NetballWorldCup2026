@@ -2,7 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 
-export function PrivacyNotice() {
+export function PrivacyNotice({
+  manualHref = "/manual/user-guide.html",
+  manualLabel = "User guide",
+}: {
+  manualHref?: string;
+  manualLabel?: string;
+}) {
   const [open, setOpen] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -26,9 +32,14 @@ export function PrivacyNotice() {
       <footer className="border-t border-line bg-white/70 px-4 py-5 text-xs text-ink-muted sm:px-6">
         <div className="mx-auto flex max-w-[90rem] flex-wrap items-center justify-between gap-3">
           <span>© 2026 Netball Americas · Event accreditation services</span>
-          <button type="button" onClick={() => setOpen(true)} className="font-semibold text-navy underline-offset-4 hover:underline">
-            Data handling &amp; privacy notice
-          </button>
+          <span className="flex flex-wrap items-center gap-4">
+            <a href={manualHref} target="_blank" rel="noreferrer" className="font-semibold text-navy underline-offset-4 hover:underline">
+              {manualLabel}
+            </a>
+            <button type="button" onClick={() => setOpen(true)} className="font-semibold text-navy underline-offset-4 hover:underline">
+              Data handling &amp; privacy notice
+            </button>
+          </span>
         </div>
       </footer>
       {open && (
