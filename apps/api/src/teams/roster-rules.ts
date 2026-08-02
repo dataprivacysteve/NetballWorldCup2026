@@ -104,6 +104,7 @@ export function rosterDraftProblems(
       problems.push(`${name}: enter the additional official's designation.`);
     }
     if (
+      person.category === 'player' &&
       !person.nationalityMatchesTeam &&
       (!person.eligibilityConfirmed || !person.eligibilityReference?.trim())
     ) {

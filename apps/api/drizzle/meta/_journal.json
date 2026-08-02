@@ -204,6 +204,13 @@
       "when": 1784242800000,
       "tag": "0028_individual_accreditation_review",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1785542400000,
+      "tag": "0029_biography_minimum_700",
+      "breakpoints": true
     }
   ]
 }

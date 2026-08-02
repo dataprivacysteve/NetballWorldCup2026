@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GameDay Production Update Runbook · e98125c</title><style>
+:root{--navy:#10183f;--navy2:#293778;--gold:#f2c94c;--ink:#171a2d;--muted:#626a80;--paper:#f5f2e9;--card:#fff;--line:#ddd9cf;--ok:#24734b;--okbg:#eaf7ef;--warn:#8a5a00;--warnbg:#fff6dc;--bad:#aa372f;--badbg:#fff0ed;--code:#0b1028}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.65 Inter,Segoe UI,Arial,sans-serif}header{padding:56px 22px;background:linear-gradient(135deg,#070b20,var(--navy) 64%,#3a2051);color:#fff;border-bottom:5px solid var(--gold)}.wrap,main{max-width:1100px;margin:auto}.eyebrow{font:800 11px Consolas,monospace;letter-spacing:.17em;text-transform:uppercase;color:var(--gold)}h1{margin:12px 0 16px;font:800 clamp(36px,6vw,62px)/1.03 Georgia,serif}header p{max-width:850px;color:#dce0f0;font-size:18px}.pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}.pill{border:1px solid #ffffff30;background:#ffffff12;border-radius:999px;padding:6px 11px;font-size:12px;font-weight:800}main{padding:24px 18px 50px}.card{margin:18px 0;padding:27px;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 12px 30px #11152f0c}h2{margin:4px 0 15px;color:var(--navy);font:800 28px/1.2 Georgia,serif}h3{color:var(--navy2);margin:22px 0 8px}.toc{display:grid;grid-template-columns:repeat(auto-fit,minmax(205px,1fr));gap:9px}.toc a{padding:11px 13px;border-radius:10px;background:#f0f1f7;color:var(--navy2);font-weight:750;text-decoration:none}.callout{margin:16px 0;padding:14px 16px;border-left:5px solid;border-radius:8px}.info{background:#edf1ff;border-color:var(--navy2)}.ok{background:var(--okbg);border-color:var(--ok)}.warn{background:var(--warnbg);border-color:var(--gold)}.danger{background:var(--badbg);border-color:var(--bad)}pre{position:relative;margin:11px 0 18px;padding:17px;overflow:auto;border-radius:12px;background:var(--code);color:#eef1ff;white-space:pre-wrap;font:13px/1.55 Consolas,monospace}code{font-family:Consolas,monospace;background:#eeeef4;border-radius:4px;padding:.1em .3em}pre code{background:none;padding:0}.steps{counter-reset:s;list-style:none;padding:0}.steps>li{counter-increment:s;position:relative;padding:3px 0 23px 54px}.steps>li:before{content:counter(s);position:absolute;left:0;top:2px;width:37px;height:37px;border-radius:10px;background:var(--navy);color:var(--gold);display:grid;place-items:center;font-weight:900}.check{list-style:none;padding:0}.check li{padding:7px 0;border-bottom:1px solid #eee}.check li:before{content:'□';font-size:19px;color:var(--navy2);margin-right:9px}table{width:100%;border-collapse:collapse}th,td{text-align:left;vertical-align:top;padding:10px;border-bottom:1px solid var(--line)}th{background:#efeee7;color:var(--navy);font-size:11px;text-transform:uppercase;letter-spacing:.08em}.command-title{display:flex;justify-content:space-between;gap:12px;align-items:center}.tag{display:inline-block;border-radius:999px;background:#e9ebf6;color:var(--navy2);font-size:11px;font-weight:800;padding:4px 9px}.small{font-size:12px;color:var(--muted)}footer{text-align:center;color:var(--muted);padding:26px}@media(max-width:650px){header{padding:38px 20px}.card{padding:19px}.steps>li{padding-left:48px}}@media print{body{background:#fff}.card{box-shadow:none;break-inside:avoid}header{padding:28px;print-color-adjust:exact}}
+</style></head><body>
+<header><div class="wrap"><div class="eyebrow">SportsBB · Production Change Procedure</div><h1>GameDay Phase 1 Production Update</h1><p>Exact server runbook for deploying release <strong>e98125c</strong> to the confirmed Debian 13, ISPConfig and Supervisor environment at <code>/var/www/clients/client0/web6/web/gameday/source</code>.</p><div class="pills"><span class="pill">Repository: NetballWorldCup2026</span><span class="pill">Required release: e98125c</span><span class="pill">Site user: web6</span><span class="pill">Group: client0</span><span class="pill">Database migration 0029</span><span class="pill">API + Teams + Platform</span></div></div></header>
+<main>
+<section class="card"><div class="eyebrow">Mandatory release gate</div><h2>Do not deploy until GitHub main contains the release</h2><div class="callout danger"><strong>Current known state when this document was written:</strong> <code>origin/main</code> was still at <code>a336cc0</code>; release <code>e98125c</code> existed on branch <code>codex/phase1-launch-updates-2026-08-01</code> in draft PR #1. “Already up to date” on main therefore meant the release was not yet deployable from main.</div><p>SportsBB must first merge <a href="https://github.com/dataprivacysteve/NetballWorldCup2026/pull/1">GitHub PR #1</a>. The technician then performs Step 2 below. If the ancestry check says STOP, do not deploy and do not pull the feature branch directly onto production.</p></section>
+<section class="card"><div class="eyebrow">Contents</div><h2>Controlled update sequence</h2><div class="toc"><a href="#preflight">1. Preflight</a><a href="#release">2. Verify release</a><a href="#backup">3. Back up</a><a href="#pull">4. Pull main</a><a href="#ownership">5. Ownership &amp; cache</a><a href="#stop">6. Stop services</a><a href="#install">7. Install &amp; migrate</a><a href="#build">8. Build</a><a href="#start">9. Start &amp; verify</a><a href="#smoke">10. Functional smoke test</a><a href="#rollback">11. Rollback</a><a href="#evidence">12. Evidence to return</a></div></section>
+<section class="card" id="preflight"><div class="eyebrow">Step 1</div><h2>Set and verify the confirmed environment</h2><p>Run as <code>root</code>. Copy commands only—not prose labels.</p><pre><code>export SITE_USER=web6
+export SITE_GROUP=client0
+export SOURCE_ROOT=/var/www/clients/client0/web6/web/gameday/source
+export CACHE_ROOT=/var/www/clients/client0/web6/web/gameday/.cache
+export BACKUP_ROOT=/var/backups/gameday
+
+cd "$SOURCE_ROOT"
+pwd
+id "$SITE_USER"
+git remote -v
+git status --short
+supervisorctl status gameday-api gameday-teams gameday-platform
+ss -lntp | grep -E ':3000|:3002|:3003'</code></pre><div class="callout danger"><strong>Stop if <code>git status --short</code> shows tracked server-side source edits.</strong> Record and review them before pulling. Do not run <code>git reset --hard</code>, <code>git checkout -- .</code>, or delete the working tree.</div></section>
+<section class="card" id="release"><div class="eyebrow">Step 2</div><h2>Prove that main contains e98125c</h2><pre><code>cd "$SOURCE_ROOT"
+git fetch --prune origin
+
+git rev-parse origin/main
+git merge-base --is-ancestor e98125c origin/main \
+  &amp;&amp; echo "PASS: e98125c is included in origin/main" \
+  || { echo "STOP: PR #1 is not merged into main"; exit 1; }</code></pre><div class="callout ok"><strong>Continue only after PASS.</strong> A merge commit may mean <code>origin/main</code> has a different/newer hash; the ancestry check is the authoritative proof that the release is included.</div></section>
+<section class="card" id="backup"><div class="eyebrow">Step 3</div><h2>Record the old release and back up PostgreSQL</h2><pre><code>cd "$SOURCE_ROOT"
+export OLD_COMMIT="$(git rev-parse HEAD)"
+echo "OLD_COMMIT=$OLD_COMMIT"
+git log -1 --oneline
+
+install -d -o root -g root -m 0700 "$BACKUP_ROOT"
+export BACKUP_FILE="$BACKUP_ROOT/gameday-before-e98125c-$(date +%Y%m%d-%H%M%S).dump"
+
+set -a
+. "$SOURCE_ROOT/.env"
+set +a
+
+test -n "$MIGRATION_DATABASE_URL" \
+  || { echo "STOP: MIGRATION_DATABASE_URL is not loaded"; exit 1; }
+
+pg_dump "$MIGRATION_DATABASE_URL" -Fc -f "$BACKUP_FILE"
+test -s "$BACKUP_FILE" \
+  &amp;&amp; echo "PASS: database backup created at $BACKUP_FILE" \
+  || { echo "STOP: database backup failed"; exit 1; }</code></pre><div class="callout warn"><strong>Do not continue without a non-empty backup.</strong> Do not paste database passwords into shell history or screenshots.</div></section>
+<section class="card" id="pull"><div class="eyebrow">Step 4</div><h2>Fast-forward production main</h2><pre><code>cd "$SOURCE_ROOT"
+git switch main
+git pull --ff-only origin main
+
+export NEW_COMMIT="$(git rev-parse HEAD)"
+echo "NEW_COMMIT=$NEW_COMMIT"
+git log -1 --oneline
+
+git merge-base --is-ancestor e98125c HEAD \
+  &amp;&amp; echo "PASS: Phase 1 release is present" \
+  || { echo "STOP: e98125c is not in the checked-out release"; exit 1; }
+
+test -f apps/api/drizzle/0029_biography_minimum_700.sql \
+  &amp;&amp; echo "PASS: migration 0029 is present" \
+  || { echo "STOP: migration 0029 is missing"; exit 1; }</code></pre></section>
+<section class="card" id="ownership"><div class="eyebrow">Step 5</div><h2>Restore ISPConfig ownership and writable caches</h2><p>Git was run as root, but builds must run as the ISPConfig site user.</p><pre><code>chown -R "$SITE_USER:$SITE_GROUP" "$SOURCE_ROOT"
+
+install -d -o "$SITE_USER" -g "$SITE_GROUP" -m 0750 \
+  "$CACHE_ROOT" \
+  "$CACHE_ROOT/corepack" \
+  "$CACHE_ROOT/pnpm"
+
+find "$SOURCE_ROOT" -type d -name node_modules -prune \
+  -exec stat -c '%U:%G %n' {} \;
+
+stat -c '%U:%G %a %n' \
+  "$SOURCE_ROOT" "$CACHE_ROOT" "$CACHE_ROOT/corepack" "$CACHE_ROOT/pnpm"</code></pre><div class="callout info"><strong>Expected:</strong> source and dependency directories are <code>web6:client0</code>. Cache must remain under <code>/var/www/clients/client0/web6/web/gameday/.cache</code>; do not use <code>/var/www/clients/client0/web6/.cache</code>.</div></section>
+<section class="card" id="stop"><div class="eyebrow">Step 6</div><h2>Stop all three applications before replacing builds</h2><pre><code>supervisorctl stop gameday-api gameday-teams gameday-platform
+
+sleep 3
+supervisorctl status gameday-api gameday-teams gameday-platform
+ss -lntp | grep -E ':3000|:3002|:3003' \
+  &amp;&amp; echo "STOP: one or more old listeners remain" \
+  || echo "PASS: application ports are free"</code></pre><p>If a listener remains, identify it before killing anything:</p><pre><code>ss -lntp | grep -E ':3000|:3002|:3003'
+ps -fp &lt;PID_FROM_SS&gt;</code></pre><div class="callout danger"><strong>Do not paste explanatory prose into the shell.</strong> Replace <code>&lt;PID_FROM_SS&gt;</code> with the actual PID only after confirming it belongs to GameDay.</div></section>
+<section class="card" id="install"><div class="eyebrow">Step 7</div><h2>Install locked dependencies and apply migration 0029</h2><pre><code>cd "$SOURCE_ROOT"
+
+sudo -u "$SITE_USER" -H env \
+  CI=true \
+  XDG_CACHE_HOME="$CACHE_ROOT" \
+  COREPACK_HOME="$CACHE_ROOT/corepack" \
+  PNPM_HOME="$CACHE_ROOT/pnpm" \
+  pnpm install --frozen-lockfile
+
+sudo -u "$SITE_USER" -H env \
+  XDG_CACHE_HOME="$CACHE_ROOT" \
+  COREPACK_HOME="$CACHE_ROOT/corepack" \
+  PNPM_HOME="$CACHE_ROOT/pnpm" \
+  MIGRATION_DATABASE_URL="$MIGRATION_DATABASE_URL" \
+  pnpm --filter api db:migrate</code></pre><div class="callout ok"><strong>Migration effect:</strong> the tournament biography minimum becomes 700 characters. Existing biographies remain stored; profiles below the minimum display incomplete until corrected.</div></section>
+<section class="card" id="build"><div class="eyebrow">Step 8</div><h2>Build API, Team Portal and LOC Platform</h2><pre><code>cd "$SOURCE_ROOT"
+
+sudo -u "$SITE_USER" -H env \
+  XDG_CACHE_HOME="$CACHE_ROOT" \
+  COREPACK_HOME="$CACHE_ROOT/corepack" \
+  PNPM_HOME="$CACHE_ROOT/pnpm" \
+  pnpm --filter api build
+
+sudo -u "$SITE_USER" -H env \
+  XDG_CACHE_HOME="$CACHE_ROOT" \
+  COREPACK_HOME="$CACHE_ROOT/corepack" \
+  PNPM_HOME="$CACHE_ROOT/pnpm" \
+  pnpm --filter teams build
+
+sudo -u "$SITE_USER" -H env \
+  XDG_CACHE_HOME="$CACHE_ROOT" \
+  COREPACK_HOME="$CACHE_ROOT/corepack" \
+  PNPM_HOME="$CACHE_ROOT/pnpm" \
+  pnpm --filter platform build</code></pre><div class="callout danger"><strong>Stop on the first build error.</strong> Do not restart services with a partial or failed build.</div></section>
+<section class="card" id="start"><div class="eyebrow">Step 9</div><h2>Start services and verify one listener per port</h2><pre><code>supervisorctl start gameday-api gameday-teams gameday-platform
+sleep 10
+
+supervisorctl status gameday-api gameday-teams gameday-platform
+ss -lntp | grep -E ':3000|:3002|:3003'
+
+curl -fsS http://127.0.0.1:3000/registration-window
+curl -I http://127.0.0.1:3002/
+curl -I http://127.0.0.1:3003/</code></pre><p>Expected: all three Supervisor programs show <strong>RUNNING</strong>; ports 3000, 3002 and 3003 each have one listener; API returns tournament JSON including <code>endsOn</code>; both Next.js applications return an HTTP response.</p><h3>If a service is not RUNNING</h3><pre><code>tail -n 100 /var/log/gameday/api-error.log
+tail -n 100 /var/log/gameday/teams-error.log
+tail -n 100 /var/log/gameday/platform-error.log</code></pre></section>
+<section class="card" id="smoke"><div class="eyebrow">Step 10</div><h2>Production functional smoke test</h2><ul class="check"><li>Open <code>https://teams.netballamericas.org</code>; sign-in screen loads with official event branding.</li><li>Sign in to a test team; dashboard, Players &amp; Officials and Submission Status load without “Failed to fetch”.</li><li>Confirm biography counter requires 700 characters.</li><li>Confirm Passport expiry calendar does not accept a date before the tournament end.</li><li>Confirm Approved, Returned and Pending filters are clickable in Team Portal.</li><li>Open <code>https://platform.netballamericas.org</code>; LOC login and dashboard load.</li><li>Confirm LOC Team Review shows full submitted person information and clickable status filters.</li><li>Confirm a current LOC-approved player appears in match-sheet selection and dropdown shows names only.</li><li>Confirm success messages appear after a safe test write action.</li><li>Confirm Data handling &amp; privacy notice opens and closes.</li></ul><div class="callout info"><strong>Use synthetic test data only.</strong> Do not upload a real passport as a deployment smoke test.</div></section>
+<section class="card" id="rollback"><div class="eyebrow">Step 11</div><h2>Rollback if a critical test fails</h2><div class="callout danger"><strong>Database rollback is required if migration or post-migration writes make code-only rollback unsafe.</strong> Coordinate with the lead engineer before restoring the dump; restoring overwrites data created after the backup.</div><h3>Code rollback before new production registrations</h3><pre><code>supervisorctl stop gameday-api gameday-teams gameday-platform
+cd "$SOURCE_ROOT"
+git switch --detach "$OLD_COMMIT"
+chown -R "$SITE_USER:$SITE_GROUP" "$SOURCE_ROOT"
+
+sudo -u "$SITE_USER" -H env CI=true \
+  XDG_CACHE_HOME="$CACHE_ROOT" COREPACK_HOME="$CACHE_ROOT/corepack" \
+  PNPM_HOME="$CACHE_ROOT/pnpm" pnpm install --frozen-lockfile
+
+sudo -u "$SITE_USER" -H env XDG_CACHE_HOME="$CACHE_ROOT" COREPACK_HOME="$CACHE_ROOT/corepack" PNPM_HOME="$CACHE_ROOT/pnpm" pnpm --filter api build
+sudo -u "$SITE_USER" -H env XDG_CACHE_HOME="$CACHE_ROOT" COREPACK_HOME="$CACHE_ROOT/corepack" PNPM_HOME="$CACHE_ROOT/pnpm" pnpm --filter teams build
+sudo -u "$SITE_USER" -H env XDG_CACHE_HOME="$CACHE_ROOT" COREPACK_HOME="$CACHE_ROOT/corepack" PNPM_HOME="$CACHE_ROOT/pnpm" pnpm --filter platform build
+
+supervisorctl start gameday-api gameday-teams gameday-platform
+sleep 10
+supervisorctl status gameday-api gameday-teams gameday-platform</code></pre><p>After recovery, return the repository to <code>main</code> only when engineering confirms the corrected release.</p></section>
+<section class="card" id="evidence"><div class="eyebrow">Step 12</div><h2>Send this evidence back to SportsBB</h2><pre><code>cd "$SOURCE_ROOT"
+git status --short
+git log -1 --oneline
+git merge-base --is-ancestor e98125c HEAD &amp;&amp; echo "e98125c present"
+supervisorctl status gameday-api gameday-teams gameday-platform
+ss -lntp | grep -E ':3000|:3002|:3003'
+curl -fsS http://127.0.0.1:3000/registration-window</code></pre><p>Also send the smoke-test result and any error-log excerpt. Redact passwords, tokens, database URLs, document contents and personal information.</p><table><thead><tr><th>Approval</th><th>Name</th><th>Date/time</th><th>Result</th></tr></thead><tbody><tr><td>Technician</td><td></td><td></td><td>□ Pass □ Failed □ Rolled back</td></tr><tr><td>SportsBB</td><td></td><td></td><td>□ Accepted □ Further action</td></tr><tr><td>LOC</td><td></td><td></td><td>□ Smoke test accepted</td></tr></tbody></table></section>
+</main><footer>SportsBB GameDay · Production Update Runbook · Required release e98125c · 1 August 2026</footer></body></html>

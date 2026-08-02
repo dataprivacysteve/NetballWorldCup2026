@@ -211,7 +211,11 @@ export class AdminService {
           .where(eq(schema.tournament.id, del.tournamentId))
           .then((rows) => rows[0]),
       ]);
-    const withPhoto = new Set(photos.map((p) => p.playerId));
+    const withPhoto = new Set(
+      photos
+        .filter((photo) => !photo.objectKey.endsWith('/seed.png'))
+        .map((photo) => photo.playerId),
+    );
     const credByPlayer = new Map<string, (typeof creds)[number]>();
     for (const credential of creds.sort(
       (a, b) => b.issuedAt.getTime() - a.issuedAt.getTime(),
@@ -450,7 +454,11 @@ export class AdminService {
         throw new BadRequestException('Delegation has no roster to accredit');
       }
 
-      const withPhoto = new Set(photos.map((photo) => photo.playerId));
+      const withPhoto = new Set(
+        photos
+          .filter((photo) => !photo.objectKey.endsWith('/seed.png'))
+          .map((photo) => photo.playerId),
+      );
       const problems = rosterSubmissionProblems(players, event);
       for (const person of players) {
         const name = `${person.firstName} ${person.lastName}`;
@@ -572,7 +580,9 @@ export class AdminService {
       .where(eq(schema.playerPhoto.playerId, playerId))
       .orderBy(desc(schema.playerPhoto.uploadedAt))
       .limit(1);
-    if (!photo) throw new NotFoundException('No photo');
+    if (!photo || photo.objectKey.endsWith('/seed.png')) {
+      throw new NotFoundException('No usable photo');
+    }
     const obj = await this.s3.send(
       new GetObjectCommand({ Bucket: this.photoBucket, Key: photo.objectKey }),
     );
@@ -730,11 +740,17 @@ export class AdminService {
           details: schema.locAuditEvent.details,
           createdAt: schema.locAuditEvent.createdAt,
           actorName: schema.appUser.displayName,
+          targetName: schema.delegation.name,
+          countryCode: schema.delegation.countryCode,
         })
         .from(schema.locAuditEvent)
         .innerJoin(
           schema.appUser,
           eq(schema.appUser.id, schema.locAuditEvent.actorUserId),
+        )
+        .leftJoin(
+          schema.delegation,
+          eq(schema.delegation.id, schema.locAuditEvent.targetId),
         )
         .orderBy(desc(schema.locAuditEvent.createdAt))
         .limit(500),
@@ -747,11 +763,17 @@ export class AdminService {
           details: schema.teamAuditEvent.details,
           createdAt: schema.teamAuditEvent.createdAt,
           actorName: schema.appUser.displayName,
+          targetName: schema.delegation.name,
+          countryCode: schema.delegation.countryCode,
         })
         .from(schema.teamAuditEvent)
         .innerJoin(
           schema.appUser,
           eq(schema.appUser.id, schema.teamAuditEvent.actorUserId),
+        )
+        .leftJoin(
+          schema.delegation,
+          eq(schema.delegation.id, schema.teamAuditEvent.targetId),
         )
         .orderBy(desc(schema.teamAuditEvent.createdAt))
         .limit(500),

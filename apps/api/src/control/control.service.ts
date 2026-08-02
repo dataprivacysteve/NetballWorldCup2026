@@ -63,6 +63,21 @@ export class ControlService {
     if (opensAt && closesAt && closesAt <= opensAt) {
       throw new BadRequestException('Registration must close after it opens');
     }
+    const startsOn = dto.startsOn ?? current.startsOn;
+    const endsOn = dto.endsOn ?? current.endsOn;
+    const eligibilityDate = dto.eligibilityDate ?? current.eligibilityDate;
+    if (startsOn && endsOn && new Date(endsOn) < new Date(startsOn)) {
+      throw new BadRequestException('Tournament must end after it starts');
+    }
+    if (startsOn && eligibilityDate) {
+      const eventYear = new Date(startsOn).getUTCFullYear();
+      const assessmentYear = new Date(eligibilityDate).getUTCFullYear();
+      if (Math.abs(eventYear - assessmentYear) > 1) {
+        throw new BadRequestException(
+          'Age assessment date must be in or adjacent to the tournament year. Enter the date on which age is assessed, not the 18th-birthday cutoff date.',
+        );
+      }
+    }
     if (
       dto.accessZoneMatrix &&
       Object.values(dto.accessZoneMatrix).some(
@@ -376,7 +391,19 @@ export class ControlService {
     if (!event.name.trim()) problems.push('Tournament name is required.');
     if (!event.startsOn || !event.endsOn)
       problems.push('Event dates are required.');
-    if (!event.eligibilityDate) problems.push('Eligibility date is required.');
+    if (!event.eligibilityDate) {
+      problems.push('Age assessment date is required.');
+    } else if (
+      event.startsOn &&
+      Math.abs(
+        new Date(event.startsOn).getUTCFullYear() -
+          new Date(event.eligibilityDate).getUTCFullYear(),
+      ) > 1
+    ) {
+      problems.push(
+        'Age assessment date appears to be a birth cutoff. Enter the date on which player age is assessed.',
+      );
+    }
     if (!event.registrationOpensAt || !event.registrationClosesAt) {
       problems.push('Registration opening and closing dates are required.');
     }

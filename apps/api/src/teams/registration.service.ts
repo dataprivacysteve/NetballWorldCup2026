@@ -61,6 +61,7 @@ export class RegistrationService {
             name: event.name,
             shortName: event.shortName,
             timezone: event.timezone,
+            endsOn: event.endsOn,
             brandPrimaryLogoUrl: event.brandPrimaryLogoUrl,
           }
         : null,

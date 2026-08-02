@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import { CountrySelect } from "./components/country-select";
+import { showSuccessToast } from "./components/toast";
 import {
   api,
   ApiError,
@@ -36,7 +37,7 @@ const CAT_CHIP: Record<Category, string> = {
   player: "bg-[rgba(244,196,48,0.18)] text-gold-deep",
   official: "bg-[rgba(27,42,107,0.12)] text-navy",
   technical: "bg-[rgba(14,140,130,0.14)] text-teal",
-  media: "bg-[rgba(232,85,61,0.14)] text-coral",
+  media: "bg-[rgba(39,120,196,0.13)] text-[#1f5f9b]",
   broadcast: "bg-[rgba(107,75,168,0.14)] text-violet",
 };
 const CAT_LABEL: Record<Category, string> = {
@@ -889,6 +890,7 @@ function Portal({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
   const tabs: {
     id: Tab;
     label: string;
+    mobileLabel: string;
     description: string;
     icon: TeamIconName;
     badge?: string;
@@ -896,12 +898,14 @@ function Portal({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
     {
       id: "overview",
       label: "Dashboard",
+      mobileLabel: "Home",
       description: "Progress and next steps",
       icon: "overview",
     },
     {
       id: "registration",
       label: "Team registration",
+      mobileLabel: "Register",
       description: "Delegation details",
       icon: "registration",
       badge: approved ? "Approved" : "Pending",
@@ -909,6 +913,7 @@ function Portal({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
     {
       id: "roster",
       label: "Players & officials",
+      mobileLabel: "Roster",
       description: "Players and officials",
       icon: "roster",
       badge: String(players.length),
@@ -916,6 +921,7 @@ function Portal({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
     {
       id: "matchday",
       label: "Match team sheets",
+      mobileLabel: "Sheets",
       description: "GameDay phase",
       icon: "clock",
       badge: "Later",
@@ -923,6 +929,7 @@ function Portal({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
     {
       id: "submit",
       label: "Submission status",
+      mobileLabel: "Status",
       description: "Readiness and review",
       icon: "submit",
     },
@@ -974,7 +981,7 @@ function Portal({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
                 key={t.id}
                 onClick={() => setTab(t.id)}
                 aria-current={tab === t.id ? "page" : undefined}
-                className={`group flex min-h-12 shrink-0 items-center gap-3 rounded-xl px-3 py-2.5 text-left lg:w-full ${
+                className={`group flex min-h-12 min-w-0 items-center gap-3 overflow-hidden rounded-xl px-3 py-2.5 text-left lg:w-full ${
                   tab === t.id
                     ? "bg-navy text-white shadow-[0_7px_18px_rgba(27,42,107,0.18)]"
                     : "text-ink-soft hover:bg-bg-soft hover:text-ink"
@@ -985,9 +992,12 @@ function Portal({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
                 >
                   <TeamIcon name={t.icon} className="h-[18px] w-[18px]" />
                 </span>
-                <span>
-                  <span className="block whitespace-nowrap text-sm font-semibold">
+                <span className="min-w-0">
+                  <span className="hidden whitespace-nowrap text-sm font-semibold lg:block">
                     {t.label}
+                  </span>
+                  <span className="block truncate text-[0.64rem] font-semibold lg:hidden">
+                    {t.mobileLabel}
                   </span>
                   <span
                     className={`hidden text-[0.68rem] lg:block ${tab === t.id ? "text-white/58" : "text-ink-muted"}`}
@@ -997,7 +1007,7 @@ function Portal({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
                 </span>
                 {t.badge && (
                   <span
-                    className={`ml-auto rounded-full px-2 py-0.5 font-mono text-[0.55rem] uppercase tracking-[0.04em] ${tab === t.id ? "bg-white/12 text-white/80" : "bg-bg-soft text-ink-muted"}`}
+                    className={`ml-auto hidden rounded-full px-2 py-0.5 font-mono text-[0.55rem] uppercase tracking-[0.04em] lg:inline-flex ${tab === t.id ? "bg-white/12 text-white/80" : "bg-bg-soft text-ink-muted"}`}
                   >
                     {t.badge}
                   </span>
@@ -1069,6 +1079,7 @@ function Portal({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
               onChanged={reload}
               onError={setError}
               policy={launch?.policy ?? null}
+              documentValidThrough={launch?.tournament?.endsOn ?? null}
             />
           )}
           {tab === "matchday" && <MatchDayTeamSheets onError={setError} />}
@@ -1724,6 +1735,9 @@ function MatchDayTeamSheets({
   const editable =
     detail?.sheet.status === "draft" && selected.status === "scheduled";
   const selectedIds = new Set([...Object.values(positions), ...bench]);
+  const eligibleRoster = detail?.roster.filter(
+    (player) => player.eligible,
+  ) ?? [];
   const valid =
     POSITIONS.every((position) => positions[position]) &&
     selectedIds.size >= 7 &&
@@ -1741,6 +1755,28 @@ function MatchDayTeamSheets({
       />
       {detail && (
         <>
+          {eligibleRoster.length === 0 ? (
+            <div className="flex items-start gap-3 rounded-2xl border border-bad-line bg-bad-soft p-4">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-bad">
+                <TeamIcon name="alert" className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="font-display font-bold text-ink">
+                  No accredited players are available for selection
+                </p>
+                <p className="mt-1 text-sm leading-6 text-ink-soft">
+                  Delegation registration approval unlocks roster building, but match sheets accept only players individually approved by the LOC. Complete each player record and obtain LOC approval before preparing this match sheet.
+                </p>
+                <p className="mt-1 font-mono text-[0.62rem] uppercase tracking-[0.06em] text-bad">
+                  {detail.roster.length} registered player{detail.roster.length === 1 ? "" : "s"} · 0 match-eligible
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-ok-line bg-ok-soft px-4 py-3 text-sm text-ok">
+              {eligibleRoster.length} accredited player{eligibleRoster.length === 1 ? " is" : "s are"} available for this match sheet.
+            </div>
+          )}
           <div className="grid gap-4 lg:grid-cols-2">
             <section className={`${panel} p-5`}>
               <h2 className="font-display text-lg font-bold text-ink">
@@ -1753,24 +1789,20 @@ function MatchDayTeamSheets({
                     <select
                       className={inputCls}
                       value={positions[position] ?? ""}
-                      disabled={!editable}
+                      disabled={!editable || eligibleRoster.length === 0}
                       onChange={(event) =>
                         setPosition(position, event.target.value)
                       }
                     >
                       <option value="">Select player…</option>
-                      {detail.roster
+                      {eligibleRoster
                         .filter(
                           (player) =>
-                            player.accredited === "issued" &&
                             (!Object.values(positions).includes(player.id) ||
                               positions[position] === player.id),
                         )
                         .map((player) => (
                           <option key={player.id} value={player.id}>
-                            {player.jerseyNumber
-                              ? `#${player.jerseyNumber} `
-                              : ""}
                             {player.firstName} {player.lastName}
                           </option>
                         ))}
@@ -1787,8 +1819,7 @@ function MatchDayTeamSheets({
                 Select up to eight additional players.
               </p>
               <div className="mt-4 space-y-2">
-                {detail.roster
-                  .filter((player) => player.accredited === "issued")
+                {eligibleRoster
                   .map((player) => {
                     const starting = Object.values(positions).includes(
                       player.id,
@@ -1859,6 +1890,7 @@ function Roster({
   onChanged,
   onError,
   policy,
+  documentValidThrough,
 }: {
   approved: boolean;
   locked: boolean;
@@ -1867,8 +1899,21 @@ function Roster({
   onChanged: () => void;
   onError: (e: unknown) => void;
   policy: RegistrationWindow["policy"];
+  documentValidThrough: string | null;
 }) {
   const [adding, setAdding] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "verified" | "returned" | "pending"
+  >("all");
+  const statusCounts = {
+    verified: players.filter((person) => person.verificationStatus === "verified").length,
+    returned: players.filter((person) => person.verificationStatus === "returned").length,
+    pending: players.filter((person) => person.verificationStatus === "pending").length,
+  };
+  const visiblePlayers =
+    statusFilter === "all"
+      ? players
+      : players.filter((person) => person.verificationStatus === statusFilter);
   if (!approved) {
     return (
       <>
@@ -1903,7 +1948,7 @@ function Roster({
       {!locked && adding && (
         <AddPerson
           teamCountryCode={teamCountryCode}
-          biographyMinimum={policy?.biographyMinimumCharacters ?? 80}
+          biographyMinimum={policy?.biographyMinimumCharacters ?? 700}
           onAdded={() => {
             setAdding(false);
             onChanged();
@@ -1912,18 +1957,50 @@ function Roster({
           onError={onError}
         />
       )}
+      {players.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2" aria-label="Filter team members by LOC review status">
+          {([
+            ["verified", statusCounts.verified, "Approved", "border-ok-line bg-ok-soft text-ok"],
+            ["returned", statusCounts.returned, "Returned", "border-bad-line bg-bad-soft text-bad"],
+            ["pending", statusCounts.pending, "Pending", "border-warn-line bg-warn-soft text-warn"],
+          ] as const).map(([status, count, label, colors]) => {
+            const active = statusFilter === status;
+            return (
+              <button
+                key={status}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setStatusFilter(active ? "all" : status)}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[0.62rem] font-bold uppercase tracking-[0.07em] transition ${colors} ${active ? "ring-2 ring-navy ring-offset-2" : "hover:brightness-95"}`}
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                {count} {label}
+              </button>
+            );
+          })}
+          {statusFilter !== "all" && (
+            <button type="button" className="text-xs font-semibold text-navy hover:underline" onClick={() => setStatusFilter("all")}>
+              Show all ({players.length})
+            </button>
+          )}
+        </div>
+      )}
       <div className="space-y-2.5">
-        {players.map((p) => (
+        {visiblePlayers.map((p) => (
           <PersonCard
             key={p.id}
             person={p}
             teamCountryCode={teamCountryCode}
-            biographyMinimum={policy?.biographyMinimumCharacters ?? 80}
+            biographyMinimum={policy?.biographyMinimumCharacters ?? 700}
+            documentValidThrough={documentValidThrough}
             editable={!locked}
             onChanged={onChanged}
             onError={onError}
           />
         ))}
+        {players.length > 0 && visiblePlayers.length === 0 && (
+          <EmptyState icon="check" title="No team members in this status" description="Choose another status or show the full team list." />
+        )}
         {players.length === 0 && (
           <EmptyState
             icon="roster"
@@ -1980,13 +2057,27 @@ function AddPerson({
     eligibilityReference: "",
   });
   const [busy, setBusy] = useState(false);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [identityFile, setIdentityFile] = useState<File | null>(null);
+  const [documentType, setDocumentType] = useState<"passport" | "national_id">("passport");
+  const [issuingCountry, setIssuingCountry] = useState("");
+  const [expiresOn, setExpiresOn] = useState("");
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (!photoFile) {
+      onError(new Error("A profile photograph is required for every team member."));
+      return;
+    }
+    if (isPlayer && (!identityFile || !issuingCountry || !expiresOn)) {
+      onError(new Error("Players require a passport or national ID file, issuing country and expiry date."));
+      return;
+    }
     setBusy(true);
     onError(null);
+    let createdPersonId: string | null = null;
     try {
-      await api.createPerson({
+      const person = await api.createPerson({
         firstName: form.firstName,
         middleNames: form.middleNames || undefined,
         lastName: form.lastName,
@@ -2007,12 +2098,30 @@ function AddPerson({
         benchEligible: form.benchEligible,
         nationalityMatchesTeam,
         eligibilityConfirmed:
-          nationalityMatchesTeam || form.eligibilityConfirmed,
+          !isPlayer || nationalityMatchesTeam || form.eligibilityConfirmed,
         eligibilityReference:
-          !nationalityMatchesTeam && form.eligibilityReference
+          isPlayer && !nationalityMatchesTeam && form.eligibilityReference
             ? form.eligibilityReference
             : undefined,
-      });
+      }, true);
+      createdPersonId = person.id;
+      await api.uploadPhoto(person.id, photoFile, true);
+      if (isPlayer && identityFile) {
+        await api.uploadIdentity(
+          person.id,
+          {
+            documentType,
+            issuingCountry,
+            nationality: form.nationality,
+            expiresOn,
+          },
+          identityFile,
+          true,
+        );
+      }
+      showSuccessToast(isPlayer
+        ? "The player, photograph and identity document were received."
+        : "The team member and required photograph were received.");
       setForm({
         firstName: "",
         middleNames: "",
@@ -2033,7 +2142,9 @@ function AddPerson({
       });
       onAdded();
     } catch (err) {
-      onError(err);
+      onError(createdPersonId
+        ? new Error(`The core team-member record was created, but a required upload failed: ${(err as Error).message}. Open the existing record to complete it; do not add the person again.`)
+        : err);
     } finally {
       setBusy(false);
     }
@@ -2059,8 +2170,9 @@ function AddPerson({
           Add a player or official
         </h2>
         <p className="mt-1 text-sm text-ink-muted">
-          Start with the person’s core details. Photos, consent and identity
-          documents are added after the record is created.
+          Complete the required details and uploads together. Every team member
+          needs a profile photograph; players also need identity evidence for
+          LOC identity verification.
         </p>
       </div>
       <label className="block">
@@ -2212,15 +2324,15 @@ function AddPerson({
         />
         Included in 17-person bench allocation
       </label>
-      <div className="rounded-xl border border-line bg-bg-soft p-3 text-sm text-ink-soft">
-        <strong className="text-ink">Eligibility:</strong>{" "}
+      {isPlayer && <div className="rounded-xl border border-line bg-bg-soft p-3 text-sm text-ink-soft">
+        <strong className="text-ink">Player eligibility:</strong>{" "}
         {form.nationality
           ? nationalityMatchesTeam
             ? `Nationality matches ${teamCountryCode}.`
-            : `Nationality differs from team ${teamCountryCode}; eligibility evidence is required.`
-          : "Enter nationality to determine eligibility requirements."}
-      </div>
-      {form.nationality && !nationalityMatchesTeam && (
+            : `Nationality differs from team ${teamCountryCode}; player eligibility evidence is required.`
+          : "Select nationality to determine player eligibility requirements."}
+      </div>}
+      {isPlayer && form.nationality && !nationalityMatchesTeam && (
         <>
           <label className="flex items-center gap-2 text-sm text-ink-soft">
             <input
@@ -2247,6 +2359,40 @@ function AddPerson({
             </span>
           </label>
         </>
+      )}
+      <div className="rounded-xl border border-line bg-bg-soft p-4 sm:col-span-2 xl:col-span-3">
+        <p className="font-display font-bold text-ink">Required profile photograph</p>
+        <p className="mt-1 text-xs text-ink-muted">Required for players, officials and every other accreditation category.</p>
+        <input
+          className={`${inputCls} mt-3`}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          onChange={(event) => setPhotoFile(event.target.files?.[0] ?? null)}
+          required
+        />
+      </div>
+      {isPlayer && (
+        <div className="grid gap-4 rounded-xl border border-warn-line bg-warn-soft p-4 sm:col-span-2 sm:grid-cols-2 xl:col-span-3 xl:grid-cols-3">
+          <div className="sm:col-span-2 xl:col-span-3">
+            <p className="font-display font-bold text-ink">Required player identity evidence</p>
+          </div>
+          <label>
+            <span className={labelCls}>Document type</span>
+            <select className={inputCls} value={documentType} onChange={(event) => setDocumentType(event.target.value as "passport" | "national_id")}>
+              <option value="passport">Passport information page</option>
+              <option value="national_id">National ID</option>
+            </select>
+          </label>
+          <CountrySelect label="Issuing country" className={inputCls} value={issuingCountry} onChange={setIssuingCountry} />
+          <label>
+            <span className={labelCls}>Expiry date</span>
+            <input className={inputCls} type="date" value={expiresOn} onChange={(event) => setExpiresOn(event.target.value)} required />
+          </label>
+          <label className="sm:col-span-2 xl:col-span-3">
+            <span className={labelCls}>Passport or national ID file</span>
+            <input className={inputCls} type="file" accept="image/jpeg,image/png,application/pdf" onChange={(event) => setIdentityFile(event.target.files?.[0] ?? null)} required />
+          </label>
+        </div>
       )}
       <div className="flex items-end gap-2 sm:col-span-2 xl:col-span-3 xl:justify-end">
         <button type="button" className={btnGhost} onClick={onCancel}>
@@ -2327,8 +2473,8 @@ function PersonEditor({
         benchEligible: form.benchEligible,
         nationalityMatchesTeam,
         eligibilityConfirmed:
-          nationalityMatchesTeam || form.eligibilityConfirmed,
-        eligibilityReference: nationalityMatchesTeam
+          !isPlayer || nationalityMatchesTeam || form.eligibilityConfirmed,
+        eligibilityReference: !isPlayer || nationalityMatchesTeam
           ? ""
           : form.eligibilityReference,
       });
@@ -2488,13 +2634,13 @@ function PersonEditor({
         />
         Included in bench allocation
       </label>
-      <div className="rounded-xl border border-line bg-bg-soft p-3 text-sm text-ink-soft">
-        <strong className="text-ink">Eligibility:</strong>{" "}
+      {isPlayer && <div className="rounded-xl border border-line bg-bg-soft p-3 text-sm text-ink-soft">
+        <strong className="text-ink">Player eligibility:</strong>{" "}
         {nationalityMatchesTeam
           ? `Nationality matches ${teamCountryCode}.`
-          : `Nationality differs from team ${teamCountryCode}; eligibility evidence is required.`}
-      </div>
-      {!nationalityMatchesTeam && (
+          : `Nationality differs from team ${teamCountryCode}; player eligibility evidence is required.`}
+      </div>}
+      {isPlayer && !nationalityMatchesTeam && (
         <>
           <label className="flex items-center gap-2 text-sm text-ink-soft">
             <input
@@ -2542,6 +2688,7 @@ function PersonCard({
   person,
   teamCountryCode,
   biographyMinimum,
+  documentValidThrough,
   editable,
   onChanged,
   onError,
@@ -2549,6 +2696,7 @@ function PersonCard({
   person: Person;
   teamCountryCode: string;
   biographyMinimum: number;
+  documentValidThrough: string | null;
   editable: boolean;
   onChanged: () => void;
   onError: (e: unknown) => void;
@@ -2559,6 +2707,17 @@ function PersonCard({
   const [consents, setConsents] = useState<Consent[]>([]);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [identity, setIdentity] = useState<IdentityStatus | null>(null);
+  const [replacingIdentity, setReplacingIdentity] = useState(false);
+  const teamSuppliedComplete =
+    person.biography.length >= biographyMinimum &&
+    person.hasPhoto &&
+    (!person.dobRequired || !!person.dateOfBirth) &&
+    person.hasRequiredConsent &&
+    (!person.identityRequired || person.identityStatus !== null);
+  const awaitingLocVerification =
+    teamSuppliedComplete &&
+    person.identityRequired &&
+    person.identityStatus === "pending";
 
   const loadPhoto = useCallback(async () => {
     setPhotoUrl(await api.photoImageUrl(person.id));
@@ -2644,14 +2803,26 @@ function PersonCard({
           {CAT_LABEL[person.category]}
         </span>
         <span
-          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[0.58rem] font-bold uppercase tracking-[0.05em] ${person.ready ? "border-ok-line bg-ok-soft text-ok" : "border-warn-line bg-warn-soft text-warn"}`}
+          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[0.58rem] font-bold uppercase tracking-[0.05em] ${
+            person.ready
+              ? "border-ok-line bg-ok-soft text-ok"
+              : awaitingLocVerification
+                ? "border-warn-line bg-warn-soft text-warn"
+                : "border-bad-line bg-bad-soft text-bad"
+          }`}
         >
           {person.ready ? (
             <TeamIcon name="check" className="h-3 w-3" />
-          ) : (
+          ) : awaitingLocVerification ? (
             <TeamIcon name="clock" className="h-3 w-3" />
+          ) : (
+            <TeamIcon name="alert" className="h-3 w-3" />
           )}
-          {person.ready ? "Ready" : "Incomplete"}
+          {person.ready
+            ? "Ready"
+            : awaitingLocVerification
+              ? "Awaiting LOC"
+              : "Incomplete"}
         </span>
         {editable && (
           <div className="flex gap-2">
@@ -2767,7 +2938,41 @@ function PersonCard({
               {person.biography}
             </p>
           </div>
-          {!person.nationalityMatchesTeam && (
+          <div className="rounded-xl border border-line bg-white p-4">
+            <p className={labelCls}>Profile completion</p>
+            <div className="mt-2 grid gap-2 text-sm sm:grid-cols-2">
+              {[
+                [person.biography.length >= biographyMinimum, `Biography (${person.biography.length}/${biographyMinimum} characters)`],
+                [person.hasPhoto, "Profile photograph"],
+                [!person.dobRequired || !!person.dateOfBirth, "Date of birth"],
+                [person.hasRequiredConsent, person.consentRequired ? "Guardian consent" : "Consent not required"],
+                [
+                  !person.identityRequired || person.identityStatus === "verified",
+                  !person.identityRequired
+                    ? "Identity evidence not required"
+                    : person.identityStatus === "pending"
+                      ? "Identity document received — awaiting LOC verification"
+                      : person.identityStatus === "rejected"
+                        ? "Identity document returned by LOC"
+                        : "Identity document required",
+                ],
+              ].map(([done, label]) => (
+                <div key={String(label)} className="flex items-start gap-2">
+                  <TeamIcon
+                    name={done ? "check" : "clock"}
+                    className={`mt-0.5 h-4 w-4 shrink-0 ${done ? "text-ok" : "text-warn"}`}
+                  />
+                  <span className="text-ink-soft">{String(label)}</span>
+                </div>
+              ))}
+            </div>
+            {awaitingLocVerification && (
+              <p className="mt-3 rounded-lg border border-ok-line bg-ok-soft px-3 py-2 text-sm text-ok">
+                The team has supplied this player&apos;s required profile information. LOC identity verification is now pending.
+              </p>
+            )}
+          </div>
+          {person.category === "player" && !person.nationalityMatchesTeam && (
             <div className="rounded-lg border border-line-strong bg-bg-soft p-3 text-sm text-ink-soft">
               <p className={labelCls}>Eligibility declaration</p>
               {person.eligibilityConfirmed
@@ -2880,14 +3085,56 @@ function PersonCard({
           {person.identityRequired && (
             <div>
               <p className={labelCls}>Passport or national ID</p>
-              {identity ? (
-                <div className="mb-2 text-sm text-ink-soft">
-                  <span className="font-semibold capitalize">
-                    {identity.status}
-                  </span>
-                  {` · ${identity.documentType.replace("_", " ")} · ${identity.issuingCountry}`}
-                  {identity.reviewNote && (
-                    <p className="mt-1 text-bad">{identity.reviewNote}</p>
+              {person.identityStatus ? (
+                <div className="rounded-xl border border-line bg-white p-4">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-mono text-[0.6rem] font-bold uppercase ${
+                        person.identityStatus === "verified"
+                          ? "border-ok-line bg-ok-soft text-ok"
+                          : person.identityStatus === "pending"
+                            ? "border-navy/20 bg-navy/5 text-navy"
+                            : "border-bad-line bg-bad-soft text-bad"
+                      }`}
+                    >
+                      <TeamIcon
+                        name={person.identityStatus === "verified" ? "check" : "clock"}
+                        className="h-3.5 w-3.5"
+                      />
+                      {person.identityStatus === "pending"
+                        ? "Received — awaiting LOC"
+                        : person.identityStatus}
+                    </span>
+                    <span className="text-sm font-semibold capitalize text-ink">
+                      {identity?.documentType.replace("_", " ") ?? "Identity document"}
+                    </span>
+                    {identity?.issuingCountry && (
+                      <span className="font-mono text-xs text-ink-muted">
+                        Issued by {identity.issuingCountry}
+                      </span>
+                    )}
+                    {identity?.expiresOn && (
+                      <span className="text-xs text-ink-muted">
+                        Expires {new Date(`${identity.expiresOn}T00:00:00`).toLocaleDateString()}
+                      </span>
+                    )}
+                    {editable && person.identityStatus !== "rejected" && (
+                      <button
+                        type="button"
+                        className={`${btnGhost} ml-auto`}
+                        onClick={() => setReplacingIdentity((value) => !value)}
+                      >
+                        {replacingIdentity ? "Cancel replacement" : "Replace document"}
+                      </button>
+                    )}
+                  </div>
+                  {person.identityStatus === "pending" && (
+                    <p className="mt-3 text-sm text-ink-soft">
+                      The document was uploaded successfully. No further action is required unless the LOC returns it for correction.
+                    </p>
+                  )}
+                  {identity?.reviewNote && (
+                    <p className="mt-3 text-sm text-bad">{identity.reviewNote}</p>
                   )}
                 </div>
               ) : (
@@ -2895,11 +3142,16 @@ function PersonCard({
                   No identity document uploaded.
                 </p>
               )}
-              {editable && (
+              {editable &&
+                (!person.identityStatus ||
+                  person.identityStatus === "rejected" ||
+                  replacingIdentity) && (
                 <IdentityUpload
                   person={person}
+                  documentValidThrough={documentValidThrough}
                   onUploaded={(status) => {
                     setIdentity(status);
+                    setReplacingIdentity(false);
                     onChanged();
                   }}
                   onError={onError}
@@ -3050,10 +3302,12 @@ function PhotoUpload({
 
 function IdentityUpload({
   person,
+  documentValidThrough,
   onUploaded,
   onError,
 }: {
   person: Person;
+  documentValidThrough: string | null;
   onUploaded: (status: IdentityStatus) => void;
   onError: (e: unknown) => void;
 }) {
@@ -3064,10 +3318,21 @@ function IdentityUpload({
   const [issuingCountry, setIssuingCountry] = useState(person.nationality);
   const [expiresOn, setExpiresOn] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const expiryTooEarly = Boolean(
+    expiresOn && documentValidThrough && expiresOn < documentValidThrough,
+  );
+  const formattedValidThrough = documentValidThrough
+    ? new Intl.DateTimeFormat("en-GB", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        timeZone: "UTC",
+      }).format(new Date(`${documentValidThrough}T00:00:00Z`))
+    : null;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!file) return;
+    if (!file || expiryTooEarly) return;
     setBusy(true);
     onError(null);
     try {
@@ -3114,12 +3379,21 @@ function IdentityUpload({
         <span className={labelCls}>Expiry date</span>
         <input
           type="date"
-          className={inputCls}
+          className={`${inputCls} ${expiryTooEarly ? "border-bad" : ""}`}
           value={expiresOn}
           onChange={(e) => setExpiresOn(e.target.value)}
           aria-label="Document expiry date"
+          aria-invalid={expiryTooEarly}
+          min={documentValidThrough ?? undefined}
           required={documentType === "passport"}
         />
+        {formattedValidThrough && (
+          <span className={`mt-1 block text-xs ${expiryTooEarly ? "text-bad" : "text-ink-soft"}`}>
+            {documentType === "national_id"
+              ? `Optional. If entered, it must be valid through ${formattedValidThrough}.`
+              : `Must be valid through ${formattedValidThrough}.`}
+          </span>
+        )}
       </label>
       <label>
         <span className={labelCls}>Document file</span>
@@ -3131,16 +3405,16 @@ function IdentityUpload({
           required
         />
       </label>
-      <div className="rounded-lg border border-warn-line bg-warn-soft p-3 text-xs leading-5 text-ink-soft sm:col-span-2 xl:col-span-4">
-        <strong className="text-ink">Restricted handling:</strong> the LOC can
-        view this file only during manual verification. It is deleted after the
-        verification decision.
-      </div>
       <button
         className={`${btnPrimary} sm:col-span-2 xl:col-span-4`}
-        disabled={busy || !file}
+        disabled={
+          busy ||
+          !file ||
+          expiryTooEarly ||
+          (documentType === "passport" && !expiresOn)
+        }
       >
-        {busy ? "Uploading…" : "Upload for restricted LOC verification"}
+        {busy ? "Uploading…" : "Upload identity document"}
       </button>
     </form>
   );
@@ -3213,9 +3487,9 @@ function Submit({
         total > 0 &&
         players.every(
           (p) =>
-            p.biography.length >= (policy?.biographyMinimumCharacters ?? 80),
+            p.biography.length >= (policy?.biographyMinimumCharacters ?? 700),
         ),
-      label: `Every person has a biography of at least ${policy?.biographyMinimumCharacters ?? 80} characters`,
+      label: `Every person has a biography of at least ${policy?.biographyMinimumCharacters ?? 700} characters`,
     },
     {
       done: total > 0 && players.every((p) => p.hasPhoto),

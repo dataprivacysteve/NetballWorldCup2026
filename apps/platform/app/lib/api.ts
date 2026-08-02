@@ -179,6 +179,8 @@ export type AuditEvent = {
   details: Record<string, unknown> | null;
   createdAt: string;
   actorName: string;
+  targetName: string | null;
+  countryCode: string | null;
 };
 export type AccreditedDelegation = {
   id: string;

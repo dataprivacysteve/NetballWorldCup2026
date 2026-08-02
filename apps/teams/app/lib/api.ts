@@ -9,7 +9,7 @@ function successMessage(path: string): string {
   if (path === "/register") return "Your team registration was received and is awaiting LOC approval.";
   if (path.includes("submit-partial")) return "Your available team information was received for rolling LOC review.";
   if (path.includes("submit")) return path.includes("team-sheet") ? "The match team sheet was submitted." : "Your team was submitted for accreditation review.";
-  if (path.includes("identity")) return "The restricted identity document was received for LOC verification.";
+  if (path.includes("identity")) return "The identity document was received for LOC verification.";
   if (path.includes("photo")) return "The profile photograph was uploaded.";
   if (path.includes("consent")) return "The consent record was saved.";
   if (path.includes("team-sheet")) return "The match team sheet was saved.";
@@ -33,7 +33,7 @@ export class ApiError extends Error {
 
 async function req<T>(
   path: string,
-  opts: { method?: string; body?: unknown; form?: FormData } = {},
+  opts: { method?: string; body?: unknown; form?: FormData; silent?: boolean } = {},
 ): Promise<T> {
   const headers: Record<string, string> = {};
   let body: BodyInit | undefined;
@@ -53,7 +53,7 @@ async function req<T>(
   const text = await res.text();
   const data = text ? JSON.parse(text) : null;
   if (!res.ok) throw new ApiError(res.status, data);
-  if ((opts.method ?? "GET").toUpperCase() !== "GET" && path !== "/login" && path !== "/logout") {
+  if (!opts.silent && (opts.method ?? "GET").toUpperCase() !== "GET" && path !== "/login" && path !== "/logout") {
     showSuccessToast(successMessage(path));
   }
   return data as T;
@@ -70,6 +70,7 @@ export type RegistrationWindow = {
     name: string;
     shortName: string | null;
     timezone: string;
+    endsOn: string | null;
     brandPrimaryLogoUrl: string | null;
   } | null;
   policy: {
@@ -148,9 +149,12 @@ export type Person = {
   eligibilityConfirmed: boolean;
   eligibilityReference: string | null;
   identityStatus: "pending" | "verified" | "rejected" | null;
+  verificationStatus: "pending" | "verified" | "returned";
   identityRequired: boolean;
   consentRequired: boolean;
+  hasRequiredConsent: boolean;
   dobRequired: boolean;
+  biographyReady: boolean;
   isMinor: boolean;
   hasPhoto: boolean;
   ready: boolean;
@@ -205,6 +209,7 @@ export type TeamSheetDetail = {
     primaryPosition: string | null;
     rosterType: "active" | "reserve" | null;
     accredited: "issued" | "revoked" | null;
+    eligible: boolean;
   }>;
   players: Array<{
     playerId: string;
@@ -339,8 +344,8 @@ export const api = {
       method: "POST",
       body: { expectedVersion },
     }),
-  createPerson: (b: PersonPayload) =>
-    req<Person>("/players", { method: "POST", body: b }),
+  createPerson: (b: PersonPayload, silent = false) =>
+    req<Person>("/players", { method: "POST", body: b, silent }),
   updatePerson: (id: string, b: Partial<PersonPayload>) =>
     req<Person>(`/players/${id}`, { method: "PATCH", body: b }),
   deletePerson: (id: string) =>
@@ -362,10 +367,10 @@ export const api = {
       method: "DELETE",
     }),
 
-  uploadPhoto: (id: string, file: File) => {
+  uploadPhoto: (id: string, file: File, silent = false) => {
     const form = new FormData();
     form.append("file", file);
-    return req<unknown>(`/players/${id}/photo`, { method: "POST", form });
+    return req<unknown>(`/players/${id}/photo`, { method: "POST", form, silent });
   },
   identityStatus: (id: string) =>
     req<IdentityStatus | null>(`/players/${id}/identity`),
@@ -378,6 +383,7 @@ export const api = {
       expiresOn?: string;
     },
     file: File,
+    silent = false,
   ) => {
     const form = new FormData();
     form.append("file", file);
@@ -387,6 +393,7 @@ export const api = {
     return req<IdentityStatus>(`/players/${id}/identity`, {
       method: "POST",
       form,
+      silent,
     });
   },
   photoImageUrl: async (id: string): Promise<string | null> => {
