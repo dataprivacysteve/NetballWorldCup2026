@@ -2,9 +2,9 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GameDay Production Update Runbook · e98125c</title><style>
 :root{--navy:#10183f;--navy2:#293778;--gold:#f2c94c;--ink:#171a2d;--muted:#626a80;--paper:#f5f2e9;--card:#fff;--line:#ddd9cf;--ok:#24734b;--okbg:#eaf7ef;--warn:#8a5a00;--warnbg:#fff6dc;--bad:#aa372f;--badbg:#fff0ed;--code:#0b1028}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.65 Inter,Segoe UI,Arial,sans-serif}header{padding:56px 22px;background:linear-gradient(135deg,#070b20,var(--navy) 64%,#3a2051);color:#fff;border-bottom:5px solid var(--gold)}.wrap,main{max-width:1100px;margin:auto}.eyebrow{font:800 11px Consolas,monospace;letter-spacing:.17em;text-transform:uppercase;color:var(--gold)}h1{margin:12px 0 16px;font:800 clamp(36px,6vw,62px)/1.03 Georgia,serif}header p{max-width:850px;color:#dce0f0;font-size:18px}.pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}.pill{border:1px solid #ffffff30;background:#ffffff12;border-radius:999px;padding:6px 11px;font-size:12px;font-weight:800}main{padding:24px 18px 50px}.card{margin:18px 0;padding:27px;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 12px 30px #11152f0c}h2{margin:4px 0 15px;color:var(--navy);font:800 28px/1.2 Georgia,serif}h3{color:var(--navy2);margin:22px 0 8px}.toc{display:grid;grid-template-columns:repeat(auto-fit,minmax(205px,1fr));gap:9px}.toc a{padding:11px 13px;border-radius:10px;background:#f0f1f7;color:var(--navy2);font-weight:750;text-decoration:none}.callout{margin:16px 0;padding:14px 16px;border-left:5px solid;border-radius:8px}.info{background:#edf1ff;border-color:var(--navy2)}.ok{background:var(--okbg);border-color:var(--ok)}.warn{background:var(--warnbg);border-color:var(--gold)}.danger{background:var(--badbg);border-color:var(--bad)}pre{position:relative;margin:11px 0 18px;padding:17px;overflow:auto;border-radius:12px;background:var(--code);color:#eef1ff;white-space:pre-wrap;font:13px/1.55 Consolas,monospace}code{font-family:Consolas,monospace;background:#eeeef4;border-radius:4px;padding:.1em .3em}pre code{background:none;padding:0}.steps{counter-reset:s;list-style:none;padding:0}.steps>li{counter-increment:s;position:relative;padding:3px 0 23px 54px}.steps>li:before{content:counter(s);position:absolute;left:0;top:2px;width:37px;height:37px;border-radius:10px;background:var(--navy);color:var(--gold);display:grid;place-items:center;font-weight:900}.check{list-style:none;padding:0}.check li{padding:7px 0;border-bottom:1px solid #eee}.check li:before{content:'□';font-size:19px;color:var(--navy2);margin-right:9px}table{width:100%;border-collapse:collapse}th,td{text-align:left;vertical-align:top;padding:10px;border-bottom:1px solid var(--line)}th{background:#efeee7;color:var(--navy);font-size:11px;text-transform:uppercase;letter-spacing:.08em}.command-title{display:flex;justify-content:space-between;gap:12px;align-items:center}.tag{display:inline-block;border-radius:999px;background:#e9ebf6;color:var(--navy2);font-size:11px;font-weight:800;padding:4px 9px}.small{font-size:12px;color:var(--muted)}footer{text-align:center;color:var(--muted);padding:26px}@media(max-width:650px){header{padding:38px 20px}.card{padding:19px}.steps>li{padding-left:48px}}@media print{body{background:#fff}.card{box-shadow:none;break-inside:avoid}header{padding:28px;print-color-adjust:exact}}
 </style></head><body>
-<header><div class="wrap"><div class="eyebrow">SportsBB · Production Change Procedure</div><h1>GameDay Phase 1 Production Update</h1><p>Exact server runbook for deploying release <strong>e98125c</strong> to the confirmed Debian 13, ISPConfig and Supervisor environment at <code>/var/www/clients/client0/web6/web/gameday/source</code>.</p><div class="pills"><span class="pill">Repository: NetballWorldCup2026</span><span class="pill">Required release: e98125c</span><span class="pill">Site user: web6</span><span class="pill">Group: client0</span><span class="pill">Database migration 0029</span><span class="pill">API + Teams + Platform</span></div></div></header>
+<header><div class="wrap"><div class="eyebrow">SportsBB · Production Change Procedure</div><h1>GameDay Phase 1 Production Update</h1><p>Exact server runbook for deploying the merged Phase 1 release to the confirmed Debian 13, ISPConfig and Supervisor environment at <code>/var/www/clients/client0/web6/web/gameday/source</code>.</p><div class="pills"><span class="pill">Repository: NetballWorldCup2026</span><span class="pill">Application: e98125c</span><span class="pill">Manuals: 6201829</span><span class="pill">Merged main: b248dc2</span><span class="pill">Database migration 0029</span><span class="pill">API + Teams + Platform</span></div></div></header>
 <main>
-<section class="card"><div class="eyebrow">Mandatory release gate</div><h2>Do not deploy until GitHub main contains the release</h2><div class="callout danger"><strong>Current known state when this document was written:</strong> <code>origin/main</code> was still at <code>a336cc0</code>; release <code>e98125c</code> existed on branch <code>codex/phase1-launch-updates-2026-08-01</code> in draft PR #1. “Already up to date” on main therefore meant the release was not yet deployable from main.</div><p>SportsBB must first merge <a href="https://github.com/dataprivacysteve/NetballWorldCup2026/pull/1">GitHub PR #1</a>. The technician then performs Step 2 below. If the ancestry check says STOP, do not deploy and do not pull the feature branch directly onto production.</p></section>
+<section class="card"><div class="eyebrow">Confirmed release state</div><h2>PR #1 is merged into GitHub main</h2><div class="callout ok"><strong>Verified online:</strong> <a href="https://github.com/dataprivacysteve/NetballWorldCup2026/pull/1">GitHub PR #1</a> was merged on 1 August 2026. GitHub <code>main</code> advanced to merge commit <code>b248dc25662759ed974217ae3e10c3034ba4007c</code>, which contains application release <code>e98125c</code> and manual/help release <code>6201829</code>.</div><p>The technician must still run the ancestry checks in Step 2. They prove that the server can see the merged GitHub state and prevent deployment from a stale remote cache. If either check says STOP, do not deploy and do not pull the deleted feature branch.</p></section>
 <section class="card"><div class="eyebrow">Contents</div><h2>Controlled update sequence</h2><div class="toc"><a href="#preflight">1. Preflight</a><a href="#release">2. Verify release</a><a href="#backup">3. Back up</a><a href="#pull">4. Pull main</a><a href="#ownership">5. Ownership &amp; cache</a><a href="#stop">6. Stop services</a><a href="#install">7. Install &amp; migrate</a><a href="#build">8. Build</a><a href="#start">9. Start &amp; verify</a><a href="#smoke">10. Functional smoke test</a><a href="#rollback">11. Rollback</a><a href="#evidence">12. Evidence to return</a></div></section>
 <section class="card" id="preflight"><div class="eyebrow">Step 1</div><h2>Set and verify the confirmed environment</h2><p>Run as <code>root</code>. Copy commands only—not prose labels.</p><pre><code>export SITE_USER=web6
 export SITE_GROUP=client0
@@ -19,13 +19,17 @@ git remote -v
 git status --short
 supervisorctl status gameday-api gameday-teams gameday-platform
 ss -lntp | grep -E ':3000|:3002|:3003'</code></pre><div class="callout danger"><strong>Stop if <code>git status --short</code> shows tracked server-side source edits.</strong> Record and review them before pulling. Do not run <code>git reset --hard</code>, <code>git checkout -- .</code>, or delete the working tree.</div></section>
-<section class="card" id="release"><div class="eyebrow">Step 2</div><h2>Prove that main contains e98125c</h2><pre><code>cd "$SOURCE_ROOT"
+<section class="card" id="release"><div class="eyebrow">Step 2</div><h2>Prove that main contains the application and manuals</h2><pre><code>cd "$SOURCE_ROOT"
 git fetch --prune origin
 
 git rev-parse origin/main
 git merge-base --is-ancestor e98125c origin/main \
   &amp;&amp; echo "PASS: e98125c is included in origin/main" \
-  || { echo "STOP: PR #1 is not merged into main"; exit 1; }</code></pre><div class="callout ok"><strong>Continue only after PASS.</strong> A merge commit may mean <code>origin/main</code> has a different/newer hash; the ancestry check is the authoritative proof that the release is included.</div></section>
+  || { echo "STOP: application release is missing from origin/main"; exit 1; }
+
+git merge-base --is-ancestor 6201829 origin/main \
+  &amp;&amp; echo "PASS: portal manuals are included in origin/main" \
+  || { echo "STOP: manual/help release is missing from origin/main"; exit 1; }</code></pre><div class="callout ok"><strong>Continue only after both PASS messages.</strong> <code>origin/main</code> should be <code>b248dc2</code> or a newer descendant. The two ancestry checks—not an exact future HEAD value—are the authoritative proof that everything is included.</div></section>
 <section class="card" id="backup"><div class="eyebrow">Step 3</div><h2>Record the old release and back up PostgreSQL</h2><pre><code>cd "$SOURCE_ROOT"
 export OLD_COMMIT="$(git rev-parse HEAD)"
 echo "OLD_COMMIT=$OLD_COMMIT"
@@ -57,9 +61,18 @@ git merge-base --is-ancestor e98125c HEAD \
   &amp;&amp; echo "PASS: Phase 1 release is present" \
   || { echo "STOP: e98125c is not in the checked-out release"; exit 1; }
 
+git merge-base --is-ancestor 6201829 HEAD \
+  &amp;&amp; echo "PASS: portal manuals and Help links are present" \
+  || { echo "STOP: 6201829 is not in the checked-out release"; exit 1; }
+
 test -f apps/api/drizzle/0029_biography_minimum_700.sql \
   &amp;&amp; echo "PASS: migration 0029 is present" \
-  || { echo "STOP: migration 0029 is missing"; exit 1; }</code></pre></section>
+  || { echo "STOP: migration 0029 is missing"; exit 1; }
+
+test -f apps/teams/public/manual/user-guide.html \
+  &amp;&amp; test -f apps/platform/public/manual/user-guide.html \
+  &amp;&amp; echo "PASS: both embedded portal manuals are present" \
+  || { echo "STOP: one or both portal manuals are missing"; exit 1; }</code></pre></section>
 <section class="card" id="ownership"><div class="eyebrow">Step 5</div><h2>Restore ISPConfig ownership and writable caches</h2><p>Git was run as root, but builds must run as the ISPConfig site user.</p><pre><code>chown -R "$SITE_USER:$SITE_GROUP" "$SOURCE_ROOT"
 
 install -d -o "$SITE_USER" -g "$SITE_GROUP" -m 0750 \
@@ -146,7 +159,12 @@ supervisorctl status gameday-api gameday-teams gameday-platform</code></pre><p>A
 git status --short
 git log -1 --oneline
 git merge-base --is-ancestor e98125c HEAD &amp;&amp; echo "e98125c present"
+git merge-base --is-ancestor 6201829 HEAD &amp;&amp; echo "6201829 manuals present"
 supervisorctl status gameday-api gameday-teams gameday-platform
 ss -lntp | grep -E ':3000|:3002|:3003'
-curl -fsS http://127.0.0.1:3000/registration-window</code></pre><p>Also send the smoke-test result and any error-log excerpt. Redact passwords, tokens, database URLs, document contents and personal information.</p><table><thead><tr><th>Approval</th><th>Name</th><th>Date/time</th><th>Result</th></tr></thead><tbody><tr><td>Technician</td><td></td><td></td><td>□ Pass □ Failed □ Rolled back</td></tr><tr><td>SportsBB</td><td></td><td></td><td>□ Accepted □ Further action</td></tr><tr><td>LOC</td><td></td><td></td><td>□ Smoke test accepted</td></tr></tbody></table></section>
-</main><footer>SportsBB GameDay · Production Update Runbook · Required release e98125c · 1 August 2026</footer></body></html>
+curl -fsS http://127.0.0.1:3000/registration-window
+curl -fsS -o /dev/null -w 'teams manual: %{http_code}\n' \
+  https://teams.netballamericas.org/manual/user-guide.html
+curl -fsS -o /dev/null -w 'LOC manual: %{http_code}\n' \
+  https://platform.netballamericas.org/manual/user-guide.html</code></pre><p>Expected: clean tracked working tree; <code>HEAD</code> at <code>b248dc2</code> or newer; both ancestry messages present; all three services RUNNING; all three ports listening; registration-window JSON returned; both manual URLs return HTTP 200.</p><p>Also send the smoke-test result and any error-log excerpt. Redact passwords, tokens, database URLs, document contents and personal information.</p><table><thead><tr><th>Approval</th><th>Name</th><th>Date/time</th><th>Result</th></tr></thead><tbody><tr><td>Technician</td><td></td><td></td><td>□ Pass □ Failed □ Rolled back</td></tr><tr><td>SportsBB</td><td></td><td></td><td>□ Accepted □ Further action</td></tr><tr><td>LOC</td><td></td><td></td><td>□ Smoke test accepted</td></tr></tbody></table></section>
+</main><footer>SportsBB GameDay · Production Update Runbook · Application e98125c · Manuals 6201829 · Synced 1 August 2026</footer></body></html>
