@@ -252,10 +252,14 @@ export async function buildNwcSubmissionWorkbook(
     ['Generated', data.generatedAt.toISOString()],
     ['Competition timezone', data.tournament.timezone],
     ['Delegations', data.delegations.length],
-    ['People', data.people.length],
+    ['Roster people', data.people.length],
     [
       'Purpose',
       'Authorised LOC operational copy for preparing the Netball World Cup submission.',
+    ],
+    [
+      'Roster coverage',
+      'Full roster for every included delegation: active players, reserves, and all team officials recorded in the platform.',
     ],
     [
       'Data minimisation',
@@ -401,7 +405,7 @@ export async function buildNwcSubmissionWorkbook(
       {
         name: 'xl/workbook.xml',
         data: utf8(
-          `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Read me" sheetId="1" r:id="rId1"/><sheet name="Delegations" sheetId="2" r:id="rId2"/><sheet name="People" sheetId="3" r:id="rId3"/></sheets></workbook>`,
+          `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Read me" sheetId="1" r:id="rId1"/><sheet name="Delegations" sheetId="2" r:id="rId2"/><sheet name="Full Team Roster" sheetId="3" r:id="rId3"/></sheets></workbook>`,
         ),
       },
       {

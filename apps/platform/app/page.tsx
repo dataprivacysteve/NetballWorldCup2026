@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   api,
+  ApiError,
   type AuditEvent,
   type AccreditedDelegation,
   type AdminMatch,
@@ -296,6 +297,16 @@ function BrandMark({
 
 function ErrorBanner({ error }: { error: unknown }) {
   if (!error) return null;
+  const problems =
+    error instanceof ApiError &&
+    typeof error.payload === "object" &&
+    error.payload !== null &&
+    "problems" in error.payload &&
+    Array.isArray((error.payload as { problems: unknown }).problems)
+      ? (error.payload as { problems: unknown[] }).problems.filter(
+          (problem): problem is string => typeof problem === "string",
+        )
+      : [];
   return (
     <div
       role="alert"
@@ -305,6 +316,16 @@ function ErrorBanner({ error }: { error: unknown }) {
       <div>
         <p className="font-semibold">This action could not be completed</p>
         <p className="mt-0.5 text-ink-soft">{(error as Error).message}</p>
+        {problems.length > 0 && (
+          <div className="mt-3 text-ink-soft">
+            <p className="font-semibold">Requirements still to resolve:</p>
+            <ul className="mt-1 list-disc space-y-1 pl-5">
+              {problems.map((problem, index) => (
+                <li key={`${index}-${problem}`}>{problem}</li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1251,9 +1272,11 @@ function Settings() {
                 Netball World Cup submission
               </h2>
               <p className="mt-1 text-sm leading-6 text-ink-soft">
-                Download submitted delegation and roster information as an Excel
-                workbook. Identity files, credential tokens, internal IDs, and LOC
-                review notes are excluded. Every export is recorded below.
+                Download the complete team roster for every submitted
+                delegation as an Excel workbook, including active players,
+                reserves, and all team officials. Identity files, credential
+                tokens, internal IDs, and LOC review notes are excluded. Every
+                export is recorded below.
               </p>
               <p className="mt-2 text-xs font-semibold leading-5 text-warn">
                 Contains personal data. Keep it encrypted, use only the approved

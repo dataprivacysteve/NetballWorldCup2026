@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>NWC Excel Export &amp; Accreditation Guidance — Staff Implementation Guide</title>
+  <style>
+    :root{--navy:#11183f;--navy2:#202b70;--gold:#efc94f;--ink:#171b34;--muted:#68708c;--paper:#f7f5ef;--white:#fff;--line:#dedfe8;--ok:#18794e;--warn:#976800;--bad:#b42318;--info:#2858b8;--code:#0c1028}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.62 Inter,Segoe UI,Arial,sans-serif}header{background:linear-gradient(135deg,var(--navy),#272052);color:white;padding:58px 24px;border-bottom:5px solid var(--gold)}
+    .wrap{max-width:1120px;margin:auto}.eyebrow{font:700 12px/1.2 ui-monospace,Consolas,monospace;letter-spacing:.18em;text-transform:uppercase;color:var(--gold)}h1{font:800 clamp(34px,5vw,58px)/1.05 Georgia,serif;margin:.3em 0}.lede{max-width:850px;color:#d8daeb;font-size:18px}.meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}.tag{display:inline-block;border-radius:999px;padding:5px 11px;background:#eef0fa;color:var(--navy2);font-size:12px;font-weight:800}.meta .tag{background:rgba(255,255,255,.1);color:white;border:1px solid rgba(255,255,255,.15)}
+    main{padding:28px 20px 72px}.card{background:white;border:1px solid var(--line);border-radius:18px;padding:26px;margin:18px 0;box-shadow:0 8px 25px rgba(17,24,63,.06)}h2{font:800 28px/1.2 Georgia,serif;color:var(--navy);margin:0 0 14px}h3{color:var(--navy2);margin:25px 0 8px}.step{display:grid;grid-template-columns:48px 1fr;gap:16px}.num{width:42px;height:42px;border-radius:12px;background:var(--navy2);color:white;display:grid;place-items:center;font-weight:800}.callout{border-left:5px solid var(--gold);background:#fff9df;padding:15px 18px;border-radius:8px;margin:15px 0}.danger{border-color:var(--bad);background:#fff0ee}.success{border-color:var(--ok);background:#ebf8f1}.info{border-color:var(--info);background:#eef4ff}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.mini{border:1px solid var(--line);border-radius:14px;padding:17px;background:#fcfcfa}.mini h3{margin:0 0 6px}.flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:18px 0}.flow div{position:relative;border:1px solid var(--line);border-radius:13px;background:#fafafe;padding:16px;text-align:center;font-weight:700;color:var(--navy)}.flow div:not(:last-child):after{content:'→';position:absolute;right:-12px;top:34%;z-index:2;color:var(--gold);font-size:22px}
+    pre{background:var(--code);color:#edf0ff;border-radius:12px;padding:18px;overflow:auto;font:13px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap}code{font-family:ui-monospace,Consolas,monospace}.checklist{list-style:none;padding:0}.checklist li{padding:8px 0 8px 30px;position:relative;border-bottom:1px solid #eee}.checklist li:before{content:'✓';position:absolute;left:4px;color:var(--ok);font-weight:900}table{width:100%;border-collapse:collapse;margin:12px 0}th,td{padding:11px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#f0efe8;color:var(--navy);font-size:13px;text-transform:uppercase;letter-spacing:.06em}.toc a{color:var(--navy2);text-decoration:none}.toc li{margin:7px 0}.status{font-weight:800;color:var(--ok)}footer{text-align:center;color:var(--muted);padding:28px}.small{font-size:13px;color:var(--muted)}
+    @media(max-width:760px){.grid,.flow{grid-template-columns:1fr}.flow div:not(:last-child):after{content:'↓';right:auto;left:48%;top:auto;bottom:-20px}.step{grid-template-columns:1fr}.num{margin-bottom:-5px}}@media print{body{background:white}.card{box-shadow:none;break-inside:avoid}header{padding:30px}.no-print{display:none}a{color:inherit;text-decoration:none}}
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="eyebrow">Netball Americas · GameDay LOC Operations</div>
+    <h1>NWC Excel Export &amp; Accreditation Guidance</h1>
+    <p class="lede">Implementation, deployment and staff operations guide for the protected Netball World Cup roster workbook and the detailed accreditation-requirement notices.</p>
+    <div class="meta"><span class="tag">LOC only</span><span class="tag">Personal data</span><span class="tag">Excel .xlsx</span><span class="tag">Audited export</span><span class="tag">No database migration</span></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="card toc">
+    <h2>Outcome and navigation</h2>
+    <p>This release gives authorised LOC staff a complete operational roster workbook and removes guesswork when a team cannot be finally accredited. It does not expose the export to SportsBB administrators, team accounts or GameDay officials.</p>
+    <ol>
+      <li><a href="#change">What changed</a></li>
+      <li><a href="#roles">Access and authority</a></li>
+      <li><a href="#operate">Staff export procedure</a></li>
+      <li><a href="#workbook">Workbook contents</a></li>
+      <li><a href="#accreditation">Accreditation guidance</a></li>
+      <li><a href="#protection">Data-protection procedure</a></li>
+      <li><a href="#implementation">Technical implementation</a></li>
+      <li><a href="#deploy">Production deployment</a></li>
+      <li><a href="#acceptance">Acceptance testing</a></li>
+      <li><a href="#rollback">Rollback and support</a></li>
+    </ol>
+  </section>
+
+  <section class="card" id="change">
+    <h2>1. What changed</h2>
+    <div class="grid">
+      <div class="mini"><h3>Complete roster workbook</h3><p>The workbook contains every recorded active player, reserve and team official for every delegation whose registration has been submitted.</p></div>
+      <div class="mini"><h3>Clear worksheet naming</h3><p>The roster worksheet is named <strong>Full Team Roster</strong>, making its purpose clear to operational staff and NWC submission preparers.</p></div>
+      <div class="mini"><h3>Detailed failure reasons</h3><p>When final accreditation fails, the LOC notice lists each missing roster requirement returned by the server instead of showing only a generic message.</p></div>
+      <div class="mini"><h3>Protected and audited</h3><p>The endpoint remains LOC-only. Each successful export records the actor, timestamp, format, delegation count and person count in the LOC audit history.</p></div>
+    </div>
+    <div class="callout success"><strong>No schema change is required.</strong> This release changes application logic, workbook presentation and the LOC interface only.</div>
+  </section>
+
+  <section class="card" id="roles">
+    <h2>2. Access and authority</h2>
+    <table>
+      <tr><th>Account</th><th>Area</th><th>Excel export</th></tr>
+      <tr><td>LOC officer</td><td>Operations console at <code>/</code></td><td class="status">Permitted</td></tr>
+      <tr><td>SportsBB administrator</td><td>Tournament control plane at <code>/control</code></td><td>Not permitted</td></tr>
+      <tr><td>Team delegation account</td><td>Teams portal</td><td>Not permitted</td></tr>
+      <tr><td>GameDay official</td><td>Assigned match console</td><td>Not permitted</td></tr>
+    </table>
+    <div class="callout info"><strong>If the header says “SportsBB control plane,” the Excel control will not appear.</strong> Sign out and use the authorised LOC officer account at the main platform address.</div>
+    <p><strong>Local testing:</strong> <code>https://platform.netballamericas.test</code><br><strong>Production:</strong> <code>https://platform.netballamericas.org</code></p>
+  </section>
+
+  <section class="card" id="operate">
+    <div class="step"><div class="num">3</div><div>
+      <h2>Staff export procedure</h2>
+      <ol>
+        <li>Sign in to the main platform with the authorised LOC officer account.</li>
+        <li>Select <strong>Settings</strong> in the Operations console navigation.</li>
+        <li>Find the <strong>Netball World Cup submission</strong> panel.</li>
+        <li>Select <strong>Export NWC submission</strong>.</li>
+        <li>Read the personal-data warning and continue only if the destination is approved and secure.</li>
+        <li>Confirm that a file named like <code>nwc-submission-YYYY-MM-DD.xlsx</code> downloads.</li>
+        <li>Open the workbook and verify the <strong>Delegations</strong> and <strong>Full Team Roster</strong> totals before submission.</li>
+        <li>Record the secure storage location and responsible staff member under the organisation’s handling procedure.</li>
+      </ol>
+      <div class="callout danger"><strong>Do not download to a shared desktop, personal cloud drive, public folder or unmanaged USB device.</strong> The workbook contains names, dates of birth, contact information, biographies and operational verification statuses.</div>
+    </div></div>
+  </section>
+
+  <section class="card" id="workbook">
+    <h2>4. Workbook contents</h2>
+    <table>
+      <tr><th>Worksheet</th><th>Purpose</th><th>Main content</th></tr>
+      <tr><td>Read me</td><td>Context and handling notice</td><td>Tournament, generation timestamp, totals, authorised purpose, security and recovery notes.</td></tr>
+      <tr><td>Delegations</td><td>One row per submitted delegation</td><td>Association, delegation contacts, travel information, registration and roster statuses, accreditation date and roster count.</td></tr>
+      <tr><td>Full Team Roster</td><td>Complete roster across included teams</td><td>Active players, reserves and all officials, with submitted role, eligibility, consent, verification and credential fields.</td></tr>
+    </table>
+    <h3>Full Team Roster columns</h3>
+    <p>Country code, delegation, first name, middle names, last name, date of birth, nationality, category, roster type, official role, other official title, playing position or role, jersey number, captain, Head of Delegation, bench eligibility, nationality match, eligibility confirmation and reference, biography, consent status, identity-verification status, LOC person-review status and credential status.</p>
+    <h3>Deliberately excluded</h3>
+    <ul>
+      <li>Internal database identifiers.</li>
+      <li>Identity-document files and object-storage locations.</li>
+      <li>Credential QR tokens and authentication secrets.</li>
+      <li>LOC review notes that are not required for the NWC submission.</li>
+    </ul>
+    <div class="callout"><strong>Coverage rule:</strong> the export includes submitted delegations and every roster person recorded for them, regardless of whether that person is pending, verified, returned or already credentialled.</div>
+  </section>
+
+  <section class="card" id="accreditation">
+    <h2>5. Accreditation guidance: no more guessing</h2>
+    <p>The green <strong>approved</strong> count records individual LOC decisions. Final team accreditation also evaluates the complete roster structure. These are separate controls.</p>
+    <div class="flow"><div>Person records complete</div><div>Individual LOC verification</div><div>Team-wide roster rules</div><div>Final accreditation</div></div>
+    <h3>Team-wide rules checked at finalisation</h3>
+    <ul>
+      <li>Active-player minimum and maximum.</li>
+      <li>Reserve and bench limits.</li>
+      <li>Required official roles: team manager, coach and primary care.</li>
+      <li>One designated Head of Delegation or delegate.</li>
+      <li>Biography, nationality, player type and eligibility declarations.</li>
+      <li>Required photograph, guardian consent and verified identity outcome.</li>
+    </ul>
+    <div class="callout info"><strong>New behaviour:</strong> if finalisation fails, the notice displays <em>Requirements still to resolve</em> followed by every server-returned reason. Staff can now return the exact corrections to the delegation.</div>
+    <h3>Worked example: Jamaica test record</h3>
+    <p>The local Jamaica record has 12 individually verified people and satisfies its player, photograph, identity and minor-consent checks. Finalisation is still blocked because the roster has only a coach and does not contain:</p>
+    <ul><li>a team manager;</li><li>a primary-care official; and</li><li>a designated Head of Delegation or delegate.</li></ul>
+    <p>The detailed notice now states those missing requirements directly.</p>
+  </section>
+
+  <section class="card" id="protection">
+    <h2>6. Data-protection and continuity procedure</h2>
+    <div class="grid">
+      <div class="mini"><h3>Before export</h3><ul><li>Confirm an NWC submission or approved continuity purpose.</li><li>Confirm an encrypted destination.</li><li>Limit the operator to authorised LOC staff.</li></ul></div>
+      <div class="mini"><h3>After export</h3><ul><li>Verify counts before transmitting.</li><li>Use only the approved NWC submission channel.</li><li>Delete unnecessary working copies under the retention schedule.</li></ul></div>
+    </div>
+    <div class="callout danger"><strong>The workbook is not a replacement for platform backup and recovery.</strong> Continue encrypted PostgreSQL backups, object-storage backups and tested restoration exercises. Excel is an operational continuity copy and submission aid.</div>
+    <p>If an exported workbook is misplaced, shared with the wrong recipient or stored in an unapproved location, stop further distribution and follow the organisation’s data-incident escalation procedure immediately.</p>
+  </section>
+
+  <section class="card" id="implementation">
+    <h2>7. Technical implementation map</h2>
+    <table>
+      <tr><th>Component</th><th>Responsibility</th></tr>
+      <tr><td><code>apps/api/src/admin/admin.controller.ts</code></td><td>Exposes <code>GET /admin/exports/nwc-submission.xlsx</code> under authentication and the LOC officer guard.</td></tr>
+      <tr><td><code>apps/api/src/admin/admin.service.ts</code></td><td>Loads submitted delegations and all associated roster people, builds data-minimised status maps, and records the audit event.</td></tr>
+      <tr><td><code>apps/api/src/admin/nwc-submission-export.ts</code></td><td>Builds the Open XML workbook with Read me, Delegations and Full Team Roster worksheets.</td></tr>
+      <tr><td><code>apps/api/src/admin/nwc-submission-export.spec.ts</code></td><td>Verifies active-player, reserve and team-official rows, worksheet structure, XML safety and removal of internal IDs.</td></tr>
+      <tr><td><code>apps/platform/app/lib/api.ts</code></td><td>Downloads the protected binary response using the authenticated session.</td></tr>
+      <tr><td><code>apps/platform/app/page.tsx</code></td><td>Displays the Settings export panel and renders structured accreditation failure reasons.</td></tr>
+    </table>
+    <h3>Security controls</h3>
+    <ul><li>HTTP-only secure session cookie.</li><li>LOC officer role enforcement at the API, not only in the interface.</li><li>Binary download with a server-supplied filename.</li><li>Data minimisation at workbook construction.</li><li>Append-only LOC audit event: <code>nwc_submission.exported</code>.</li></ul>
+  </section>
+
+  <section class="card" id="deploy">
+    <div class="step"><div class="num">8</div><div>
+      <h2>Production deployment</h2>
+      <p>Use the approved production runbook and deployment account. The commands below show the release-specific application steps; substitute the production paths and service names already configured on the server.</p>
+      <h3>Preflight and rollback point</h3>
+      <pre>cd /var/www/clients/client0/web6/web/gameday/source
+git status --short
+git branch --show-current
+export RELEASE_BEFORE=$(git rev-parse HEAD)
+echo "Rollback commit: $RELEASE_BEFORE"</pre>
+      <div class="callout danger"><strong>Stop if production contains unreviewed source changes.</strong> Preserve and investigate them. Do not use <code>git reset --hard</code>.</div>
+      <h3>Pull and verify</h3>
+      <pre>git fetch origin
+git pull --ff-only origin main
+git log -1 --oneline</pre>
+      <h3>Build affected applications</h3>
+      <pre>pnpm install --frozen-lockfile
+pnpm --filter api build
+pnpm --filter platform build</pre>
+      <h3>Restart affected services</h3>
+      <pre>supervisorctl restart gameday-api gameday-platform
+sleep 8
+supervisorctl status gameday-api gameday-platform
+ss -lntp | grep -E ':3000|:3003'</pre>
+      <div class="callout success"><strong>No database migration command is required for this release.</strong></div>
+    </div></div>
+  </section>
+
+  <section class="card" id="acceptance">
+    <h2>9. Release acceptance checklist</h2>
+    <ul class="checklist">
+      <li>API and platform builds complete successfully.</li>
+      <li>Unauthenticated export request returns HTTP 401.</li>
+      <li>SportsBB administrator cannot access the export endpoint.</li>
+      <li>LOC officer can see Settings → Netball World Cup submission.</li>
+      <li>Confirmation warning appears before download.</li>
+      <li>Downloaded file opens in Excel without repair warnings.</li>
+      <li>Workbook contains Read me, Delegations and Full Team Roster.</li>
+      <li>Active players, reserves and officials all appear.</li>
+      <li>Workbook contains no identity files, credential tokens or internal IDs.</li>
+      <li>Audit history records the successful export.</li>
+      <li>Failed final accreditation lists each unmet requirement.</li>
+      <li>Successful accreditation behaviour remains unchanged.</li>
+    </ul>
+    <h3>Automated verification</h3>
+    <pre>pnpm --filter api exec jest nwc-submission-export.spec.ts --runInBand
+pnpm --filter api build
+pnpm --filter platform exec tsc --noEmit
+pnpm --filter platform exec eslint app/page.tsx app/lib/api.ts</pre>
+  </section>
+
+  <section class="card" id="rollback">
+    <h2>10. Rollback and support</h2>
+    <p>This release has no migration, so rollback is application-only.</p>
+    <pre>cd /var/www/clients/client0/web6/web/gameday/source
+git switch --detach "$RELEASE_BEFORE"
+pnpm install --frozen-lockfile
+pnpm --filter api build
+pnpm --filter platform build
+supervisorctl restart gameday-api gameday-platform</pre>
+    <div class="callout info"><strong>After an emergency rollback, do not leave production detached indefinitely.</strong> Record the incident and restore the approved deployment branch under technical supervision.</div>
+    <h3>First-response decision table</h3>
+    <table>
+      <tr><th>Symptom</th><th>First check</th></tr>
+      <tr><td>Excel button missing</td><td>Confirm the session is LOC officer and the user is in the main Operations console, not <code>/control</code>.</td></tr>
+      <tr><td>Download returns 401</td><td>Sign in again through the secure platform domain; confirm session-cookie and API-domain configuration.</td></tr>
+      <tr><td>Download returns 403</td><td>Confirm the account has <code>loc_officer</code> authority.</td></tr>
+      <tr><td>Roster count seems low</td><td>Compare the Delegations count with Full Team Roster rows and confirm the team registration was submitted.</td></tr>
+      <tr><td>Final accreditation blocked</td><td>Read every item under Requirements still to resolve and return those exact corrections to the team.</td></tr>
+      <tr><td>Workbook will not open</td><td>Preserve the file, record the export timestamp, and escalate without emailing the personal-data file casually.</td></tr>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>Staff sign-off</h2>
+    <table><tr><th>Role</th><th>Name</th><th>Date</th><th>Result</th></tr><tr><td>Technical deployment</td><td></td><td></td><td></td></tr><tr><td>LOC acceptance</td><td></td><td></td><td></td></tr><tr><td>Data-protection review</td><td></td><td></td><td></td></tr></table>
+    <p class="small">Document owner: SportsBB / Netball Americas GameDay Operations. Review this guide whenever workbook fields, LOC authority, production service names or the NWC submission process changes.</p>
+  </section>
+</main>
+
+<footer>SportsBB GameDay · NWC Excel Export &amp; Accreditation Guidance · Staff Implementation Guide</footer>
+</body>
+</html>
