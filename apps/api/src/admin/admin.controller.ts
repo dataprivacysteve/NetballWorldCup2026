@@ -168,6 +168,25 @@ export class AdminController {
     return this.admin.auditHistory();
   }
 
+  @Get('exports/nwc-submission.xlsx')
+  @Header('Cache-Control', 'private, no-store')
+  async exportNwcSubmission(
+    @Req() req: Request & { user: { userId: string } },
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const exportFile = await this.admin.exportNwcSubmission(req.user.userId);
+    res.set(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.set(
+      'Content-Disposition',
+      `attachment; filename="${exportFile.filename}"`,
+    );
+    res.set('X-Content-Type-Options', 'nosniff');
+    return new StreamableFile(exportFile.buffer);
+  }
+
   // --- Media ---
   @Get('players/:id/photo/image')
   @Header('Cache-Control', 'no-store')

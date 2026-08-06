@@ -57,6 +57,43 @@ async function req<T>(
   return data as T;
 }
 
+async function download(
+  path: string,
+  fallbackFilename: string,
+): Promise<string> {
+  const res = await fetch(`${BASE}${path}`, {
+    credentials: "include",
+    signal: AbortSignal.timeout(60_000),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    let payload: unknown = text;
+    try {
+      payload = text ? JSON.parse(text) : null;
+    } catch {
+      // Keep the response text for a useful ApiError message.
+    }
+    throw new ApiError(res.status, payload);
+  }
+
+  const disposition = res.headers.get("content-disposition") ?? "";
+  const filename =
+    disposition.match(/filename="?([^";]+)"?/i)?.[1] ?? fallbackFilename;
+  const objectUrl = URL.createObjectURL(await res.blob());
+  try {
+    const anchor = document.createElement("a");
+    anchor.href = objectUrl;
+    anchor.download = filename;
+    anchor.rel = "noopener";
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+  return filename;
+}
+
 export type Me = {
   user: {
     email: string;
@@ -523,6 +560,8 @@ export const api = {
       body: { closesAt },
     }),
   auditHistory: () => req<AuditEvent[]>("/admin/audit"),
+  downloadNwcSubmission: () =>
+    download("/admin/exports/nwc-submission.xlsx", "nwc-submission.xlsx"),
 
   // SportsBB control plane (separate from the LOC officer authority).
   launchConfiguration: () =>
