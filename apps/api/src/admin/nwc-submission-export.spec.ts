@@ -19,7 +19,7 @@ function storedZipEntries(buffer: Buffer): Map<string, string> {
 }
 
 describe('buildNwcSubmissionWorkbook', () => {
-  it('creates a minimised Open XML workbook without internal identifiers', async () => {
+  it('creates a minimised workbook containing the complete team roster', async () => {
     const buffer = await buildNwcSubmissionWorkbook({
       tournament: {
         name: 'Americas Qualifier 2026',
@@ -79,6 +79,56 @@ describe('buildNwcSubmissionWorkbook', () => {
           locReviewStatus: 'verified',
           credentialStatus: 'not issued',
         },
+        {
+          delegationId: 'internal-delegation-id',
+          firstName: 'Riley',
+          middleNames: null,
+          lastName: 'Reserve',
+          nationality: 'BRB',
+          category: 'player',
+          rosterType: 'reserve',
+          officialRole: null,
+          otherOfficialTitle: null,
+          role: 'WD',
+          jerseyNumber: 12,
+          isCaptain: false,
+          dateOfBirth: '2002-04-05',
+          isHeadOfDelegation: false,
+          benchEligible: true,
+          nationalityMatchesTeam: true,
+          eligibilityConfirmed: true,
+          eligibilityReference: null,
+          biography: 'Reserve biography',
+          consentStatus: 'player',
+          identityStatus: 'verified',
+          locReviewStatus: 'pending',
+          credentialStatus: 'not issued',
+        },
+        {
+          delegationId: 'internal-delegation-id',
+          firstName: 'Morgan',
+          middleNames: null,
+          lastName: 'Manager',
+          nationality: 'BRB',
+          category: 'official',
+          rosterType: null,
+          officialRole: 'team_manager',
+          otherOfficialTitle: null,
+          role: 'Team manager',
+          jerseyNumber: null,
+          isCaptain: false,
+          dateOfBirth: '1980-06-07',
+          isHeadOfDelegation: true,
+          benchEligible: true,
+          nationalityMatchesTeam: true,
+          eligibilityConfirmed: true,
+          eligibilityReference: null,
+          biography: 'Team manager biography',
+          consentStatus: 'player',
+          identityStatus: 'not recorded',
+          locReviewStatus: 'verified',
+          credentialStatus: 'not issued',
+        },
       ],
     });
 
@@ -95,8 +145,17 @@ describe('buildNwcSubmissionWorkbook', () => {
       ]),
     );
     expect(entries.get('xl/workbook.xml')).toContain('name="Delegations"');
-    expect(entries.get('xl/worksheets/sheet3.xml')).toContain('Casey &amp; Co');
-    expect(entries.get('xl/worksheets/sheet3.xml')).not.toContain(
+    expect(entries.get('xl/workbook.xml')).toContain(
+      'name="Full Team Roster"',
+    );
+    const rosterSheet = entries.get('xl/worksheets/sheet3.xml');
+    expect(rosterSheet).toContain('Casey &amp; Co');
+    expect(rosterSheet).toContain('Riley');
+    expect(rosterSheet).toContain('Reserve');
+    expect(rosterSheet).toContain('Morgan');
+    expect(rosterSheet).toContain('Manager');
+    expect(rosterSheet).toContain('team_manager');
+    expect(rosterSheet).not.toContain(
       'internal-delegation-id',
     );
     expect(buffer.readUInt32LE(buffer.length - 22)).toBe(0x06054b50);
