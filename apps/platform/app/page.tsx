@@ -1156,6 +1156,7 @@ function Settings() {
   const [error, setError] = useState<unknown>(null);
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [exportBusy, setExportBusy] = useState(false);
   const [audit, setAudit] = useState<AuditEvent[] | null>(null);
 
   useEffect(() => {
@@ -1201,6 +1202,25 @@ function Settings() {
     }
   }
 
+  async function exportNwcSubmission() {
+    const confirmed = window.confirm(
+      "This Excel workbook contains personal data. Download it only to an approved secure location for the Netball World Cup submission. Continue?",
+    );
+    if (!confirmed) return;
+    setExportBusy(true);
+    setError(null);
+    setNote(null);
+    try {
+      const filename = await api.downloadNwcSubmission();
+      setNote(`${filename} downloaded. Store and share it securely.`);
+      setAudit(await api.auditHistory());
+    } catch (e) {
+      setError(e);
+    } finally {
+      setExportBusy(false);
+    }
+  }
+
   const closed = win ? !win.open : false;
 
   return (
@@ -1220,6 +1240,38 @@ function Settings() {
           <span className="font-semibold">{note}</span>
         </div>
       )}
+      <div className={`${panel} mb-6 p-5 sm:p-6`}>
+        <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
+          <div className="flex max-w-3xl items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gold-soft text-navy">
+              <Icon name="shield" className="h-5 w-5" />
+            </span>
+            <div>
+              <h2 className="font-display text-lg font-bold text-ink">
+                Netball World Cup submission
+              </h2>
+              <p className="mt-1 text-sm leading-6 text-ink-soft">
+                Download submitted delegation and roster information as an Excel
+                workbook. Identity files, credential tokens, internal IDs, and LOC
+                review notes are excluded. Every export is recorded below.
+              </p>
+              <p className="mt-2 text-xs font-semibold leading-5 text-warn">
+                Contains personal data. Keep it encrypted, use only the approved
+                NWC submission channel, and delete working copies when no longer
+                required.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={exportNwcSubmission}
+            disabled={exportBusy}
+            className={`${btnGold} w-full shrink-0 sm:w-auto`}
+          >
+            {exportBusy ? "Preparing secure export…" : "Export NWC submission"}
+          </button>
+        </div>
+      </div>
       <div className="grid gap-6 xl:grid-cols-[minmax(0,0.8fr)_minmax(420px,1.2fr)]">
         <div className={`${panel} self-start p-5 sm:p-6`}>
           <div className="flex items-center justify-between">

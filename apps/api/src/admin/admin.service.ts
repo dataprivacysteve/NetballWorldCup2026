@@ -15,12 +15,13 @@ import {
 } from '@aws-sdk/client-s3';
 import { Pool } from 'pg';
 import { drizzle, NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { asc, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm';
 import { PRIVILEGED_POOL } from '../db/db.tokens';
 import * as schema from '../db/schema';
 import { isMinor } from '../teams/age';
 import { rosterSubmissionProblems } from '../teams/roster-rules';
 import type { OfflineScanEventDto } from './admin.dto';
+import { buildNwcSubmissionWorkbook } from './nwc-submission-export';
 
 // STOPGAP OC admin / committee. Runs on the privileged (superuser) pool, which
 // bypasses RLS — the only way the app acts across all delegations today. The
@@ -781,6 +782,162 @@ export class AdminService {
     return [...locEvents, ...teamEvents]
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
       .slice(0, 500);
+  }
+
+  async exportNwcSubmission(actorUserId: string) {
+    const [event] = await this.db.select().from(schema.tournament).limit(1);
+    if (!event) throw new NotFoundException('No tournament is configured');
+
+    const delegations = await this.db
+      .select()
+      .from(schema.delegation)
+      .where(
+        and(
+          eq(schema.delegation.tournamentId, event.id),
+          isNotNull(schema.delegation.registrationSubmittedAt),
+        ),
+      )
+      .orderBy(asc(schema.delegation.name));
+    const delegationIds = delegations.map((delegation) => delegation.id);
+
+    const [people, consents, identities, reviews, credentials] =
+      delegationIds.length === 0
+        ? [[], [], [], [], []]
+        : await Promise.all([
+            this.db
+              .select()
+              .from(schema.player)
+              .where(inArray(schema.player.delegationId, delegationIds))
+              .orderBy(
+                asc(schema.player.delegationId),
+                asc(schema.player.lastName),
+                asc(schema.player.firstName),
+              ),
+            this.db
+              .select()
+              .from(schema.consentRecord)
+              .where(inArray(schema.consentRecord.delegationId, delegationIds)),
+            this.db
+              .select()
+              .from(schema.identityDocument)
+              .where(
+                inArray(schema.identityDocument.delegationId, delegationIds),
+              ),
+            this.db
+              .select()
+              .from(schema.personAccreditationReview)
+              .where(
+                inArray(
+                  schema.personAccreditationReview.delegationId,
+                  delegationIds,
+                ),
+              ),
+            this.db
+              .select()
+              .from(schema.credential)
+              .where(inArray(schema.credential.delegationId, delegationIds)),
+          ]);
+
+    const consentByPlayer = new Map<string, string>();
+    for (const consent of consents) {
+      if (consent.consentGiven)
+        consentByPlayer.set(consent.playerId, consent.type);
+    }
+    const identityByPlayer = new Map(
+      identities.map((identity) => [identity.playerId, identity.status]),
+    );
+    const reviewByPlayer = new Map(
+      reviews.map((review) => [review.playerId, review.status]),
+    );
+    const credentialByPlayer = new Map<string, string>();
+    for (const credential of credentials.sort(
+      (a, b) => b.issuedAt.getTime() - a.issuedAt.getTime(),
+    )) {
+      if (
+        !credentialByPlayer.has(credential.playerId) ||
+        credential.status === 'issued'
+      ) {
+        credentialByPlayer.set(credential.playerId, credential.status);
+      }
+    }
+
+    const generatedAt = new Date();
+    const buffer = await buildNwcSubmissionWorkbook({
+      tournament: {
+        name: event.name,
+        shortName: event.shortName,
+        timezone: event.timezone,
+        startsOn: event.startsOn,
+        endsOn: event.endsOn,
+      },
+      generatedAt,
+      delegations: delegations.map((delegation) => ({
+        id: delegation.id,
+        countryCode: delegation.countryCode,
+        name: delegation.name,
+        associationName: delegation.associationName,
+        headOfDelegation: delegation.headOfDelegation,
+        headCoach: delegation.headCoach,
+        contactName: delegation.contactName,
+        contactEmail: delegation.contactEmail,
+        contactPhone: delegation.contactPhone,
+        contactRoleTitle: delegation.contactRoleTitle,
+        expectedSquadSize: delegation.expectedSquadSize,
+        travellingParty: delegation.travellingParty,
+        arrivalDate: delegation.arrivalDate,
+        departureDate: delegation.departureDate,
+        dpaConsent: delegation.dpaConsent,
+        registrationStatus: delegation.registrationStatus,
+        registrationSubmittedAt: delegation.registrationSubmittedAt,
+        rosterStatus: delegation.status,
+        rosterSubmittedAt: delegation.submittedAt,
+        accreditedAt: delegation.accreditedAt,
+      })),
+      people: people.map((person) => ({
+        delegationId: person.delegationId,
+        firstName: person.firstName,
+        middleNames: person.middleNames,
+        lastName: person.lastName,
+        nationality: person.nationality,
+        category: person.category,
+        rosterType: person.rosterType,
+        officialRole: person.officialRole,
+        otherOfficialTitle: person.otherOfficialTitle,
+        role: person.role,
+        jerseyNumber: person.jerseyNumber,
+        isCaptain: person.isCaptain,
+        dateOfBirth: person.dateOfBirth,
+        isHeadOfDelegation: person.isHeadOfDelegation,
+        benchEligible: person.benchEligible,
+        nationalityMatchesTeam: person.nationalityMatchesTeam,
+        eligibilityConfirmed: person.eligibilityConfirmed,
+        eligibilityReference: person.eligibilityReference,
+        biography: person.biography,
+        consentStatus: consentByPlayer.get(person.id) ?? 'not recorded',
+        identityStatus: identityByPlayer.get(person.id) ?? 'not recorded',
+        locReviewStatus: reviewByPlayer.get(person.id) ?? 'pending',
+        credentialStatus: credentialByPlayer.get(person.id) ?? 'not issued',
+      })),
+    });
+
+    await this.audit(
+      actorUserId,
+      'nwc_submission.exported',
+      'tournament',
+      event.id,
+      {
+        format: 'xlsx',
+        generatedAt: generatedAt.toISOString(),
+        delegations: delegations.length,
+        people: people.length,
+      },
+    );
+
+    const date = generatedAt.toISOString().slice(0, 10);
+    return {
+      buffer,
+      filename: `nwc-submission-${date}.xlsx`,
+    };
   }
 
   private audit(
