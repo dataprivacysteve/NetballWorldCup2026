@@ -33,6 +33,23 @@ const btnGhost =
   "enterprise-button inline-flex items-center justify-center gap-2 rounded-lg border border-line-strong bg-white px-4 py-2 text-sm font-semibold text-ink-soft hover:bg-bg-soft disabled:opacity-50";
 const panel = "enterprise-panel";
 
+const DELEGATION_TO_ISO_ALPHA3: Record<string, string> = {
+  BVI: "VGB",
+  SLU: "LCA",
+  SVG: "VCT",
+};
+
+function nationalityMatchesDelegation(
+  nationality: string,
+  delegationCountry: string,
+) {
+  const canonical = (code: string) => {
+    const normalized = code.trim().toUpperCase();
+    return DELEGATION_TO_ISO_ALPHA3[normalized] ?? normalized;
+  };
+  return canonical(nationality) === canonical(delegationCountry);
+}
+
 const CAT_CHIP: Record<Category, string> = {
   player: "bg-[rgba(244,196,48,0.18)] text-gold-deep",
   official: "bg-[rgba(27,42,107,0.12)] text-navy",
@@ -2154,8 +2171,10 @@ function AddPerson({
     setForm((f) => ({ ...f, [k]: v }));
   const isPlayer = form.category === "player";
   const isOfficial = form.category === "official";
-  const nationalityMatchesTeam =
-    form.nationality.trim().toUpperCase() === teamCountryCode.toUpperCase();
+  const nationalityMatchesTeam = nationalityMatchesDelegation(
+    form.nationality,
+    teamCountryCode,
+  );
 
   return (
     <form
@@ -2445,8 +2464,10 @@ function PersonEditor({
     setForm((current) => ({ ...current, [key]: value }));
   const isPlayer = person.category === "player";
   const isOfficial = person.category === "official";
-  const nationalityMatchesTeam =
-    form.nationality.trim().toUpperCase() === teamCountryCode.toUpperCase();
+  const nationalityMatchesTeam = nationalityMatchesDelegation(
+    form.nationality,
+    teamCountryCode,
+  );
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();

@@ -39,13 +39,19 @@ export class DelegationService {
         'Registration details can only be corrected after the LOC returns them',
       );
     }
+    const countryCode = dto.countryCode?.toUpperCase();
+    if (countryCode) {
+      const [eligible] = await db
+        .select({ code: schema.eligibleCountry.code })
+        .from(schema.eligibleCountry)
+        .where(eq(schema.eligibleCountry.code, countryCode));
+      if (!eligible) throw new BadRequestException('Unknown country code.');
+    }
     const [row] = await db
       .update(schema.delegation)
       .set({
         ...(dto.name !== undefined ? { name: dto.name } : {}),
-        ...(dto.countryCode !== undefined
-          ? { countryCode: dto.countryCode.toUpperCase() }
-          : {}),
+        ...(countryCode !== undefined ? { countryCode } : {}),
         ...(dto.associationName !== undefined
           ? { associationName: dto.associationName.trim() }
           : {}),

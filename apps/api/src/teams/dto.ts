@@ -6,6 +6,7 @@ import {
   IsEmail,
   IsIn,
   IsInt,
+  Length,
   IsOptional,
   IsString,
   Min,
@@ -16,8 +17,10 @@ import {
 const ISO_ALPHA3_CODES = Object.keys(countries.getAlpha3Codes());
 
 export class RegisterDelegationDto {
-  // Chosen from GET /eligible-countries.
-  @IsString() @IsIn(ISO_ALPHA3_CODES) countryCode!: string;
+  // Chosen from GET /eligible-countries. Tournament delegation codes are not
+  // always ISO alpha-3 codes (for example SVG represents ISO VCT), so the
+  // registration service validates this value against eligible_country.
+  @IsString() @Length(3, 3) countryCode!: string;
   @IsString() @MinLength(2) teamName!: string;
   @IsString() @MinLength(2) associationName!: string;
   @IsString() @MinLength(2) teamManager!: string;
@@ -41,7 +44,7 @@ export class RegisterDelegationDto {
 
 export class UpdateDelegationDto {
   @IsOptional() @IsString() @MinLength(2) name?: string;
-  @IsOptional() @IsString() @IsIn(ISO_ALPHA3_CODES) countryCode?: string;
+  @IsOptional() @IsString() @Length(3, 3) countryCode?: string;
   @IsOptional() @IsString() @MinLength(2) associationName?: string;
   @IsOptional() @IsString() @MinLength(2) headOfDelegation?: string;
   @IsOptional() @IsString() headCoach?: string;

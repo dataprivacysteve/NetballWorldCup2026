@@ -44,6 +44,12 @@ describe('roster rules', () => {
     expect(nationalityMatchesDelegation('JAM', 'BRB')).toBe(false);
   });
 
+  it('matches ISO nationality codes to tournament delegation aliases', () => {
+    expect(nationalityMatchesDelegation('VCT', 'SVG')).toBe(true);
+    expect(nationalityMatchesDelegation('LCA', 'SLU')).toBe(true);
+    expect(nationalityMatchesDelegation('VGB', 'BVI')).toBe(true);
+  });
+
   it('enforces active-player and reserve maxima while a roster is drafted', () => {
     const people = [
       ...Array.from({ length: 16 }, () => person({})),

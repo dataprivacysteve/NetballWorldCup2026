@@ -31,12 +31,26 @@ export interface RosterRulePerson {
 const personName = (p: RosterRulePerson) =>
   `${p.firstName} ${p.lastName}`.trim();
 
+// Tournament/team abbreviations occasionally differ from ISO alpha-3 codes,
+// which remain the required format for nationality and identity documents.
+const DELEGATION_TO_ISO_ALPHA3: Record<string, string> = {
+  BVI: 'VGB',
+  SLU: 'LCA',
+  SVG: 'VCT',
+};
+
+function canonicalCountryCode(code: string): string {
+  const normalized = code.trim().toUpperCase();
+  return DELEGATION_TO_ISO_ALPHA3[normalized] ?? normalized;
+}
+
 export function nationalityMatchesDelegation(
   nationality: string,
   delegationCountry: string,
 ): boolean {
   return (
-    nationality.trim().toUpperCase() === delegationCountry.trim().toUpperCase()
+    canonicalCountryCode(nationality) ===
+    canonicalCountryCode(delegationCountry)
   );
 }
 

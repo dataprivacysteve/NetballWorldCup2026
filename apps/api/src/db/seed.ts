@@ -15,6 +15,7 @@ const COUNTRIES = [
   ['JAM', 'Jamaica'],
   ['TTO', 'Trinidad & Tobago'],
   ['BRB', 'Barbados'],
+  ['SVG', 'Saint Vincent and the Grenadines'],
   ['LCA', 'Saint Lucia'],
   ['GUY', 'Guyana'],
   ['ARG', 'Argentina'],
