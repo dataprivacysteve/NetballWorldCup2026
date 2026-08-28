@@ -65,13 +65,6 @@ export class UpdateLaunchConfigurationDto {
   @Max(40)
   benchMaximum?: number;
   @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(700)
-  @Max(2000)
-  biographyMinimumCharacters?: number;
-
-  @IsOptional()
   @IsArray()
   @IsIn(OFFICIAL_ROLES, { each: true })
   requiredOfficialRoles?: string[];

@@ -3,7 +3,6 @@ export interface RosterRuleConfig {
   activePlayerMaximum: number;
   reserveMaximum: number;
   benchMaximum: number;
-  biographyMinimumCharacters: number;
   eligibilityDate: string | null;
   requiredOfficialRoles: string[];
   identityRequiredCategories: string[];
@@ -93,11 +92,6 @@ export function rosterDraftProblems(
 
   for (const person of people) {
     const name = personName(person);
-    if (person.biography.trim().length < config.biographyMinimumCharacters) {
-      problems.push(
-        `${name}: biography must contain at least ${config.biographyMinimumCharacters} characters.`,
-      );
-    }
     if (!person.nationality || person.nationality === 'UNK') {
       problems.push(`${name}: nationality is required.`);
     }

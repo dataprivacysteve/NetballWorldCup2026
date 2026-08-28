@@ -65,8 +65,6 @@ export class PlayerService {
         activePlayerMaximum: schema.tournament.activePlayerMaximum,
         reserveMaximum: schema.tournament.reserveMaximum,
         benchMaximum: schema.tournament.benchMaximum,
-        biographyMinimumCharacters:
-          schema.tournament.biographyMinimumCharacters,
         eligibilityDate: schema.tournament.eligibilityDate,
         requiredOfficialRoles: schema.tournament.requiredOfficialRoles,
         identityRequiredCategories:
@@ -151,14 +149,11 @@ export class PlayerService {
         p.category,
       );
       const dobReady = p.category !== 'player' || !!p.dateOfBirth;
-      const biographyReady =
-        p.biography.trim().length >= config.biographyMinimumCharacters;
       const verifiedIdentity = identityDocuments.some(
         (document) =>
           document.playerId === p.id && document.status === 'verified',
       );
       const ready =
-        biographyReady &&
         hasPhoto &&
         dobReady &&
         hasRequiredConsent &&
@@ -188,7 +183,6 @@ export class PlayerService {
         isMinor: minor,
         hasPhoto,
         dobRequired: p.category === 'player',
-        biographyReady,
         consentRequired,
         hasRequiredConsent,
         identityRequired,

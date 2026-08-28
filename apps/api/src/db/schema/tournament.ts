@@ -28,9 +28,6 @@ export const tournament = pgTable('tournament', {
   activePlayerMaximum: integer('active_player_maximum').notNull().default(15),
   reserveMaximum: integer('reserve_maximum').notNull().default(3),
   benchMaximum: integer('bench_maximum').notNull().default(17),
-  biographyMinimumCharacters: integer('biography_minimum_characters')
-    .notNull()
-    .default(700),
   requiredOfficialRoles: jsonb('required_official_roles')
     .$type<string[]>()
     .notNull()

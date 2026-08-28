@@ -78,7 +78,6 @@ export type RegistrationWindow = {
     activePlayerMaximum: number;
     reserveMaximum: number;
     benchMaximum: number;
-    biographyMinimumCharacters: number;
     requiredOfficialRoles: string[];
     identityRequiredCategories: string[];
     consentRequiredCategories: string[];
@@ -154,7 +153,6 @@ export type Person = {
   consentRequired: boolean;
   hasRequiredConsent: boolean;
   dobRequired: boolean;
-  biographyReady: boolean;
   isMinor: boolean;
   hasPhoto: boolean;
   ready: boolean;

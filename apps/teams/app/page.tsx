@@ -1965,7 +1965,6 @@ function Roster({
       {!locked && adding && (
         <AddPerson
           teamCountryCode={teamCountryCode}
-          biographyMinimum={policy?.biographyMinimumCharacters ?? 700}
           onAdded={() => {
             setAdding(false);
             onChanged();
@@ -2008,7 +2007,6 @@ function Roster({
             key={p.id}
             person={p}
             teamCountryCode={teamCountryCode}
-            biographyMinimum={policy?.biographyMinimumCharacters ?? 700}
             documentValidThrough={documentValidThrough}
             editable={!locked}
             onChanged={onChanged}
@@ -2040,13 +2038,11 @@ function Roster({
 
 function AddPerson({
   teamCountryCode,
-  biographyMinimum,
   onAdded,
   onCancel,
   onError,
 }: {
   teamCountryCode: string;
-  biographyMinimum: number;
   onAdded: () => void;
   onCancel: () => void;
   onError: (e: unknown) => void;
@@ -2319,12 +2315,10 @@ function AddPerson({
           className={inputCls}
           value={form.biography}
           onChange={(e) => set("biography", e.target.value)}
-          minLength={biographyMinimum}
           rows={3}
-          required
         />
         <span className="mt-1 block text-xs text-ink-muted">
-          {form.biography.length}/{biographyMinimum} minimum characters
+          Optional; there is no minimum length.
         </span>
       </label>
       <label className="flex items-center gap-2 text-sm text-ink-soft">
@@ -2428,14 +2422,12 @@ function AddPerson({
 function PersonEditor({
   person,
   teamCountryCode,
-  biographyMinimum,
   onSaved,
   onCancel,
   onError,
 }: {
   person: Person;
   teamCountryCode: string;
-  biographyMinimum: number;
   onSaved: () => void;
   onCancel: () => void;
   onError: (error: unknown) => void;
@@ -2630,13 +2622,11 @@ function PersonEditor({
         <textarea
           className={inputCls}
           rows={3}
-          minLength={biographyMinimum}
           value={form.biography}
           onChange={(event) => set("biography", event.target.value)}
-          required
         />
         <span className="mt-1 block text-xs text-ink-muted">
-          {form.biography.length}/{biographyMinimum} minimum characters
+          Optional; there is no minimum length.
         </span>
       </label>
       <label className="flex items-center gap-2 text-sm text-ink-soft">
@@ -2708,7 +2698,6 @@ function PersonEditor({
 function PersonCard({
   person,
   teamCountryCode,
-  biographyMinimum,
   documentValidThrough,
   editable,
   onChanged,
@@ -2716,7 +2705,6 @@ function PersonCard({
 }: {
   person: Person;
   teamCountryCode: string;
-  biographyMinimum: number;
   documentValidThrough: string | null;
   editable: boolean;
   onChanged: () => void;
@@ -2730,7 +2718,6 @@ function PersonCard({
   const [identity, setIdentity] = useState<IdentityStatus | null>(null);
   const [replacingIdentity, setReplacingIdentity] = useState(false);
   const teamSuppliedComplete =
-    person.biography.length >= biographyMinimum &&
     person.hasPhoto &&
     (!person.dobRequired || !!person.dateOfBirth) &&
     person.hasRequiredConsent &&
@@ -2914,7 +2901,6 @@ function PersonCard({
             <PersonEditor
               person={person}
               teamCountryCode={teamCountryCode}
-              biographyMinimum={biographyMinimum}
               onSaved={() => {
                 setEditing(false);
                 onChanged();
@@ -2963,7 +2949,6 @@ function PersonCard({
             <p className={labelCls}>Profile completion</p>
             <div className="mt-2 grid gap-2 text-sm sm:grid-cols-2">
               {[
-                [person.biography.length >= biographyMinimum, `Biography (${person.biography.length}/${biographyMinimum} characters)`],
                 [person.hasPhoto, "Profile photograph"],
                 [!person.dobRequired || !!person.dateOfBirth, "Date of birth"],
                 [person.hasRequiredConsent, person.consentRequired ? "Guardian consent" : "Consent not required"],
@@ -3502,15 +3487,6 @@ function Submit({
     {
       done: players.filter((p) => p.isHeadOfDelegation).length === 1,
       label: "One Head of Delegation/delegate designated",
-    },
-    {
-      done:
-        total > 0 &&
-        players.every(
-          (p) =>
-            p.biography.length >= (policy?.biographyMinimumCharacters ?? 700),
-        ),
-      label: `Every person has a biography of at least ${policy?.biographyMinimumCharacters ?? 700} characters`,
     },
     {
       done: total > 0 && players.every((p) => p.hasPhoto),

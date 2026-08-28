@@ -437,8 +437,6 @@ export class AdminService {
               activePlayerMaximum: schema.tournament.activePlayerMaximum,
               reserveMaximum: schema.tournament.reserveMaximum,
               benchMaximum: schema.tournament.benchMaximum,
-              biographyMinimumCharacters:
-                schema.tournament.biographyMinimumCharacters,
               eligibilityDate: schema.tournament.eligibilityDate,
               requiredOfficialRoles: schema.tournament.requiredOfficialRoles,
               identityRequiredCategories:

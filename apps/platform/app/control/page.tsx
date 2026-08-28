@@ -417,7 +417,6 @@ function ConfigurationForm({
         activePlayerMaximum: Number(form.activePlayerMaximum),
         reserveMaximum: Number(form.reserveMaximum),
         benchMaximum: Number(form.benchMaximum),
-        biographyMinimumCharacters: Number(form.biographyMinimumCharacters),
         requiredOfficialRoles: form.requiredOfficialRoles,
         identityRequiredCategories: form.identityRequiredCategories,
         consentRequiredCategories: form.consentRequiredCategories,
@@ -537,13 +536,6 @@ function ConfigurationForm({
           onChange={(v) => set("benchMaximum", v)}
           required
         />
-        <Field
-          type="number"
-          labelText="Biography minimum"
-          value={form.biographyMinimumCharacters}
-          onChange={(v) => set("biographyMinimumCharacters", v)}
-          required
-        />
         <CheckboxGroup
           title="Required team-official roles"
           values={officialRoles}
@@ -638,7 +630,6 @@ function formFrom(event: LaunchConfiguration) {
     activePlayerMaximum: String(event.activePlayerMaximum),
     reserveMaximum: String(event.reserveMaximum),
     benchMaximum: String(event.benchMaximum),
-    biographyMinimumCharacters: String(event.biographyMinimumCharacters),
     requiredOfficialRoles: event.requiredOfficialRoles,
     identityRequiredCategories: event.identityRequiredCategories,
     consentRequiredCategories: event.consentRequiredCategories,

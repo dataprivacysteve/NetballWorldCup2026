@@ -71,7 +71,6 @@ export class RegistrationService {
             activePlayerMaximum: event.activePlayerMaximum,
             reserveMaximum: event.reserveMaximum,
             benchMaximum: event.benchMaximum,
-            biographyMinimumCharacters: event.biographyMinimumCharacters,
             requiredOfficialRoles: event.requiredOfficialRoles,
             identityRequiredCategories: event.identityRequiredCategories,
             consentRequiredCategories: event.consentRequiredCategories,

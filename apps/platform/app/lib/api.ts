@@ -155,7 +155,6 @@ export type LaunchConfiguration = {
   activePlayerMaximum: number;
   reserveMaximum: number;
   benchMaximum: number;
-  biographyMinimumCharacters: number;
   requiredOfficialRoles: string[];
   identityRequiredCategories: string[];
   consentRequiredCategories: string[];

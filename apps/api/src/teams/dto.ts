@@ -67,7 +67,7 @@ export class CreatePlayerDto {
   @IsOptional() @IsString() middleNames?: string;
   @IsString() @MinLength(1) lastName!: string;
   @IsString() @IsIn(ISO_ALPHA3_CODES) nationality!: string;
-  @IsString() @MinLength(1) biography!: string;
+  @IsString() biography!: string;
   // YYYY-MM-DD. Required for players so under-18 consent can be derived.
   // Officials do not provide DOB unless a future configured category requires it.
   @ValidateIf(
@@ -101,7 +101,7 @@ export class UpdatePlayerDto {
   @IsOptional() @IsString() middleNames?: string;
   @IsOptional() @IsString() @MinLength(1) lastName?: string;
   @IsOptional() @IsString() @IsIn(ISO_ALPHA3_CODES) nationality?: string;
-  @IsOptional() @IsString() @MinLength(1) biography?: string;
+  @IsOptional() @IsString() biography?: string;
   @IsOptional() @IsDateString() dateOfBirth?: string;
   @IsOptional()
   @IsIn(['player', 'official', 'technical', 'media', 'broadcast'])

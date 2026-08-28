@@ -10,7 +10,6 @@ const config = {
   activePlayerMaximum: 15,
   reserveMaximum: 3,
   benchMaximum: 17,
-  biographyMinimumCharacters: 700,
   eligibilityDate: '2026-10-19',
   requiredOfficialRoles: ['team_manager', 'coach', 'primary_care'],
   identityRequiredCategories: ['player'],
@@ -29,7 +28,7 @@ function person(overrides: Partial<RosterRulePerson>): RosterRulePerson {
     isHeadOfDelegation: false,
     benchEligible: false,
     nationality: 'BRB',
-    biography: 'A'.repeat(700),
+    biography: '',
     dateOfBirth: '2000-01-01',
     nationalityMatchesTeam: true,
     eligibilityConfirmed: false,
@@ -106,6 +105,12 @@ describe('roster rules', () => {
         config,
       ),
     ).not.toContain('Test Person: date of birth is required for players.');
+  });
+
+  it('does not require a biography to save a roster draft', () => {
+    expect(rosterDraftProblems([person({ biography: '' })], config)).toEqual(
+      [],
+    );
   });
 
   it('accepts a complete 15-player, 3-reserve and required-official roster', () => {
