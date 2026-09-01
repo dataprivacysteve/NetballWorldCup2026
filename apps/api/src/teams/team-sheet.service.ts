@@ -122,8 +122,7 @@ export class TeamSheetService {
       },
       roster: roster.map((person) => ({
         ...person,
-        eligible:
-          person.accredited === 'issued' || approvedIds.has(person.id),
+        eligible: person.accredited === 'issued' || approvedIds.has(person.id),
       })),
       players: selected,
     };

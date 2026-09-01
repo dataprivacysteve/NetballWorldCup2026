@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LOC Badge Print Sample — 88 × 142 mm</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #0d1b4b;
+        --line: #d7dde7;
+        --page: #eef2f6;
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body {
+        margin: 0;
+        min-height: 100%;
+        background: var(--page);
+        color: var(--ink);
+        font-family: Arial, Helvetica, sans-serif;
+      }
+
+      body { padding: 24px; }
+
+      .toolbar {
+        display: flex;
+        max-width: 1100px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        margin: 0 auto 24px;
+        padding: 16px 18px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: #fff;
+        box-shadow: 0 8px 24px rgba(15, 27, 57, 0.08);
+      }
+
+      .toolbar h1 { margin: 0; font-size: 20px; }
+      .toolbar p { margin: 4px 0 0; color: #5a667a; font-size: 13px; }
+
+      .print-button {
+        flex: none;
+        min-height: 42px;
+        padding: 0 18px;
+        border: 0;
+        border-radius: 9px;
+        background: #1b2a6b;
+        color: #fff;
+        font: 700 14px Arial, Helvetica, sans-serif;
+        cursor: pointer;
+      }
+
+      .sheet {
+        display: grid;
+        max-width: 850px;
+        grid-template-columns: repeat(2, minmax(280px, 400px));
+        justify-content: center;
+        gap: 24px;
+        margin: 0 auto;
+        align-items: start;
+      }
+
+      .badge {
+        container-type: inline-size;
+        position: relative;
+        width: 100%;
+        max-width: 400px;
+        aspect-ratio: 88 / 142;
+        overflow: hidden;
+        border: 1px solid #dfe4ed;
+        border-radius: 20px;
+        background: #fff;
+        color: var(--ink);
+        box-shadow: 0 8px 22px rgba(15, 27, 57, 0.14);
+      }
+
+      .badge::after {
+        content: "";
+        position: absolute;
+        right: -6cqw;
+        top: 22cqw;
+        width: 55%;
+        height: 47%;
+        opacity: 0.22;
+        pointer-events: none;
+        background:
+          radial-gradient(circle at 30% 22%, transparent 0 18cqw, #d5dbe5 18.2cqw 18.8cqw, transparent 19cqw),
+          linear-gradient(90deg, transparent 49%, #d5dbe5 50%, transparent 51%);
+      }
+
+      .badge-header {
+        position: relative;
+        z-index: 3;
+        display: flex;
+        height: 16.3cqw;
+        align-items: flex-end;
+        justify-content: center;
+        padding-bottom: 2.3cqw;
+      }
+
+      .red .badge-header, .red .access { background: linear-gradient(180deg, #d92531, #c21b27); color: #fff; }
+      .green .badge-header, .green .access { background: linear-gradient(180deg, #4f9d43, #3f8435); color: #fff; }
+      .yellow .badge-header, .yellow .access { background: linear-gradient(180deg, #e9c248, #d5b43e); color: #111; }
+
+      .slot {
+        position: absolute;
+        top: 2.3cqw;
+        left: 50%;
+        width: 21cqw;
+        height: 4.7cqw;
+        transform: translateX(-50%);
+        border-radius: 2.8cqw;
+        background: #fbfbfb;
+        box-shadow: inset 0 1px 7px rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.45);
+      }
+
+      .category {
+        position: relative;
+        z-index: 2;
+        max-width: 92%;
+        overflow: hidden;
+        font-size: 5.45cqw;
+        font-weight: 900;
+        line-height: 1;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .content { position: relative; z-index: 2; padding: 3.1cqw 4.3cqw 0; }
+      .identity { display: grid; grid-template-columns: 1fr 1.18fr; gap: 3.1cqw; align-items: start; }
+      .brand { display: flex; align-items: flex-start; justify-content: center; padding-top: 0.4cqw; }
+      .qualifier-logo { display: block; width: 100%; height: 33.4cqw; object-fit: contain; }
+      .portrait-stack { display: flex; width: 100%; flex-direction: column; align-items: center; padding-top: 0.4cqw; }
+
+      .portrait {
+        position: relative;
+        width: 88%;
+        aspect-ratio: 1 / 1.05;
+        overflow: hidden;
+        border: 1px solid #e5e8ee;
+        border-radius: 2.7cqw;
+        background: linear-gradient(145deg, #e9edf3, #cbd3de);
+      }
+
+      .portrait svg { display: block; width: 100%; height: 100%; }
+
+      .flag-chip {
+        display: flex;
+        max-width: 100%;
+        align-items: center;
+        gap: 1.9cqw;
+        margin-top: 1.55cqw;
+        padding: 1.15cqw 1.95cqw;
+        overflow: hidden;
+        border: 1px solid #dbe2ec;
+        border-radius: 2.3cqw;
+        background: #f7f9fc;
+        font-size: 2.15cqw;
+        font-weight: 900;
+        letter-spacing: 0.1cqw;
+        line-height: 1;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
+      .flag {
+        position: relative;
+        display: grid;
+        width: 8cqw;
+        height: 5cqw;
+        flex: none;
+        place-items: center;
+        overflow: hidden;
+        border-radius: 0.5cqw;
+        background: linear-gradient(90deg, #00267f 0 33.333%, #ffc726 33.333% 66.666%, #00267f 66.666%);
+        color: #111;
+        font-size: 3.2cqw;
+        line-height: 1;
+      }
+
+      .name { margin-top: 2.3cqw; font-size: 5.65cqw; font-weight: 900; letter-spacing: -0.15cqw; line-height: 1; text-align: center; text-transform: uppercase; }
+      .role { margin-top: 1.15cqw; font-size: 3.5cqw; line-height: 1.1; text-align: center; }
+      .organisation { margin-top: 1.15cqw; font-size: 2.55cqw; font-weight: 900; letter-spacing: 0.075cqw; line-height: 1.1; text-align: center; text-transform: uppercase; }
+      .red .organisation, .red .divider, .red .detail { color: #d92531; }
+      .green .organisation, .green .divider, .green .detail { color: #3f8435; }
+      .yellow .organisation, .yellow .divider, .yellow .detail { color: #2c767e; }
+      .divider { height: 0.4cqw; margin: 2.7cqw 0 2.3cqw; background: currentColor; }
+      .details-wrap { display: grid; grid-template-columns: minmax(0, 1fr) 30.3cqw; gap: 2.3cqw; align-items: start; }
+      .details { display: grid; gap: 1.95cqw; color: var(--ink); font-size: 2.9cqw; line-height: 1.2; }
+      .detail { display: grid; grid-template-columns: 4.65cqw 1fr; gap: 1.75cqw; align-items: center; }
+      .detail span { color: var(--ink); }
+      .detail svg { width: 3.7cqw; height: 3.7cqw; }
+
+      .loc-card {
+        display: flex;
+        min-height: 21.75cqw;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 1.95cqw 1.55cqw;
+        border: 1px solid var(--line);
+        border-radius: 2.7cqw;
+        background: #f8fafe;
+        color: #6c7584;
+        font-size: 1.95cqw;
+        font-weight: 800;
+        letter-spacing: 0.075cqw;
+        line-height: 1.15;
+        text-align: center;
+        text-transform: uppercase;
+      }
+
+      .loc-card img { display: block; width: auto; max-width: 16.7cqw; height: auto; max-height: 12cqw; margin-bottom: 1.55cqw; object-fit: contain; }
+
+      .access {
+        display: grid;
+        min-height: 16.3cqw;
+        grid-template-columns: 17.1cqw 1fr;
+        gap: 1.95cqw;
+        align-items: center;
+        margin: 0 -4.3cqw;
+        padding: 1.55cqw 2.7cqw;
+      }
+
+      .access-icon { display: grid; width: 12.4cqw; height: 12.4cqw; place-items: center; border: 0.6cqw solid currentColor; border-radius: 50%; }
+      .access-icon svg { width: 6.4cqw; height: 6.4cqw; stroke-linecap: round; stroke-linejoin: round; }
+      .access-title { font-size: 4.85cqw; font-weight: 900; line-height: 1; }
+      .access-copy { margin-top: 0.95cqw; font-size: 2.25cqw; font-weight: 600; line-height: 1.17; }
+
+      @media (max-width: 920px) {
+        .sheet { grid-template-columns: 1fr; max-width: 400px; }
+      }
+
+      @media print {
+        @page { size: letter; margin: 0.2in; }
+        html, body { margin: 0; padding: 0; background: #fff; }
+        .no-print { display: none !important; }
+        .sheet {
+          display: grid;
+          width: auto;
+          max-width: none;
+          grid-template-columns: 1fr 1fr;
+          justify-items: center;
+          align-items: start;
+          gap: 0.12in 0.15in;
+          margin: 0;
+        }
+        .badge {
+          width: 3.1in;
+          height: 5in;
+          max-width: none;
+          break-inside: avoid;
+          border-radius: 0.08in;
+          box-shadow: none;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="toolbar no-print">
+      <div>
+        <h1>LOC badge print sample</h1>
+        <p>Four fictional credentials · four-up US Letter sheet · no barcode or QR code</p>
+      </div>
+      <button class="print-button" type="button" onclick="window.print()">Print sample</button>
+    </div>
+
+    <main class="sheet">
+      <section class="badge red">
+        <div class="badge-header"><div class="slot"></div><div class="category">OFFICIAL</div></div>
+        <div class="content">
+          <div class="identity">
+            <div class="brand"><img class="qualifier-logo" src="event-brand/nwc-2027-regional-qualifier-americas-portrait.png" alt="Netball World Cup Sydney 2027 Regional Qualifier Americas" /></div>
+            <div class="portrait-stack">
+              <div class="portrait"><svg viewBox="0 0 100 105" role="img" aria-label="Sample portrait placeholder"><defs><linearGradient id="rbg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f4c7a8"/><stop offset="1" stop-color="#b96f4f"/></linearGradient></defs><rect width="100" height="105" fill="#e7ebf1"/><circle cx="50" cy="38" r="22" fill="url(#rbg)"/><path d="M23 105c2-28 14-42 27-42s25 14 27 42" fill="#d92531"/><path d="M31 29c3-19 35-24 40 1-8-6-29-8-40-1" fill="#201914"/></svg></div>
+              <div class="flag-chip"><span class="flag">♆</span><span>Barbados</span></div>
+            </div>
+          </div>
+          <div class="name">Maria Johnson</div><div class="role">Team Official</div><div class="organisation">Barbados Netball Association</div>
+          <div class="divider"></div>
+          <div class="details-wrap">
+            <div class="details">
+              <div class="detail"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22s7-6.2 7-13a7 7 0 1 0-14 0c0 6.8 7 13 7 13Z"/><circle cx="12" cy="9" r="2.6" fill="#fff"/></svg><span>Regional Qualifier Americas</span></div>
+              <div class="detail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-5h6v5"/></svg><span>Garfield Sobers Gymnasium</span></div>
+              <div class="detail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg><span>October 19 – 26, 2026</span></div>
+            </div>
+            <div class="loc-card"><img src="event-brand/barbados-loc-logo.png" alt="Barbados LOC logo" /><div>Local Organising Committee</div></div>
+          </div>
+          <div class="divider"></div>
+          <div class="access"><div class="access-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 1 1 8 0v3"/></svg></div><div><div class="access-title">RED ZONE</div><div class="access-copy">Restricted Access / Competition Areas / Team &amp; Official Areas</div></div></div>
+        </div>
+      </section>
+
+      <section class="badge green">
+        <div class="badge-header"><div class="slot"></div><div class="category">ATHLETE</div></div>
+        <div class="content">
+          <div class="identity">
+            <div class="brand"><img class="qualifier-logo" src="event-brand/nwc-2027-regional-qualifier-americas-portrait.png" alt="Netball World Cup Sydney 2027 Regional Qualifier Americas" /></div>
+            <div class="portrait-stack">
+              <div class="portrait"><svg viewBox="0 0 100 105" role="img" aria-label="Sample portrait placeholder"><defs><linearGradient id="gbg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#8c4f35"/><stop offset="1" stop-color="#512819"/></linearGradient></defs><rect width="100" height="105" fill="#e7ebf1"/><circle cx="50" cy="38" r="22" fill="url(#gbg)"/><path d="M23 105c2-28 14-42 27-42s25 14 27 42" fill="#4f9d43"/><path d="M28 32c0-25 44-25 44 0-10-7-34-7-44 0" fill="#16110f"/></svg></div>
+              <div class="flag-chip"><span class="flag">♆</span><span>Barbados</span></div>
+            </div>
+          </div>
+          <div class="name">Jada Williams</div><div class="role">Athlete</div><div class="organisation">Barbados Netball Team</div>
+          <div class="divider"></div>
+          <div class="details-wrap">
+            <div class="details">
+              <div class="detail"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22s7-6.2 7-13a7 7 0 1 0-14 0c0 6.8 7 13 7 13Z"/><circle cx="12" cy="9" r="2.6" fill="#fff"/></svg><span>Regional Qualifier Americas</span></div>
+              <div class="detail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-5h6v5"/></svg><span>Garfield Sobers Gymnasium</span></div>
+              <div class="detail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg><span>October 19 – 26, 2026</span></div>
+            </div>
+            <div class="loc-card"><img src="event-brand/barbados-loc-logo.png" alt="Barbados LOC logo" /><div>Local Organising Committee</div></div>
+          </div>
+          <div class="divider"></div>
+          <div class="access"><div class="access-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="15" cy="4.5" r="2"/><path d="M6 12l4-3 2 2 3-1 3 2M10 11l-2 4-3 2M12 12l3 4 4 1M10 15l2 5"/></svg></div><div><div class="access-title">GREEN ZONE</div><div class="access-copy">Field of Play / Team Bench / Warm-up Court / Mixed Zone</div></div></div>
+        </div>
+      </section>
+
+      <section class="badge yellow">
+        <div class="badge-header"><div class="slot"></div><div class="category">VOLUNTEER</div></div>
+        <div class="content">
+          <div class="identity">
+            <div class="brand"><img class="qualifier-logo" src="event-brand/nwc-2027-regional-qualifier-americas-portrait.png" alt="Netball World Cup Sydney 2027 Regional Qualifier Americas" /></div>
+            <div class="portrait-stack">
+              <div class="portrait"><svg viewBox="0 0 100 105" role="img" aria-label="Sample portrait placeholder"><defs><linearGradient id="ybg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d69a72"/><stop offset="1" stop-color="#8f5034"/></linearGradient></defs><rect width="100" height="105" fill="#e7ebf1"/><circle cx="50" cy="38" r="22" fill="url(#ybg)"/><path d="M23 105c2-28 14-42 27-42s25 14 27 42" fill="#e9c248"/><path d="M29 31c2-23 40-23 42 0-10-8-32-8-42 0" fill="#2a1b15"/></svg></div>
+              <div class="flag-chip"><span class="flag">♆</span><span>Barbados</span></div>
+            </div>
+          </div>
+          <div class="name">Keisha Roberts</div><div class="role">Technical Team</div><div class="organisation">Netball Barbados</div>
+          <div class="divider"></div>
+          <div class="details-wrap">
+            <div class="details">
+              <div class="detail"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22s7-6.2 7-13a7 7 0 1 0-14 0c0 6.8 7 13 7 13Z"/><circle cx="12" cy="9" r="2.6" fill="#fff"/></svg><span>Regional Qualifier Americas</span></div>
+              <div class="detail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-5h6v5"/></svg><span>Garfield Sobers Gymnasium</span></div>
+              <div class="detail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg><span>October 19 – 26, 2026</span></div>
+            </div>
+            <div class="loc-card"><img src="event-brand/barbados-loc-logo.png" alt="Barbados LOC logo" /><div>Local Organising Committee</div></div>
+          </div>
+          <div class="divider"></div>
+          <div class="access"><div class="access-icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M3 20c0-3 2.5-5 5-5s5 2 5 5H3ZM11 20c.3-2.5 2.4-4.2 5-4.2 2.4 0 4.8 1.8 5 4.2H11Z"/></svg></div><div><div class="access-title">YELLOW ZONE</div><div class="access-copy">Controlled Access / Media / Hospitality / Mixed Zones</div></div></div>
+        </div>
+      </section>
+
+      <section class="badge yellow">
+        <div class="badge-header"><div class="slot"></div><div class="category">VOLUNTEER</div></div>
+        <div class="content">
+          <div class="identity">
+            <div class="brand"><img class="qualifier-logo" src="event-brand/nwc-2027-regional-qualifier-americas-portrait.png" alt="Netball World Cup Sydney 2027 Regional Qualifier Americas" /></div>
+            <div class="portrait-stack">
+              <div class="portrait"><svg viewBox="0 0 100 105" role="img" aria-label="Sample portrait placeholder"><defs><linearGradient id="ymbg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#9f6044"/><stop offset="1" stop-color="#5d3022"/></linearGradient></defs><rect width="100" height="105" fill="#e7ebf1"/><circle cx="50" cy="38" r="22" fill="url(#ymbg)"/><path d="M23 105c2-28 14-42 27-42s25 14 27 42" fill="#e9c248"/><path d="M28 32c0-24 44-24 44 0-12-9-32-9-44 0" fill="#17100d"/></svg></div>
+              <div class="flag-chip"><span class="flag">♆</span><span>Barbados</span></div>
+            </div>
+          </div>
+          <div class="name">Naomi Clarke</div><div class="role">Media</div><div class="organisation">Netball Barbados</div>
+          <div class="divider"></div>
+          <div class="details-wrap">
+            <div class="details">
+              <div class="detail"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22s7-6.2 7-13a7 7 0 1 0-14 0c0 6.8 7 13 7 13Z"/><circle cx="12" cy="9" r="2.6" fill="#fff"/></svg><span>Regional Qualifier Americas</span></div>
+              <div class="detail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-5h6v5"/></svg><span>Garfield Sobers Gymnasium</span></div>
+              <div class="detail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg><span>October 19 – 26, 2026</span></div>
+            </div>
+            <div class="loc-card"><img src="event-brand/barbados-loc-logo.png" alt="Barbados LOC logo" /><div>Local Organising Committee</div></div>
+          </div>
+          <div class="divider"></div>
+          <div class="access"><div class="access-icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="8" cy="9" r="3"/><circle cx="16" cy="9" r="3"/><path d="M3 20c0-3 2.5-5 5-5s5 2 5 5H3ZM11 20c.3-2.5 2.4-4.2 5-4.2 2.4 0 4.8 1.8 5 4.2H11Z"/></svg></div><div><div class="access-title">YELLOW ZONE</div><div class="access-copy">Controlled Access / Media / Hospitality / Mixed Zones</div></div></div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

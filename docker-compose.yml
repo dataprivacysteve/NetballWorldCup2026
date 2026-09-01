@@ -4,7 +4,7 @@ name: gameday
 # GameDay local chassis — backing services only.
 #
 # This file brings up Postgres, Redis, MinIO, and Caddy. The four
-# application processes (api, www, teams, platform) run on the host via
+# application processes (api, www, teams, platform, stats) run on the host via
 # pnpm during development for fast hot-reload; Caddy reaches them through
 # host.docker.internal. See README.md.
 #

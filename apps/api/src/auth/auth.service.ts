@@ -3,7 +3,6 @@ import {
   BadRequestException,
   Inject,
   Injectable,
-  ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -27,10 +26,12 @@ export interface SessionUser {
 export type PlatformRole =
   | 'sportsbb_admin'
   | 'loc_officer'
+  | 'media_comms'
   | 'match_supervisor'
   | 'scorer'
   | 'timekeeper'
   | 'stats_lineup'
+  | 'stats_host'
   | 'result_approver';
 
 @Injectable()

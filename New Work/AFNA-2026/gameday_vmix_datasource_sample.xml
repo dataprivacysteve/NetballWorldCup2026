@@ -1,20 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- GameDay live match feed for vMix Data Sources.
-     In production this is served live at: https://platform.netballamericas.org/api/live.xml
-     vMix XPath: /gameday/match   ·   Update interval: 1000 ms (set 100 ms only if showing tenths) -->
+     Verified local URL: https://api.netballamericas.test/live.xml
+     Production target after deployment: https://api.netballamericas.org/live.xml
+     vMix XPath: /gameday/match   ·   Update interval: 1000 ms -->
 <gameday>
   <match>
+    <MatchId>00000000-0000-4000-8000-000000000001</MatchId>
     <Status>LIVE</Status>
     <Quarter>Q2</Quarter>
     <Clock>11:23</Clock>
-    <HomeName>Barbados</HomeName>
-    <HomeAbbr>BRB</HomeAbbr>
-    <HomeScore>34</HomeScore>
-    <HomeFlag>https://platform.netballamericas.org/flags/brb.png</HomeFlag>
-    <AwayName>Jamaica</AwayName>
-    <AwayAbbr>JAM</AwayAbbr>
-    <AwayScore>31</AwayScore>
-    <AwayFlag>https://platform.netballamericas.org/flags/jam.png</AwayFlag>
-    <Venue>Garfield Sobers Gymnasium</Venue>
+    <TeamAAbbr>BRB</TeamAAbbr>
+    <TeamAName>Barbados</TeamAName>
+    <TeamAScore>34</TeamAScore>
+    <TeamAFlag>https://www.netballamericas.org/flags/brb.svg</TeamAFlag>
+    <TeamBAbbr>JAM</TeamBAbbr>
+    <TeamBName>Jamaica</TeamBName>
+    <TeamBScore>31</TeamBScore>
+    <TeamBFlag>https://www.netballamericas.org/flags/jam.svg</TeamBFlag>
+    <Venue>G. Sobers Gymnasium</Venue>
+    <Court>Centre Court</Court>
+    <Provisional>true</Provisional>
+    <UpdatedAt>2026-08-29T21:00:00-04:00</UpdatedAt>
   </match>
 </gameday>

@@ -22,6 +22,7 @@ import {
 @Injectable()
 export class ControlService {
   private readonly db: NodePgDatabase<typeof schema>;
+  private lineupResetTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(@Inject(PRIVILEGED_POOL) pool: Pool) {
     this.db = drizzle(pool, { schema });
@@ -302,6 +303,70 @@ export class ControlService {
     return experience;
   }
 
+  async updatePublicSiteMode(live: boolean, actorUserId: string) {
+    const [current] = await this.db.select().from(schema.tournament).limit(1);
+    if (!current) throw new NotFoundException('No tournament is configured');
+    await this.db
+      .update(schema.tournament)
+      .set({ publicSiteLive: live })
+      .where(eq(schema.tournament.id, current.id));
+    await this.audit(
+      actorUserId,
+      live ? 'public_site.launched' : 'public_site.held',
+      current.id,
+      { live },
+    );
+    return this.configuration();
+  }
+
+  async updateGymDisplayMode(
+    mode: 'automatic' | 'arena' | 'lineup' | 'live',
+    actorUserId: string,
+  ) {
+    if (this.lineupResetTimer) {
+      clearTimeout(this.lineupResetTimer);
+      this.lineupResetTimer = null;
+    }
+    const [current] = await this.db.select().from(schema.tournament).limit(1);
+    if (!current) throw new NotFoundException('No tournament is configured');
+    await this.db
+      .update(schema.tournament)
+      .set({ gymDisplayMode: mode })
+      .where(eq(schema.tournament.id, current.id));
+    await this.audit(actorUserId, 'gym_display.mode_changed', current.id, {
+      mode,
+    });
+    if (mode === 'lineup') {
+      this.lineupResetTimer = setTimeout(() => {
+        void this.finishLineupPresentation(current.id, actorUserId);
+      }, 48_000);
+    }
+    return this.configuration();
+  }
+
+  private async finishLineupPresentation(
+    tournamentId: string,
+    actorUserId: string,
+  ) {
+    this.lineupResetTimer = null;
+    const [current] = await this.db
+      .select({ mode: schema.tournament.gymDisplayMode })
+      .from(schema.tournament)
+      .where(eq(schema.tournament.id, tournamentId))
+      .limit(1);
+    if (current?.mode !== 'lineup') return;
+    await this.db
+      .update(schema.tournament)
+      .set({ gymDisplayMode: 'arena' })
+      .where(eq(schema.tournament.id, tournamentId));
+    await this.audit(
+      actorUserId,
+      'gym_display.lineup_completed',
+      tournamentId,
+      { mode: 'arena' },
+    );
+  }
+
   async saveSponsor(dto: SaveSponsorDto, actorUserId: string) {
     const [event] = await this.db.select().from(schema.tournament).limit(1);
     if (!event) throw new NotFoundException('No tournament is configured');
@@ -311,6 +376,10 @@ export class ControlService {
       tier: dto.tier,
       logoUrl: dto.logoUrl?.trim() || null,
       destinationUrl: dto.destinationUrl?.trim() || null,
+      websiteEnabled: dto.websiteEnabled ?? true,
+      displayImageUrl: dto.displayImageUrl?.trim() || null,
+      displayEnabled: dto.displayEnabled ?? false,
+      displaySeconds: dto.displaySeconds ?? 10,
       active: dto.active ?? true,
       sortOrder: dto.sortOrder ?? 0,
     };

@@ -16,11 +16,10 @@ import {
 import { Type } from 'class-transformer';
 
 export const GAME_DAY_ROLES = [
-  'match_supervisor',
   'scorer',
   'timekeeper',
   'stats_lineup',
-  'result_approver',
+  'stats_host',
 ] as const;
 export type GameDayRole = (typeof GAME_DAY_ROLES)[number];
 

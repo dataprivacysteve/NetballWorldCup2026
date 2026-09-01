@@ -13,13 +13,8 @@ import { AuthGuard, GameDayOfficialGuard } from '../auth/auth.guard';
 import type { SessionUser } from '../auth/auth.service';
 import {
   ClockCommandDto,
-  CentrePassDto,
-  ConfirmResultDto,
   CorrectGoalDto,
   GoalDto,
-  IncidentDto,
-  PositionChangeDto,
-  StatisticDto,
   VersionedCommandDto,
 } from './gameday.dto';
 import { GameDayService } from './gameday.service';
@@ -88,34 +83,6 @@ export class GameDayController {
     );
   }
 
-  @Post('matches/:id/centre-pass')
-  centrePass(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: CentrePassDto,
-    @Req() req: OfficialRequest,
-  ) {
-    return this.gameDay.setCentrePass(
-      id,
-      req.user.userId,
-      req.user.platformRole,
-      dto,
-    );
-  }
-
-  @Post('matches/:id/incidents')
-  incident(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: IncidentDto,
-    @Req() req: OfficialRequest,
-  ) {
-    return this.gameDay.recordIncident(
-      id,
-      req.user.userId,
-      req.user.platformRole,
-      dto,
-    );
-  }
-
   @Post('matches/:id/clock')
   clock(
     @Param('id', ParseUUIDPipe) id: string,
@@ -130,45 +97,4 @@ export class GameDayController {
     );
   }
 
-  @Post('matches/:id/lineup')
-  lineup(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: PositionChangeDto,
-    @Req() req: OfficialRequest,
-  ) {
-    return this.gameDay.positionChange(
-      id,
-      req.user.userId,
-      req.user.platformRole,
-      dto,
-    );
-  }
-
-  @Post('matches/:id/statistics')
-  statistic(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: StatisticDto,
-    @Req() req: OfficialRequest,
-  ) {
-    return this.gameDay.recordStatistic(
-      id,
-      req.user.userId,
-      req.user.platformRole,
-      dto,
-    );
-  }
-
-  @Post('matches/:id/result/confirm')
-  confirm(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: ConfirmResultDto,
-    @Req() req: OfficialRequest,
-  ) {
-    return this.gameDay.confirmResult(
-      id,
-      req.user.userId,
-      req.user.platformRole,
-      dto,
-    );
-  }
 }

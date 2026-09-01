@@ -72,4 +72,36 @@ export class BroadcastController {
     if (!feed) throw new NotFoundException('Broadcast match not found');
     response.type('application/xml').send(feedXml(feed));
   }
+
+  @Get(['stats.json', 'public/broadcast/stats.json'])
+  @Header('Cache-Control', NO_STORE)
+  async statsJson() {
+    const feed = await this.publicService.liveStatsBroadcast();
+    if (!feed) throw new NotFoundException('No statistics match is available');
+    return feed;
+  }
+
+  @Get(['stats.xml', 'public/broadcast/stats.xml'])
+  @Header('Cache-Control', NO_STORE)
+  async statsXml(@Res() response: Response) {
+    const feed = await this.publicService.liveStatsBroadcast();
+    if (!feed) throw new NotFoundException('No statistics match is available');
+    response.type('application/xml').send(feedXml(feed));
+  }
+
+  @Get('public/broadcast/matches/:id/stats.json')
+  @Header('Cache-Control', NO_STORE)
+  async matchStatsJson(@Param('id') id: string) {
+    const feed = await this.publicService.liveStatsBroadcast(id);
+    if (!feed) throw new NotFoundException('Statistics match not found');
+    return feed;
+  }
+
+  @Get('public/broadcast/matches/:id/stats.xml')
+  @Header('Cache-Control', NO_STORE)
+  async matchStatsXml(@Param('id') id: string, @Res() response: Response) {
+    const feed = await this.publicService.liveStatsBroadcast(id);
+    if (!feed) throw new NotFoundException('Statistics match not found');
+    response.type('application/xml').send(feedXml(feed));
+  }
 }

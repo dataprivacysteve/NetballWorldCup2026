@@ -58,11 +58,11 @@ mkcert -version
 
 ### 1. Hosts file
 
-Map the four subdomains to your machine. Open Notepad **as Administrator**,
+Map the application subdomains to your machine. Open Notepad **as Administrator**,
 open `C:\Windows\System32\drivers\etc\hosts`, and add this line:
 
 ```
-127.0.0.1  netballamericas.test www.netballamericas.test teams.netballamericas.test platform.netballamericas.test api.netballamericas.test
+127.0.0.1  netballamericas.test www.netballamericas.test teams.netballamericas.test platform.netballamericas.test stats.netballamericas.test api.netballamericas.test
 ```
 
 > `.test` is the RFC-reserved local TLD — it never resolves publicly and
@@ -150,6 +150,7 @@ Then set each app's dev port so Caddy can reach it. In each app's
 | Public (www)    | `apps/web`      | 3001     | `next dev -p 3001`           |
 | Delegations     | `apps/teams`    | 3002     | `next dev -p 3002`           |
 | Operations      | `apps/platform` | 3003     | `next dev -p 3003`           |
+| Live statistics | `apps/stats`    | 3004     | `next dev -p 3004`           |
 
 Link the workspace:
 
@@ -173,9 +174,10 @@ Then open each surface over trusted HTTPS — no certificate warning:
 - https://www.netballamericas.test
 - https://teams.netballamericas.test
 - https://platform.netballamericas.test
+- https://stats.netballamericas.test/org
 - https://api.netballamericas.test
 
-If all four load through Caddy with a valid lock icon, **Phase 0 is
+If all application surfaces load through Caddy with a valid lock icon, **Phase 0 is
 complete** and the chassis is ready for Module 1 (Delegation Registration
 & Roster), where the RLS migrations land.
 

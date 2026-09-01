@@ -218,6 +218,76 @@
       "when": 1787889600000,
       "tag": "0030_remove_biography_minimum",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1787961600000,
+      "tag": "0031_public_broadcast_analytics",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1788048000000,
+      "tag": "0032_public_match_report",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1788048060000,
+      "tag": "0033_governed_historical_records",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1788134400000,
+      "tag": "0034_loc_advertising",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1788210000000,
+      "tag": "0035_media_comms_role",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1788296400000,
+      "tag": "0036_optional_match_statistics",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1788296460000,
+      "tag": "0037_public_demo_athlete_profiles",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1788296520000,
+      "tag": "0038_public_site_launch_toggle",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1788296580000,
+      "tag": "0039_gym_display_mode",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1788296640000,
+      "tag": "0040_gym_lineup_mode",
+      "breakpoints": true
     }
   ]
 }

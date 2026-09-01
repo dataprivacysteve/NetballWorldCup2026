@@ -13,3 +13,4 @@ export * from './roster';
 export * from './person-review';
 export * from './match';
 export * from './operations';
+export * from './historical';

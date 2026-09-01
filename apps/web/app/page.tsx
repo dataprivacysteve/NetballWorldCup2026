@@ -8,6 +8,9 @@ import { NationsExplorer } from "./components/NationsExplorer";
 import { LiveScore } from "./components/LiveScore";
 
 export const revalidate = 30;
+export const dynamic = "force-dynamic";
+const FORCE_FULL_SITE = process.env.PUBLIC_SITE_MODE === "full";
+const TOURNAMENT_START = "2026-10-19T00:00:00-04:00";
 
 // ---- date helpers (tournament-local, deterministic on the server) ----
 const TZ = "America/Barbados";
@@ -31,6 +34,11 @@ const timeLabel = (iso: string | null) =>
   iso ? fdate(iso, { hour: "2-digit", minute: "2-digit" }) : "v";
 
 export default async function Home() {
+  const siteMode = await publicApi.siteMode();
+  if (!FORCE_FULL_SITE && !siteMode.live) {
+    return <ComingSoon />;
+  }
+
   const [
     tournament,
     experience,
@@ -81,7 +89,9 @@ export default async function Home() {
   const featuredBroadcast =
     broadcasts.find((match) => match.broadcast.featured) ?? broadcasts[0] ?? null;
   const sponsorByTier = (tier: Sponsor["tier"]) =>
-    experience?.sponsors.find((sponsor) => sponsor.tier === tier) ?? null;
+    experience?.sponsors.find(
+      (sponsor) => sponsor.websiteEnabled && sponsor.tier === tier,
+    ) ?? null;
 
   return (
     <>
@@ -293,13 +303,13 @@ export default async function Home() {
         <div className="wrap">
           <div className="sec-head">
             <h2 className="disp">
-              <small>Group stage</small>League Tables
+              <small>Round robin stage</small>League Table
             </h2>
           </div>
           {standings.length === 0 ? (
             <EmptyRow label="Standings appear once results are in." />
           ) : (
-            <div className="sr-2">
+            <div className={standings.length === 1 ? "standings-single" : "sr-2"}>
               {standings.map((g) => (
                 <StandingsTable key={g.stage.id} group={g} />
               ))}
@@ -307,7 +317,7 @@ export default async function Home() {
           )}
           <p className="qn">
             <span className="sw" />
-            Top two of each group qualify for the 2027 Netball World Cup, Sydney.
+            Top two in the league table qualify for the 2027 Netball World Cup, Sydney.
             Places confirmed by World Netball.
           </p>
         </div>
@@ -368,9 +378,25 @@ export default async function Home() {
           </div>
           <div className="news">
             {(experience?.news ?? []).length === 0 ? (
-              <div className="nc"><div className="body"><h4>Tournament newsroom</h4><div className="date">Official updates will be published here.</div></div></div>
+              <div className="nc">
+                <div
+                  className="img"
+                  style={{
+                    backgroundImage:
+                      "url(/news/netball-newsroom-card-1200x750.jpg)",
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                  }}
+                >
+                  <span className="cat">Newsroom</span>
+                </div>
+                <div className="body">
+                  <h4>Tournament newsroom</h4>
+                  <div className="date">Official updates will be published here.</div>
+                </div>
+              </div>
             ) : experience?.news.map((article) => (
-              <article className="nc" key={article.id}>
+              <a className="nc" key={article.id} href={"/news/" + article.slug}>
                 <div className="img" style={article.imageUrl ? { backgroundImage: `url(${article.imageUrl})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}>
                   <span className="cat">Newsroom</span>
                 </div>
@@ -379,7 +405,7 @@ export default async function Home() {
                   <p>{article.summary}</p>
                   <div className="date">{article.publishedAt ? dayLabel(article.publishedAt) : "Official update"}</div>
                 </div>
-              </article>
+              </a>
             ))}
           </div>
         </div>
@@ -392,7 +418,7 @@ export default async function Home() {
             Proudly supported by
           </span>
           <div className="sp-row">
-            {(experience?.sponsors ?? []).length ? experience?.sponsors.map((sponsor) => (
+            {(experience?.sponsors ?? []).filter((sponsor) => sponsor.websiteEnabled).length ? experience?.sponsors.filter((sponsor) => sponsor.websiteEnabled).map((sponsor) => (
               <a className="sp" key={sponsor.id} href={sponsor.destinationUrl ?? "#sponsors"}>
                 {sponsor.logoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -481,6 +507,67 @@ export default async function Home() {
         </div>
       </footer>
     </>
+  );
+}
+
+function ComingSoon() {
+  return (
+    <main className="coming-soon">
+      <div className="coming-soon__glow coming-soon__glow--one" />
+      <div className="coming-soon__glow coming-soon__glow--two" />
+      <div className="coming-soon__grid" />
+
+      <section className="coming-soon__content">
+        <div className="coming-soon__eyebrow">
+          <span className="coming-soon__dot" />
+          Official tournament website
+        </div>
+
+        <img
+          className="coming-soon__logo"
+          src="/event-brand/Americas/Landscape/RGB/NWC_SYD2027_Logo_Landscape_Full_Colour_Negative_RGB_Regional_Qualifier_Americas.png"
+          alt="Netball World Cup Sydney 2027 Regional Qualifier Americas"
+        />
+
+        <div className="coming-soon__rule" />
+
+        <p className="coming-soon__kicker">The road to Sydney starts here</p>
+        <h1>Coming soon</h1>
+        <p className="coming-soon__intro">
+          We’re preparing the official home of the Americas Regional Qualifier.
+          Fixtures, teams, results and live match coverage will be available
+          here soon.
+        </p>
+
+        <div className="coming-soon__countdown" aria-label="Countdown to the tournament">
+          <Countdown target={TOURNAMENT_START} mode="units" />
+        </div>
+
+        <div className="coming-soon__details">
+          <div>
+            <span>Dates</span>
+            <strong>19–26 October 2026</strong>
+          </div>
+          <div>
+            <span>Venue</span>
+            <strong>G. Sobers Gymnasium</strong>
+          </div>
+          <div>
+            <span>Host</span>
+            <strong>Barbados</strong>
+          </div>
+        </div>
+
+        <a className="coming-soon__contact" href="mailto:steven@sports.bb">
+          Tournament enquiries <span aria-hidden>→</span>
+        </a>
+      </section>
+
+      <footer className="coming-soon__footer">
+        <span>Netball Americas</span>
+        <span>Regional Qualifier · Sydney 2027</span>
+      </footer>
+    </main>
   );
 }
 

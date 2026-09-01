@@ -133,10 +133,29 @@ export default function BroadcastPage() {
               </div> : <p className="mt-4 text-sm text-ink-muted">Feed becomes available once the fixture is ready for broadcast.</p>}
             </div>
             {selected && <div className="enterprise-panel p-6 text-sm">
-              <h2 className="font-display text-xl font-bold">vMix pull sources</h2>
-              <p className="mt-2 text-ink-muted">Update interval: 1000 ms. XPath: <code>/gameday/match</code>.</p>
-              <a className="mt-3 block break-all text-navy underline" href={`${API}/public/broadcast/matches/${selected}/live.xml`}>{API}/public/broadcast/matches/{selected}/live.xml</a>
-              <a className="mt-2 block break-all text-navy underline" href={`${API}/public/broadcast/matches/${selected}/live.json`}>{API}/public/broadcast/matches/{selected}/live.json</a>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="font-mono text-[0.63rem] font-bold uppercase tracking-wider text-ink-muted">Stream team · read-only</p>
+                  <h2 className="mt-1 font-display text-xl font-bold">Automatic data feeds</h2>
+                </div>
+                <span className="rounded-full bg-ok/10 px-3 py-1 text-xs font-bold text-ok">Always available</span>
+              </div>
+              <p className="mt-3 text-ink-muted">Generated directly from the official score and statistics ledgers. No Match Host action or publish step is required. Poll every 1000 ms; XML XPath: <code>/gameday/match</code>.</p>
+              <div className="mt-5 grid gap-4 md:grid-cols-2">
+                <div className="rounded-xl border border-line bg-white p-4">
+                  <h3 className="font-semibold text-navy">Score &amp; clock</h3>
+                  <p className="mt-1 text-xs text-ink-muted">Use for the standard vMix scoreboard contract.</p>
+                  <a className="mt-3 block break-all text-navy underline" target="_blank" rel="noreferrer" href={`${API}/public/broadcast/matches/${selected}/live.xml`}>XML feed ↗</a>
+                  <a className="mt-2 block break-all text-navy underline" target="_blank" rel="noreferrer" href={`${API}/public/broadcast/matches/${selected}/live.json`}>JSON feed ↗</a>
+                </div>
+                <div className="rounded-xl border border-line bg-white p-4">
+                  <h3 className="font-semibold text-navy">Enhanced match statistics</h3>
+                  <p className="mt-1 text-xs text-ink-muted">Adds attempts, accuracy, gains, turnovers, penalties and leaders.</p>
+                  <a className="mt-3 block break-all text-navy underline" target="_blank" rel="noreferrer" href={`${API}/public/broadcast/matches/${selected}/stats.xml`}>Stats XML feed ↗</a>
+                  <a className="mt-2 block break-all text-navy underline" target="_blank" rel="noreferrer" href={`${API}/public/broadcast/matches/${selected}/stats.json`}>Stats JSON feed ↗</a>
+                </div>
+              </div>
+              <p className="mt-4 text-xs text-ink-muted">The Match Host receives the same live information for commentary but cannot alter, enable or disable these feeds.</p>
             </div>}
           </section>
         </div>

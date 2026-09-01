@@ -189,7 +189,7 @@ export class MatchAdminService {
       })
       .from(schema.appUser)
       .where(
-        sql`${schema.appUser.platformRole} IN ('match_supervisor', 'scorer', 'timekeeper', 'stats_lineup', 'result_approver')`,
+        sql`${schema.appUser.platformRole} IN ('scorer', 'timekeeper', 'stats_lineup', 'stats_host')`,
       )
       .orderBy(asc(schema.appUser.displayName));
   }
@@ -233,7 +233,12 @@ export class MatchAdminService {
         schema.appUser,
         eq(schema.appUser.id, schema.matchOfficialAssignment.appUserId),
       )
-      .where(eq(schema.matchOfficialAssignment.matchId, matchId))
+      .where(
+        and(
+          eq(schema.matchOfficialAssignment.matchId, matchId),
+          sql`${schema.matchOfficialAssignment.role} IN ('scorer', 'timekeeper', 'stats_lineup', 'stats_host')`,
+        ),
+      )
       .orderBy(asc(schema.matchOfficialAssignment.role));
   }
 

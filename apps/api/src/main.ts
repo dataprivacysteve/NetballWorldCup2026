@@ -32,6 +32,14 @@ async function bootstrap() {
         'PLATFORM_BASE_URL',
         'https://platform.netballamericas.test',
       ),
+      config.get<string>(
+        'MATCH_BASE_URL',
+        'https://match.netballamericas.test',
+      ),
+      config.get<string>(
+        'STATS_BASE_URL',
+        'https://stats.netballamericas.test',
+      ),
       config.get<string>('PUBLIC_BASE_URL', 'https://www.netballamericas.test'),
     ],
     allowedHeaders: ['content-type', 'x-delegation-id'],

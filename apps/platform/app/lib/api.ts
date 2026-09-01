@@ -6,13 +6,20 @@ import { showSuccessToast } from "../components/toast";
 const BASE = process.env.NEXT_PUBLIC_API_BASE_URL as string;
 
 function successMessage(path: string): string {
-  if (path.includes("/admin/review/") && path.endsWith("/approve")) return "The team was approved and accreditation status was updated.";
-  if (path.includes("approve")) return "The delegation registration was approved.";
-  if (path.includes("reject")) return "The delegation registration was returned with the recorded reason.";
-  if (path.includes("return")) return "The record was returned to the team with your review note.";
-  if (path.includes("verify") || path.includes("identity")) return "Verification was recorded successfully.";
-  if (path.includes("registration-window")) return "The registration window settings were saved.";
-  if (path.includes("credential")) return "The credential action was completed.";
+  if (path.includes("/admin/review/") && path.endsWith("/approve"))
+    return "The team was approved and accreditation status was updated.";
+  if (path.includes("approve"))
+    return "The delegation registration was approved.";
+  if (path.includes("reject"))
+    return "The delegation registration was returned with the recorded reason.";
+  if (path.includes("return"))
+    return "The record was returned to the team with your review note.";
+  if (path.includes("verify") || path.includes("identity"))
+    return "Verification was recorded successfully.";
+  if (path.includes("registration-window"))
+    return "The registration window settings were saved.";
+  if (path.includes("credential"))
+    return "The credential action was completed.";
   if (path.includes("match")) return "The match information was saved.";
   if (path.includes("country")) return "The eligible-country list was updated.";
   return "Your changes were saved successfully.";
@@ -33,11 +40,13 @@ export class ApiError extends Error {
 
 async function req<T>(
   path: string,
-  opts: { method?: string; body?: unknown } = {},
+  opts: { method?: string; body?: unknown; form?: FormData } = {},
 ): Promise<T> {
   const headers: Record<string, string> = {};
   let body: BodyInit | undefined;
-  if (opts.body !== undefined) {
+  if (opts.form) {
+    body = opts.form;
+  } else if (opts.body !== undefined) {
     headers["content-type"] = "application/json";
     body = JSON.stringify(opts.body);
   }
@@ -51,7 +60,13 @@ async function req<T>(
   const text = await res.text();
   const data = text ? JSON.parse(text) : null;
   if (!res.ok) throw new ApiError(res.status, data);
-  if ((opts.method ?? "GET").toUpperCase() !== "GET" && path !== "/login" && path !== "/logout" && !path.startsWith("/gameday/") && !path.startsWith("/admin/scan/")) {
+  if (
+    (opts.method ?? "GET").toUpperCase() !== "GET" &&
+    path !== "/login" &&
+    path !== "/logout" &&
+    !path.startsWith("/gameday/") &&
+    !path.startsWith("/admin/scan/")
+  ) {
     showSuccessToast(successMessage(path));
   }
   return data as T;
@@ -102,10 +117,12 @@ export type Me = {
     platformRole:
       | "sportsbb_admin"
       | "loc_officer"
+      | "media_comms"
       | "match_supervisor"
       | "scorer"
       | "timekeeper"
       | "stats_lineup"
+      | "stats_host"
       | "result_approver"
       | null;
   } | null;
@@ -162,6 +179,8 @@ export type LaunchConfiguration = {
   accessZoneMatrix: Record<string, string[]>;
   brandPrimaryLogoUrl: string | null;
   brandReverseLogoUrl: string | null;
+  publicSiteLive: boolean;
+  gymDisplayMode: "automatic" | "arena" | "lineup" | "live";
   configurationStatus: "draft" | "published" | "locked";
   configurationVersion: number;
   configurationPublishedAt: string | null;
@@ -189,6 +208,10 @@ export type SponsorConfig = {
   tier: "gold" | "silver" | "bronze" | "supporter";
   logoUrl: string | null;
   destinationUrl: string | null;
+  websiteEnabled: boolean;
+  displayImageUrl: string | null;
+  displayEnabled: boolean;
+  displaySeconds: number;
   active: boolean;
   sortOrder: number;
 };
@@ -432,11 +455,10 @@ export type EdgeNode = {
 };
 
 export type GameDayRole =
-  | "match_supervisor"
   | "scorer"
   | "timekeeper"
   | "stats_lineup"
-  | "result_approver";
+  | "stats_host";
 export type GameDayAccount = {
   id: string;
   email: string;
@@ -507,6 +529,7 @@ export type GameDayState = {
     period: number | null;
     clockSeconds: number | null;
     payload: Record<string, unknown> | null;
+    reversesEventId: string | null;
     recordedAt: string;
   }>;
   teamSheets: Array<{
@@ -590,6 +613,16 @@ export const api = {
   controlAudit: () => req<AuditEvent[]>("/control/audit"),
   publicExperience: () =>
     req<PublicExperienceResponse>("/control/public-experience"),
+  updatePublicSiteMode: (live: boolean) =>
+    req<LaunchConfigurationResponse>("/control/public-site-mode", {
+      method: "PATCH",
+      body: { live },
+    }),
+  updateGymDisplayMode: (mode: "automatic" | "arena" | "lineup" | "live") =>
+    req<LaunchConfigurationResponse>("/control/gym-display-mode", {
+      method: "PATCH",
+      body: { mode },
+    }),
   updatePublicExperience: (
     body: Partial<Omit<PublicExperienceConfig, "tournamentId" | "updatedAt">>,
   ) =>
@@ -602,11 +635,69 @@ export const api = {
   ) => req<SponsorConfig>("/control/sponsors", { method: "POST", body }),
   deleteSponsor: (id: string) =>
     req<{ ok: boolean }>(`/control/sponsors/${id}`, { method: "DELETE" }),
+  advertisements: () => req<SponsorConfig[]>("/admin/advertising"),
+  saveAdvertisement: (
+    body: Partial<SponsorConfig> & Pick<SponsorConfig, "name" | "tier">,
+  ) => req<SponsorConfig>("/admin/advertising", { method: "POST", body }),
+  uploadAdvertisementCreative: (
+    id: string,
+    surface: "website" | "display",
+    file: File,
+  ) => {
+    const form = new FormData();
+    form.append("file", file);
+    return req<SponsorConfig>(`/admin/advertising/${id}/creative/${surface}`, {
+      method: "POST",
+      form,
+    });
+  },
+  deleteAdvertisement: (id: string) =>
+    req<{ ok: boolean }>(`/admin/advertising/${id}`, {
+      method: "DELETE",
+    }),
+  newsArticles: () => req<NewsConfig[]>("/admin/news"),
   saveNews: (
     body: Partial<NewsConfig> & Pick<NewsConfig, "slug" | "title" | "summary">,
-  ) => req<NewsConfig>("/control/news", { method: "POST", body }),
+  ) => req<NewsConfig>("/admin/news", { method: "POST", body }),
+  uploadNewsImage: (id: string, file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return req<NewsConfig>(`/admin/news/${id}/image`, {
+      method: "POST",
+      form,
+    });
+  },
   deleteNews: (id: string) =>
-    req<{ ok: boolean }>(`/control/news/${id}`, { method: "DELETE" }),
+    req<{ ok: boolean }>(`/admin/news/${id}`, { method: "DELETE" }),
+  controlGameDayMatches: () => req<AdminMatch[]>("/control/gameday/matches"),
+  controlGameDayAccounts: () =>
+    req<GameDayAccount[]>("/control/gameday/accounts"),
+  createControlGameDayAccount: (body: {
+    email: string;
+    displayName: string;
+    password: string;
+    role: GameDayRole;
+  }) =>
+    req<GameDayAccount>("/control/gameday/accounts", {
+      method: "POST",
+      body,
+    }),
+  controlGameDayAssignments: (matchId: string) =>
+    req<GameDayAssignment[]>(`/control/gameday/matches/${matchId}/assignments`),
+  assignControlGameDayOfficial: (
+    matchId: string,
+    appUserId: string,
+    role: GameDayRole,
+  ) =>
+    req<GameDayAssignment>(`/control/gameday/matches/${matchId}/assignments`, {
+      method: "POST",
+      body: { appUserId, role },
+    }),
+  unassignControlGameDayOfficial: (matchId: string, role: GameDayRole) =>
+    req<{ ok: boolean }>(
+      `/control/gameday/matches/${matchId}/assignments/${role}`,
+      { method: "DELETE" },
+    ),
 
   // Badges + gate scan
   listAccredited: () => req<AccreditedDelegation[]>("/admin/accredited"),

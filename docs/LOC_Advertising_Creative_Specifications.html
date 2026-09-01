@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LOC Advertising Creative Specifications · Americas Regional Qualifier</title>
+  <style>
+    :root {
+      --navy: #061127;
+      --navy-2: #111f49;
+      --blue: #4b7ebb;
+      --gold: #f4c430;
+      --teal: #28c9b1;
+      --paper: #f7f4ed;
+      --ink: #10182c;
+      --muted: #657084;
+      --line: #d9dee8;
+      --white: #fff;
+      --danger: #b42336;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: #e8ebf1;
+      font-family: Inter, Manrope, "Segoe UI", Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.55;
+    }
+    h1, h2, h3, p { margin-top: 0; }
+    h1, h2, h3 { line-height: 1.08; }
+    a { color: inherit; }
+    .document { width: min(1120px, 100%); margin: 0 auto; background: var(--paper); box-shadow: 0 25px 80px rgba(6,17,39,.2); }
+    .hero {
+      position: relative;
+      min-height: 570px;
+      overflow: hidden;
+      padding: 56px 64px 48px;
+      color: white;
+      background:
+        radial-gradient(circle at 78% 18%, rgba(75,126,187,.55), transparent 30%),
+        radial-gradient(circle at 15% 105%, rgba(40,201,177,.23), transparent 34%),
+        linear-gradient(135deg, var(--navy), var(--navy-2));
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -95px;
+      bottom: -250px;
+      width: 490px;
+      height: 490px;
+      border: 68px solid rgba(244,196,48,.12);
+      border-radius: 50%;
+    }
+    .brand-row { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 28px; }
+    .brand-row img { display: block; object-fit: contain; }
+    .event-logo { width: min(430px, 48%); max-height: 122px; }
+    .sportsbb-logo { width: min(245px, 30%); padding: 10px 14px; border-radius: 12px; background: white; }
+    .eyebrow { margin: 92px 0 14px; color: var(--gold); font-size: 12px; font-weight: 800; letter-spacing: .2em; text-transform: uppercase; }
+    .hero h1 { position: relative; z-index: 1; max-width: 820px; margin-bottom: 20px; font-size: clamp(46px, 7vw, 82px); letter-spacing: -.045em; }
+    .hero-copy { position: relative; z-index: 1; max-width: 700px; color: rgba(255,255,255,.72); font-size: 20px; }
+    .meta { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 10px; margin-top: 38px; }
+    .pill { padding: 8px 12px; border: 1px solid rgba(255,255,255,.18); border-radius: 999px; background: rgba(255,255,255,.07); font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+    .toolbar { position: sticky; top: 0; z-index: 20; display: flex; justify-content: space-between; gap: 12px; padding: 12px 24px; color: white; background: rgba(6,17,39,.96); backdrop-filter: blur(14px); }
+    .toolbar nav { display: flex; flex-wrap: wrap; gap: 8px; }
+    .toolbar a, .toolbar button { padding: 8px 11px; border: 0; border-radius: 8px; color: white; background: transparent; font: inherit; font-size: 12px; font-weight: 700; text-decoration: none; cursor: pointer; }
+    .toolbar a:hover, .toolbar button:hover { background: rgba(255,255,255,.1); }
+    .toolbar button { color: var(--navy); background: var(--gold); }
+    .content { padding: 58px 64px 72px; }
+    .section { margin-top: 66px; scroll-margin-top: 78px; }
+    .section:first-child { margin-top: 0; }
+    .section-kicker { margin-bottom: 8px; color: #3c6aa3; font-size: 11px; font-weight: 900; letter-spacing: .18em; text-transform: uppercase; }
+    .section h2 { margin-bottom: 14px; font-size: 38px; letter-spacing: -.035em; }
+    .section-intro { max-width: 780px; color: var(--muted); font-size: 17px; }
+    .notice { display: grid; grid-template-columns: 46px 1fr; gap: 16px; align-items: start; margin: 26px 0; padding: 20px; border: 1px solid #e5c65b; border-radius: 16px; background: #fff8d8; }
+    .notice-icon { display: grid; width: 46px; height: 46px; place-items: center; border-radius: 50%; color: var(--navy); background: var(--gold); font-weight: 900; }
+    .notice strong { display: block; margin-bottom: 3px; }
+    .spec-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; margin-top: 30px; }
+    .spec-card { overflow: hidden; border: 1px solid var(--line); border-radius: 18px; background: white; box-shadow: 0 9px 30px rgba(17,31,73,.06); }
+    .spec-card.featured { grid-column: 1 / -1; border-color: #d5b631; }
+    .spec-head { display: flex; justify-content: space-between; gap: 16px; padding: 20px 22px 16px; }
+    .spec-title { margin: 0; font-size: 20px; }
+    .ratio { align-self: start; padding: 5px 9px; border-radius: 999px; color: #265444; background: #ddf8f1; font-size: 11px; font-weight: 900; white-space: nowrap; }
+    .dimensions { margin: 4px 0 0; color: #3c6aa3; font-family: Consolas, monospace; font-size: 18px; font-weight: 800; }
+    .canvas { position: relative; display: grid; min-height: 116px; place-items: center; margin: 0 22px 20px; overflow: hidden; border-radius: 12px; color: white; background: linear-gradient(135deg, var(--navy), #223773); }
+    .canvas.wide { aspect-ratio: 3/1; min-height: 150px; }
+    .canvas.gold { aspect-ratio: 4.85/1; }
+    .canvas.banner { aspect-ratio: 6/1; }
+    .canvas.logo-strip { aspect-ratio: 2/1; }
+    .safe { position: absolute; inset: 8%; display: grid; place-items: center; border: 2px dashed rgba(244,196,48,.9); border-radius: 7px; }
+    .canvas-label { text-align: center; font-size: 13px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+    .canvas-label small { display: block; margin-top: 2px; color: rgba(255,255,255,.58); font-weight: 600; }
+    .spec-copy { padding: 0 22px 22px; color: var(--muted); font-size: 14px; }
+    .placement-demo { display: grid; grid-template-columns: 1.35fr .65fr; gap: 22px; margin-top: 28px; }
+    .screen { position: relative; min-height: 360px; overflow: hidden; border: 10px solid #1c2332; border-radius: 20px; color: white; background: var(--navy); box-shadow: 0 16px 40px rgba(6,17,39,.2); }
+    .screen::after { content: "GYMNASIUM DISPLAY"; position: absolute; top: 13px; right: 15px; color: rgba(255,255,255,.35); font: 700 9px Consolas, monospace; letter-spacing: .15em; }
+    .screen-score { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 20px; height: 66%; padding: 38px; text-align: center; }
+    .team-score { color: var(--gold); font-size: 54px; font-weight: 900; }
+    .clock { font: 900 34px Consolas, monospace; }
+    .ad-slot { position: absolute; right: 7%; bottom: 7%; left: 7%; display: grid; height: 21%; place-items: center; border: 2px solid var(--gold); border-radius: 10px; color: var(--navy); background: linear-gradient(90deg, #f9edac, white); font-size: 14px; font-weight: 900; letter-spacing: .08em; text-align: center; text-transform: uppercase; }
+    .placements { display: grid; gap: 12px; }
+    .placement-item { padding: 18px; border: 1px solid var(--line); border-radius: 14px; background: white; }
+    .placement-item strong { display: block; margin-bottom: 5px; }
+    .placement-item p { margin: 0; color: var(--muted); font-size: 14px; }
+    .table-wrap { margin-top: 28px; overflow: hidden; border: 1px solid var(--line); border-radius: 16px; background: white; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 15px 17px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: white; background: var(--navy-2); font-size: 11px; letter-spacing: .09em; text-transform: uppercase; }
+    tr:last-child td { border-bottom: 0; }
+    td { font-size: 14px; }
+    td strong { display: block; }
+    td small { color: var(--muted); }
+    .quality-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 28px; }
+    .quality-card { padding: 21px; border-radius: 16px; background: white; border: 1px solid var(--line); }
+    .number { display: grid; width: 34px; height: 34px; margin-bottom: 15px; place-items: center; border-radius: 10px; color: var(--navy); background: var(--gold); font-weight: 900; }
+    .quality-card h3 { margin-bottom: 7px; font-size: 17px; }
+    .quality-card p { margin: 0; color: var(--muted); font-size: 14px; }
+    .dos { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 28px; }
+    .do-card { padding: 23px; border-radius: 16px; background: white; border: 1px solid var(--line); }
+    .do-card.good { border-top: 5px solid var(--teal); }
+    .do-card.bad { border-top: 5px solid #d44c60; }
+    .do-card h3 { margin-bottom: 14px; }
+    ul, ol { margin: 0; padding-left: 21px; }
+    li + li { margin-top: 8px; }
+    .workflow { display: grid; gap: 0; margin-top: 30px; counter-reset: steps; }
+    .step { position: relative; display: grid; grid-template-columns: 58px 1fr; gap: 18px; padding: 0 0 28px; counter-increment: steps; }
+    .step::before { content: counter(steps); z-index: 1; display: grid; width: 48px; height: 48px; place-items: center; border-radius: 50%; color: var(--navy); background: var(--gold); font-weight: 900; }
+    .step:not(:last-child)::after { content: ""; position: absolute; top: 48px; bottom: 0; left: 23px; width: 2px; background: #d8c66f; }
+    .step h3 { margin: 4px 0 5px; font-size: 18px; }
+    .step p { margin: 0; color: var(--muted); }
+    .checklist { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 22px; margin-top: 25px; }
+    .check { display: grid; grid-template-columns: 24px 1fr; gap: 10px; align-items: start; padding: 13px 0; border-bottom: 1px solid var(--line); }
+    .box { width: 20px; height: 20px; border: 2px solid #8792a6; border-radius: 4px; background: white; }
+    .submission { margin-top: 34px; padding: 26px; border-radius: 18px; color: white; background: var(--navy-2); }
+    .submission h3 { margin-bottom: 18px; color: var(--gold); }
+    .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 28px; }
+    .field { padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,.35); color: rgba(255,255,255,.55); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+    .footer { display: flex; justify-content: space-between; gap: 24px; padding: 24px 64px; color: rgba(255,255,255,.62); background: var(--navy); font-size: 12px; }
+    .footer strong { color: white; }
+    .code { padding: 3px 6px; border-radius: 5px; color: #214469; background: #e7eef8; font-family: Consolas, monospace; font-size: .9em; }
+    @media (max-width: 800px) {
+      .hero, .content { padding-right: 28px; padding-left: 28px; }
+      .hero { min-height: 520px; }
+      .brand-row { align-items: flex-start; }
+      .spec-grid, .placement-demo, .quality-grid, .dos, .checklist, .fields { grid-template-columns: 1fr; }
+      .spec-card.featured { grid-column: auto; }
+      .toolbar nav { display: none; }
+      .footer { padding-right: 28px; padding-left: 28px; }
+    }
+    @media print {
+      @page { size: A4; margin: 12mm; }
+      body { background: white; font-size: 10pt; }
+      .document { width: auto; box-shadow: none; }
+      .toolbar { display: none; }
+      .hero { min-height: 245mm; page-break-after: always; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      .content { padding: 0; }
+      .section { margin-top: 12mm; }
+      .section + .section { page-break-before: always; }
+      .spec-card, .quality-card, .do-card, .placement-item, .notice, .submission, .table-wrap { break-inside: avoid; }
+      .footer { margin-top: 12mm; padding: 8mm 0 0; color: var(--muted); background: transparent; border-top: 1px solid var(--line); }
+      .footer strong { color: var(--ink); }
+    }
+  </style>
+</head>
+<body>
+  <div class="document">
+    <header class="hero">
+      <div class="brand-row">
+        <img class="event-logo" src="https://platform.netballamericas.test/event-brand/NWC_SYD2027_Logo_Landscape_Full_Colour_Negative_RGB_Regional_Qualifier_Americas.png" alt="Netball World Cup Sydney 2027 Regional Qualifier Americas">
+        <img class="sportsbb-logo" src="https://platform.netballamericas.test/event-brand/sportsbb-logo.png" alt="SportsBB — A Digital Sports Network">
+      </div>
+      <p class="eyebrow">Local Organising Committee · Commercial Operations</p>
+      <h1>Advertising Creative Specifications</h1>
+      <p class="hero-copy">Production-ready guidance for partner artwork appearing on the tournament website and inside G. Sobers Gymnasium.</p>
+      <div class="meta">
+        <span class="pill">Issue 1 · 01 September 2026</span>
+        <span class="pill">Digital &amp; in-venue</span>
+        <span class="pill">LOC working document</span>
+      </div>
+    </header>
+
+    <div class="toolbar">
+      <nav aria-label="Document sections">
+        <a href="#quick-spec">Quick spec</a><a href="#placement">Placement</a><a href="#quality">Quality</a><a href="#workflow">Upload</a><a href="#checklist">Checklist</a>
+      </nav>
+      <button type="button" onclick="window.print()">Print / Save PDF</button>
+    </div>
+
+    <main class="content">
+      <section class="section" id="quick-spec">
+        <p class="section-kicker">01 · Deliverables</p>
+        <h2>Supply artwork at the exact canvas size</h2>
+        <p class="section-intro">The platform never stretches advertising. It scales the image proportionately and adds transparent space when the aspect ratio does not match. Exact dimensions prevent filler, letterboxing and unexpectedly small logos.</p>
+        <div class="notice">
+          <div class="notice-icon">!</div>
+          <div><strong>One placement requires one correctly sized file.</strong> Do not submit a square logo and expect it to fill a wide banner. Build the logo, campaign message and background into the specified canvas.</div>
+        </div>
+        <div class="spec-grid">
+          <article class="spec-card featured">
+            <div class="spec-head"><div><h3 class="spec-title">Gymnasium / in-house display</h3><p class="dimensions">1500 × 500 px</p></div><span class="ratio">3:1 ratio</span></div>
+            <div class="canvas wide"><div class="safe"><div class="canvas-label">Partner message + logo<small>Keep essential content inside the dashed safe area</small></div></div></div>
+            <p class="spec-copy">Used below the live match clock and in the Arena Championship Hub partner band. Design for long-distance viewing on a large screen.</p>
+          </article>
+          <article class="spec-card">
+            <div class="spec-head"><div><h3 class="spec-title">Gold billboard</h3><p class="dimensions">970 × 200 px</p></div><span class="ratio">4.85:1</span></div>
+            <div class="canvas gold"><div class="safe"><div class="canvas-label">Gold partner</div></div></div>
+            <p class="spec-copy">Premium website billboard. Best for a short campaign line, logo and one clear call to action.</p>
+          </article>
+          <article class="spec-card">
+            <div class="spec-head"><div><h3 class="spec-title">Silver / Bronze banner</h3><p class="dimensions">1200 × 200 px</p></div><span class="ratio">6:1</span></div>
+            <div class="canvas banner"><div class="safe"><div class="canvas-label">Wide website banner</div></div></div>
+            <p class="spec-copy">A very wide website placement. Keep copy brief and prevent logos from becoming too small.</p>
+          </article>
+          <article class="spec-card">
+            <div class="spec-head"><div><h3 class="spec-title">Partner logo strip</h3><p class="dimensions">600 × 300 px</p></div><span class="ratio">2:1</span></div>
+            <div class="canvas logo-strip"><div class="safe"><div class="canvas-label">Partner logo</div></div></div>
+            <p class="spec-copy">Supporter placement designed primarily for a centred logo with generous breathing room.</p>
+          </article>
+          <article class="spec-card">
+            <div class="spec-head"><div><h3 class="spec-title">Accepted source files</h3><p class="dimensions">JPEG · PNG · WebP</p></div><span class="ratio">10 MB max</span></div>
+            <div class="canvas logo-strip"><div class="canvas-label">sRGB colour<small>SVG, PDF, GIF and video are not accepted</small></div></div>
+            <p class="spec-copy">The platform automatically rotates the image correctly, scales it without distortion and publishes an optimized WebP at quality 90.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section" id="placement">
+        <p class="section-kicker">02 · Where it appears</p>
+        <h2>In-venue placement and rotation</h2>
+        <p class="section-intro">One in-house creative feeds both operational display states. It remains secondary to the score, clock, teams and competition information.</p>
+        <div class="placement-demo">
+          <div class="screen" aria-label="Diagram showing advertising below the live scoreboard">
+            <div class="screen-score"><div><div>TEAM A</div><div class="team-score">49</div></div><div class="clock">08:42</div><div><div>TEAM B</div><div class="team-score">58</div></div></div>
+            <div class="ad-slot">1500 × 500 partner creative</div>
+          </div>
+          <div class="placements">
+            <div class="placement-item"><strong>Live Score</strong><p>Displayed below the match clock and score, scaled proportionately inside the allocated banner area.</p></div>
+            <div class="placement-item"><strong>Arena Display</strong><p>Displayed in the footer partner showcase while standings, results and the next fixture remain visible.</p></div>
+            <div class="placement-item"><strong>Rotation</strong><p>Each enabled creative runs for 5–60 seconds. The platform default is 10 seconds.</p></div>
+            <div class="placement-item"><strong>Transitions</strong><p>SportsBB stingers cover screen-mode changes; advertisements do not replace or interrupt the stinger.</p></div>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Surface</th><th>Inventory rule</th><th>Timing</th><th>Click-through</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Gymnasium display</strong><small>Live Score + Arena</small></td><td>All active display-enabled campaigns join the rotation.</td><td>5–60 seconds per creative; 10 seconds recommended.</td><td>Not applicable on the physical screen.</td></tr>
+              <tr><td><strong>Website</strong><small>Gold, Silver, Bronze, Supporter</small></td><td>One active creative per designed website slot.</td><td>Persistent within the page placement.</td><td>Optional HTTPS destination URL.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section" id="quality">
+        <p class="section-kicker">03 · Production quality</p>
+        <h2>Artwork that remains legible across the gym</h2>
+        <p class="section-intro">Large screens magnify weak source images and small text. Build from original logos and photography rather than screenshots or social-media downloads.</p>
+        <div class="quality-grid">
+          <article class="quality-card"><div class="number">1</div><h3>Correct pixel dimensions</h3><p>Export at the exact size listed. Never enlarge a small image to meet the canvas.</p></article>
+          <article class="quality-card"><div class="number">2</div><h3>sRGB colour</h3><p>Convert CMYK artwork to sRGB before export so colours remain predictable on screens.</p></article>
+          <article class="quality-card"><div class="number">3</div><h3>Strong contrast</h3><p>Use light text on dark backgrounds or dark text on light backgrounds. Avoid thin outlines.</p></article>
+          <article class="quality-card"><div class="number">4</div><h3>Safe area</h3><p>Keep logos, legal copy and calls to action at least 8% inside every edge.</p></article>
+          <article class="quality-card"><div class="number">5</div><h3>Readable type</h3><p>For the 1500×500 gym creative, use approximately 48 px or larger for essential copy.</p></article>
+          <article class="quality-card"><div class="number">6</div><h3>Lean file size</h3><p>10 MB is the enforced maximum. A clean source under 2 MB is preferred for fast venue loading.</p></article>
+        </div>
+        <div class="dos">
+          <article class="do-card good"><h3>Do</h3><ul><li>Use official vector or high-resolution partner logos.</li><li>Keep the message to one short headline.</li><li>Build backgrounds to the complete canvas edge.</li><li>Check spelling, dates, URLs and sponsor tier.</li><li>Preview on a dark screen before approval.</li></ul></article>
+          <article class="do-card bad"><h3>Do not</h3><ul><li>Submit screenshots, Word files, PDFs or SVG files.</li><li>Place a narrow image inside a white 1500×500 canvas.</li><li>Use tiny disclaimers as essential information.</li><li>Distort, stretch or crop partner logos.</li><li>Include QR codes unless tested from the gym seating distance.</li></ul></article>
+        </div>
+      </section>
+
+      <section class="section" id="workflow">
+        <p class="section-kicker">04 · LOC publishing workflow</p>
+        <h2>Upload, preview and approve</h2>
+        <p class="section-intro">Advertising is managed from the LOC platform by authorized Media &amp; Communications or LOC personnel. Every save and upload is recorded in the audit history.</p>
+        <div class="workflow">
+          <article class="step"><div><h3>Open Advertising</h3><p>Sign in at <span class="code">platform.netballamericas.test</span> and open the Advertising module.</p></div></article>
+          <article class="step"><div><h3>Create the campaign</h3><p>Enter the partner or campaign name and choose Website, In-house display, or both.</p></div></article>
+          <article class="step"><div><h3>Select the placement</h3><p>For website use, choose Gold, Silver, Bronze or Supporter. Upload artwork matching that exact slot.</p></div></article>
+          <article class="step"><div><h3>Set rotation and destination</h3><p>Choose 5–60 seconds for in-house rotation. Add an HTTPS click-through URL for website advertising when required.</p></div></article>
+          <article class="step"><div><h3>Save as draft or publish</h3><p>Use draft while approvals are outstanding. Activate only after brand, commercial and technical review.</p></div></article>
+          <article class="step"><div><h3>Preview both surfaces</h3><p>Check the public website placement and the controlled gym screen at <span class="code">platform.netballamericas.test/gym</span>.</p></div></article>
+        </div>
+      </section>
+
+      <section class="section" id="checklist">
+        <p class="section-kicker">05 · Final approval</p>
+        <h2>Creative delivery checklist</h2>
+        <p class="section-intro">Complete this check before enabling a campaign. The LOC retains final approval over placement, duration and publishing status.</p>
+        <div class="checklist">
+          <div class="check"><span class="box"></span><span>Correct placement and exact pixel dimensions</span></div>
+          <div class="check"><span class="box"></span><span>JPEG, PNG or WebP source file</span></div>
+          <div class="check"><span class="box"></span><span>File is below the 10 MB limit</span></div>
+          <div class="check"><span class="box"></span><span>sRGB colour profile</span></div>
+          <div class="check"><span class="box"></span><span>Logos are approved and undistorted</span></div>
+          <div class="check"><span class="box"></span><span>Essential content remains inside 8% safe area</span></div>
+          <div class="check"><span class="box"></span><span>Copy is readable at intended viewing distance</span></div>
+          <div class="check"><span class="box"></span><span>Dates, spelling and call to action verified</span></div>
+          <div class="check"><span class="box"></span><span>Destination URL tested, if applicable</span></div>
+          <div class="check"><span class="box"></span><span>Gym rotation duration approved</span></div>
+          <div class="check"><span class="box"></span><span>Website preview approved</span></div>
+          <div class="check"><span class="box"></span><span>Gymnasium preview approved</span></div>
+        </div>
+        <div class="submission">
+          <h3>Campaign approval record</h3>
+          <div class="fields">
+            <div class="field">Partner / campaign</div><div class="field">Placement(s)</div>
+            <div class="field">Start date and time</div><div class="field">End date and time</div>
+            <div class="field">Commercial approval</div><div class="field">LOC publishing approval</div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div><strong>Americas Regional Qualifier</strong><br>G. Sobers Gymnasium · Barbados</div>
+      <div style="text-align:right"><strong>Advertising Creative Specifications</strong><br>Prepared for the Local Organising Committee</div>
+    </footer>
+  </div>
+</body>
+</html>

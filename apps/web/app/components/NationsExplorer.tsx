@@ -46,27 +46,35 @@ export function NationsExplorer({
             <div>
               <div className="h-nm">{squad.nation.name}</div>
               <div className="h-meta">
-                {squad.members.length} accredited · {active}
+                {squad.members.length} {squad.members.length === 1 ? "player" : "players"} · {active}
               </div>
             </div>
           </div>
           <div className="players">
             {squad.members.map((p, i) => (
-              <div className="pl" key={i}>
+              <article className="pl" key={i}>
                 <div className="num">{p.jerseyNumber ?? "–"}</div>
-                <div
-                  className="av"
-                  style={{
-                    background: nationTheme(active).color,
-                    color: "#fff",
-                  }}
-                >
-                  {p.firstName.charAt(0)}
-                  {p.lastName.charAt(0)}
-                </div>
-                <div>
+                {p.photoAssetPath ? (
+                  <img
+                    className="av athlete-photo"
+                    src={`/${p.photoAssetPath}`}
+                    alt={`${p.firstName} ${p.lastName}, ${p.role ?? "squad member"}`}
+                  />
+                ) : (
+                  <div
+                    className="av"
+                    style={{
+                      background: nationTheme(active).color,
+                      color: "#fff",
+                    }}
+                  >
+                    {p.firstName.charAt(0)}
+                    {p.lastName.charAt(0)}
+                  </div>
+                )}
+                <div className="player-copy">
                   <div className="pn">
-                    {p.firstName.charAt(0)}. {p.lastName}
+                    {p.firstName} {p.lastName}
                     {p.isCaptain && <span className="cap">C</span>}
                   </div>
                   <div className="pp">
@@ -74,13 +82,14 @@ export function NationsExplorer({
                       ? `Primary: ${p.role}`
                       : (p.role ?? p.category)}
                   </div>
+                  {p.biography && <p className="bio">{p.biography}</p>}
                 </div>
-              </div>
+              </article>
             ))}
           </div>
           <div className="squad-note">
             Listed positions are primary preferences, not fixed match
-            assignments. Squads remain subject to accreditation.
+            assignments. Match-day selection remains subject to tournament eligibility.
           </div>
         </div>
       )}

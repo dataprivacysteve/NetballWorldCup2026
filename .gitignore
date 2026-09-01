@@ -10,6 +10,8 @@ infra/caddy/certs/*.pem
 # build output
 dist/
 .next/
+.next.stale-*/
+.next.partial-*/
 build/
 
 # logs / os cruft
@@ -18,3 +20,9 @@ build/
 
 # generated inspection/rendering artifacts
 tmp/
+.diagram-design
+
+# local recovery/evidence archives — retain outside source control
+backups/
+.local-backups/
+Netball_2026_Qualifiers_Logos.zip

@@ -4,12 +4,15 @@ import {
   IsArray,
   IsBoolean,
   IsDateString,
+  IsInt,
   IsOptional,
   IsString,
   MinLength,
   ValidateIf,
   IsIn,
   IsUUID,
+  Max,
+  Min,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -61,4 +64,29 @@ export class VerifyIdentityDto {
 
 export class RevokeCredentialDto {
   @IsString() @MinLength(3) reason!: string;
+}
+
+export class SaveAdvertisementDto {
+  @IsOptional() @IsUUID() id?: string;
+  @IsString() @MinLength(2) name!: string;
+  @IsIn(['gold', 'silver', 'bronze', 'supporter'])
+  tier!: 'gold' | 'silver' | 'bronze' | 'supporter';
+  @IsOptional() @IsString() logoUrl?: string;
+  @IsOptional() @IsString() destinationUrl?: string;
+  @IsOptional() @IsBoolean() websiteEnabled?: boolean;
+  @IsOptional() @IsString() displayImageUrl?: string;
+  @IsOptional() @IsBoolean() displayEnabled?: boolean;
+  @IsOptional() @IsInt() @Min(5) @Max(60) displaySeconds?: number;
+  @IsOptional() @IsBoolean() active?: boolean;
+  @IsOptional() @IsInt() sortOrder?: number;
+}
+
+export class SaveNewsArticleDto {
+  @IsOptional() @IsUUID() id?: string;
+  @IsString() @MinLength(2) slug!: string;
+  @IsString() @MinLength(3) title!: string;
+  @IsString() @MinLength(3) summary!: string;
+  @IsOptional() @IsString() body?: string;
+  @IsOptional() @IsString() imageUrl?: string;
+  @IsOptional() @IsBoolean() published?: boolean;
 }

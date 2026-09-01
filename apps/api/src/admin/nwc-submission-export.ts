@@ -61,7 +61,7 @@ type ZipEntry = { name: string; data: Buffer };
 
 const textEncoder = new TextEncoder();
 
-function xml(value: unknown): string {
+function xml(value: CellValue | null | undefined): string {
   return String(value ?? '')
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
@@ -233,9 +233,7 @@ function utf8(value: string): Buffer {
   return Buffer.from(textEncoder.encode(value));
 }
 
-export async function buildNwcSubmissionWorkbook(
-  data: NwcSubmissionExport,
-): Promise<Buffer> {
+export function buildNwcSubmissionWorkbook(data: NwcSubmissionExport): Buffer {
   const delegationById = new Map(
     data.delegations.map((delegation) => [delegation.id, delegation]),
   );

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title">
+  <title id="title">Flag of Barbados</title>
+  <path fill="#00267f" d="M0 0h400v800H0zM800 0h400v800H800z"/>
+  <path fill="#ffc726" d="M400 0h400v800H400z"/>
+  <path fill="#000" d="M582 575h36v-92h70l24-164c11-55 44-102 91-130-64 4-108 34-134 91-19 43-31 92-39 148h-12V260h35l-53-126-53 126h35v168h-12c-8-56-20-105-39-148-26-57-70-87-134-91 47 28 80 75 91 130l24 164h70z"/>
+</svg>

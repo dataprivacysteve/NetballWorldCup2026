@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Anton, Archivo, Manrope, JetBrains_Mono } from "next/font/google";
+import { publicApi } from "./lib/api";
 import "./globals.css";
 
 const anton = Anton({
@@ -24,11 +25,18 @@ const jetbrains = JetBrains_Mono({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: "Americas Netball Regional Qualifier 2026 · NetballAmericas.org",
-  description:
-    "The official home of the Americas Netball Regional Qualifier 2026 — fixtures, results, standings, nations and live coverage.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const mode = await publicApi.siteMode();
+  const full = process.env.PUBLIC_SITE_MODE === "full" || mode.live;
+  return {
+    title: full
+      ? "Americas Netball Regional Qualifier 2026 · NetballAmericas.org"
+      : "Coming Soon · Americas Netball Regional Qualifier 2026",
+    description: full
+      ? "The official home of the Americas Netball Regional Qualifier 2026 — fixtures, results, standings, nations and live coverage."
+      : "The official website for the Americas Netball Regional Qualifier 2026 is coming soon.",
+  };
+}
 
 export default function RootLayout({
   children,

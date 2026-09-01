@@ -1,31 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api, ApiError, type GameDayMatch, type GameDayRuntime, type GameDayState } from "../lib/api";
-
-const positions = [
-  "Goal Shooter",
-  "Goal Attack",
-  "Wing Attack",
-  "Centre",
-  "Wing Defence",
-  "Goal Defence",
-  "Goal Keeper",
-];
 
 function clockLabel(seconds: number) {
   const value = Math.max(0, seconds);
   return `${String(Math.floor(value / 60)).padStart(2, "0")}:${String(value % 60).padStart(2, "0")}`;
 }
-
 export default function GameDayPage() {
   const [matches, setMatches] = useState<GameDayMatch[]>([]);
   const [selected, setSelected] = useState<GameDayMatch | null>(null);
   const [state, setState] = useState<GameDayState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [statType, setStatType] = useState<"goal_attempt" | "intercept" | "gain" | "turnover" | "deflection" | "rebound" | "penalty">("intercept");
-  const [goalPlayers, setGoalPlayers] = useState<Record<"A" | "B", string>>({ A: "", B: "" });
   const [runtime, setRuntime] = useState<GameDayRuntime | null>(null);
 
   const refresh = useCallback(async () => {
@@ -59,7 +46,7 @@ export default function GameDayPage() {
   }, []);
   useEffect(() => {
     const initial = window.setTimeout(() => void refresh(), 0);
-    const timer = window.setInterval(() => void refresh(), 2000);
+    const timer = window.setInterval(() => void refresh(), 1000);
     return () => {
       window.clearTimeout(initial);
       window.clearInterval(timer);
@@ -82,15 +69,26 @@ export default function GameDayPage() {
   }
 
   const role = selected?.assignmentRole;
-  const recentGoals = state?.events.filter((event) => event.eventType === "goal") ?? [];
-  const allPlayers = useMemo(
-    () => state?.teamSheets.flatMap((sheet) => sheet.players) ?? [],
-    [state],
+  const reversedGoalIds = new Set(
+    state?.events
+      .filter((event) => event.eventType === "goal_correction")
+      .map((event) => event.reversesEventId)
+      .filter((eventId): eventId is string => Boolean(eventId)) ?? [],
   );
-  const teamPlayers = useMemo(() => ({
-    A: state?.teamSheets.find((sheet) => sheet.delegationId === state.match.teamADelegationId)?.players ?? [],
-    B: state?.teamSheets.find((sheet) => sheet.delegationId === state.match.teamBDelegationId)?.players ?? [],
-  }), [state]);
+  const removableGoal = {
+    A: state?.events.find(
+      (event) =>
+        event.eventType === "goal" &&
+        event.teamSide === "A" &&
+        !reversedGoalIds.has(event.id),
+    ),
+    B: state?.events.find(
+      (event) =>
+        event.eventType === "goal" &&
+        event.teamSide === "B" &&
+        !reversedGoalIds.has(event.id),
+    ),
+  };
 
   return (
     <main className="min-h-screen bg-[#0b1029] text-white">
@@ -106,7 +104,7 @@ export default function GameDayPage() {
             <p className="font-mono text-[0.6rem] uppercase tracking-[0.16em] text-[#f5c84c]">
               Americas Qualifier · GameDay
             </p>
-            <h1 className="font-display text-xl font-bold">Match operations console</h1>
+            <h1 className="font-display text-xl font-bold">Mobile scorer &amp; match clock</h1>
           </div>
           <div className="ml-auto flex items-center gap-3">
             <span className={`rounded-full px-3 py-1 font-mono text-[0.62rem] font-bold uppercase ${runtime?.mode === "edge" ? "bg-emerald-400/15 text-emerald-200" : "bg-white/5 text-white/70"}`}>
@@ -195,64 +193,52 @@ export default function GameDayPage() {
               </div>
 
               {role === "scorer" && (
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="md:col-span-2 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <div className="mr-auto">
-                        <h2 className="font-display text-lg font-bold">Next centre pass</h2>
-                        <p className="text-sm text-white/45">Current: Team {state.match.centrePassTeam ?? "not set"}</p>
-                      </div>
-                      {(["A", "B"] as const).map((side) => (
-                        <button
-                          key={side}
-                          className="rounded-xl border border-[#f5c84c]/40 px-4 py-2 font-bold text-[#f5c84c] disabled:opacity-40"
-                          disabled={busy || !["ready", "live", "suspended"].includes(state.match.status)}
-                          onClick={() => command((version) => api.setCentrePass(selected.id, version, side))}
-                        >
-                          Set Team {side}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                <div className="space-y-4">
+                  {state.match.status === "scheduled" && (
+                    <ActionPanel title="Prepare this match" description="Lock both submitted team sheets and release the fixture to the scorer. Only the named scorer is required for a one-person table crew.">
+                      <button
+                        className="min-h-14 w-full rounded-xl bg-[#f5c84c] px-5 py-3 font-bold text-[#0b1029] disabled:opacity-40 sm:w-auto"
+                        disabled={busy}
+                        onClick={() => command((version) => api.readyMatch(selected.id, version))}
+                      >
+                        Mark match ready
+                      </button>
+                    </ActionPanel>
+                  )}
+                  <ClockControls
+                    disabled={busy}
+                    status={state.match.status}
+                    running={state.match.clockRunning}
+                    period={state.match.currentPeriod}
+                    run={(action, reason) => command((version) => api.clockCommand(selected.id, version, action, reason))}
+                  />
+                  <div className="grid gap-4 sm:grid-cols-2">
                   {(["A", "B"] as const).map((side) => (
                     <div key={side} className="rounded-2xl bg-[#f5c84c] p-4 text-[#0b1029]">
-                      <label className="block font-mono text-[0.62rem] font-bold uppercase tracking-[0.12em]">Team {side} scorer</label>
-                      <select
-                        className="mt-2 w-full rounded-lg border border-[#0b1029]/20 bg-white/70 px-3 py-2 text-sm"
-                        value={goalPlayers[side]}
-                        onChange={(event) => setGoalPlayers((current) => ({ ...current, [side]: event.target.value }))}
-                      >
-                        <option value="">Unattributed goal</option>
-                        {teamPlayers[side].map((player) => <option key={player.playerId} value={player.playerId}>{player.firstName} {player.lastName} · {player.currentPosition ?? "Bench"}</option>)}
-                      </select>
-                      <button
-                        disabled={busy || state.match.status !== "live"}
-                        onClick={() => command((version) => api.recordGoal(selected.id, version, side, goalPlayers[side] || undefined))}
-                        className="mt-3 min-h-20 w-full rounded-xl bg-[#0b1029] p-4 text-center text-white disabled:opacity-40"
-                      >
-                        <span className="block font-display text-2xl font-bold">Record goal +1</span>
-                      </button>
+                      <p className="font-mono text-[0.62rem] font-bold uppercase tracking-[0.12em]">Team {side} points</p>
+                      <div className="mt-3 grid grid-cols-[1fr_2fr] gap-3">
+                        <button
+                          disabled={busy || !["live", "suspended"].includes(state.match.status) || !removableGoal[side]}
+                          onClick={() => {
+                            const goal = removableGoal[side];
+                            if (goal) void command((version) => api.correctGoal(selected.id, version, goal.id, "Point removed by scorer"));
+                          }}
+                          className="min-h-20 rounded-xl border-2 border-[#0b1029]/30 bg-white/60 p-4 text-center disabled:opacity-35"
+                        >
+                          <span className="block font-display text-3xl font-bold">−1</span>
+                          <span className="text-xs font-bold">Remove point</span>
+                        </button>
+                        <button
+                          disabled={busy || state.match.status !== "live"}
+                          onClick={() => command((version) => api.recordGoal(selected.id, version, side))}
+                          className="min-h-20 rounded-xl bg-[#0b1029] p-4 text-center text-white disabled:opacity-40"
+                        >
+                          <span className="block font-display text-3xl font-bold">+1</span>
+                          <span className="text-xs font-bold">Add goal</span>
+                        </button>
+                      </div>
                     </div>
                   ))}
-                  <div className="md:col-span-2 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                    <h2 className="font-display text-lg font-bold">Recent goals and corrections</h2>
-                    <div className="mt-3 space-y-2">
-                      {recentGoals.slice(0, 8).map((event) => (
-                        <div key={event.id} className="flex items-center gap-3 rounded-lg bg-white/[0.05] p-3 text-sm">
-                          <span className="font-mono text-[#f5c84c]">#{event.sequence}</span>
-                          <span>Team {event.teamSide} · P{event.period} · {clockLabel(event.clockSeconds ?? 0)}</span>
-                          <button
-                            className="ml-auto rounded-lg border border-white/15 px-3 py-1 text-xs"
-                            onClick={() => {
-                              const reason = window.prompt("Reason for correcting this goal?");
-                              if (reason) void command((version) => api.correctGoal(selected.id, version, event.id, reason));
-                            }}
-                          >
-                            Correct
-                          </button>
-                        </div>
-                      ))}
-                    </div>
                   </div>
                 </div>
               )}
@@ -267,85 +253,6 @@ export default function GameDayPage() {
                 />
               )}
 
-              {role === "match_supervisor" && (
-                <div className="space-y-4">
-                  <ActionPanel title="Match readiness" description="Verify both submitted team sheets and every assigned GameDay role before releasing the match to the timekeeper.">
-                    <button
-                      className="rounded-xl bg-[#f5c84c] px-5 py-3 font-bold text-[#0b1029] disabled:opacity-40"
-                      disabled={busy || state.match.status !== "scheduled"}
-                      onClick={() => command((version) => api.readyMatch(selected.id, version))}
-                    >
-                      Lock team sheets and mark ready
-                    </button>
-                  </ActionPanel>
-                  <IncidentPanel disabled={busy || !["live", "suspended"].includes(state.match.status)} run={(type, note, side) => command((version) => api.recordIncident(selected.id, version, type, note, side))} />
-                </div>
-              )}
-
-              {role === "stats_lineup" && (
-                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-                  <h2 className="font-display text-xl font-bold">Lineup and position capture</h2>
-                  <p className="mt-1 text-sm text-white/50">Changes are match-specific and never overwrite a player’s primary position preference.</p>
-                  <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-3">
-                    <label className="font-mono text-[0.62rem] uppercase tracking-[0.12em] text-white/50">Statistic to record</label>
-                    <select className="rounded-lg border border-white/15 bg-[#11183b] px-3 py-2 text-xs" value={statType} onChange={(event) => setStatType(event.target.value as typeof statType)}>
-                      <option value="goal_attempt">Goal attempt</option><option value="intercept">Intercept</option><option value="gain">Gain</option><option value="turnover">Turnover</option><option value="deflection">Deflection</option><option value="rebound">Rebound</option><option value="penalty">Penalty</option>
-                    </select>
-                    <span className="text-xs text-white/40">Use Record stat beside the responsible player.</span>
-                  </div>
-                  <div className="mt-4 grid gap-3 md:grid-cols-2">
-                    {allPlayers.map((player) => (
-                      <div key={player.playerId} className="flex items-center gap-3 rounded-xl bg-white/[0.05] p-3">
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold">{player.firstName} {player.lastName}</p>
-                          <p className="text-xs text-white/40">{player.currentPosition ?? "Bench"}</p>
-                        </div>
-                        <select
-                          className="rounded-lg border border-white/15 bg-[#11183b] px-2 py-2 text-xs"
-                          value={player.currentPosition ?? ""}
-                          disabled={busy || !["live", "suspended"].includes(state.match.status)}
-                          onChange={(event) =>
-                            command((version) =>
-                              api.changePosition(
-                                selected.id,
-                                version,
-                                player.playerId,
-                                event.target.value || null,
-                                "Match lineup update",
-                              ),
-                            )
-                          }
-                        >
-                          <option value="">Bench</option>
-                          {positions.map((position) => <option key={position}>{position}</option>)}
-                        </select>
-                        <button
-                          className="rounded-lg border border-[#f5c84c]/35 px-3 py-2 text-xs font-bold text-[#f5c84c] disabled:opacity-40"
-                          disabled={busy || !["live", "suspended"].includes(state.match.status)}
-                          onClick={() => command((version) => api.recordStatistic(selected.id, version, player.playerId, statType))}
-                        >
-                          Record stat
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {role === "result_approver" && (
-                <ActionPanel title="Confirm official result" description="Confirm only after the paper record and electronic event ledger have been reconciled.">
-                  <button
-                    className="rounded-xl bg-emerald-400 px-5 py-3 font-bold text-[#071b15] disabled:opacity-40"
-                    disabled={busy || state.match.status !== "awaiting_confirmation"}
-                    onClick={() => {
-                      const note = window.prompt("Confirmation note / paper record reference?");
-                      if (note) void command((version) => api.confirmResult(selected.id, version, note));
-                    }}
-                  >
-                    Confirm and publish final result
-                  </button>
-                </ActionPanel>
-              )}
             </>
           ) : (
             <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-10 text-center text-white/45">
@@ -382,33 +289,13 @@ function ActionPanel({ title, description, children }: { title: string; descript
 function ClockControls({ disabled, status, running, period, run }: { disabled: boolean; status: string; running: boolean; period: number; run: (action: string, reason?: string) => Promise<void> }) {
   return (
     <ActionPanel title="Official match clock" description="The server anchors every start and stop. Refreshing or changing devices does not reset elapsed time.">
-      <div className="flex flex-wrap gap-3">
-        <button className="rounded-xl bg-[#f5c84c] px-5 py-3 font-bold text-[#0b1029] disabled:opacity-40" disabled={disabled || !["ready", "live"].includes(status) || running || period >= 4} onClick={() => run("start_period")}>Start next period</button>
-        <button className="rounded-xl bg-emerald-400 px-5 py-3 font-bold text-[#071b15] disabled:opacity-40" disabled={disabled || status !== "live" || running} onClick={() => run("start_clock")}>Start clock</button>
-        <button className="rounded-xl bg-white px-5 py-3 font-bold text-[#0b1029] disabled:opacity-40" disabled={disabled || !running} onClick={() => run("stop_clock")}>Stop clock</button>
-        <button className="rounded-xl border border-white/20 px-5 py-3 font-bold disabled:opacity-40" disabled={disabled || status !== "live"} onClick={() => run("end_period")}>End period</button>
-        <button className="rounded-xl border border-red-400/40 px-5 py-3 font-bold text-red-200 disabled:opacity-40" disabled={disabled || status !== "live"} onClick={() => { const reason = window.prompt("Suspension reason?"); if (reason) void run("suspend", reason); }}>Suspend match</button>
-        <button className="rounded-xl border border-white/20 px-5 py-3 font-bold disabled:opacity-40" disabled={disabled || status !== "suspended"} onClick={() => run("resume")}>Resume match</button>
-      </div>
-    </ActionPanel>
-  );
-}
-
-function IncidentPanel({ disabled, run }: { disabled: boolean; run: (type: "injury" | "warning" | "suspension" | "technical" | "other", note: string, side?: "A" | "B") => Promise<void> }) {
-  const [type, setType] = useState<"injury" | "warning" | "suspension" | "technical" | "other">("injury");
-  const [side, setSide] = useState<"" | "A" | "B">("");
-  const [note, setNote] = useState("");
-  return (
-    <ActionPanel title="Incident log" description="Record an attributed, time-stamped match incident in the immutable event ledger.">
-      <div className="grid gap-3 md:grid-cols-[12rem_10rem_1fr_auto]">
-        <select className="rounded-xl border border-white/15 bg-[#11183b] px-3 py-2" value={type} onChange={(event) => setType(event.target.value as typeof type)}>
-          <option value="injury">Injury</option><option value="warning">Warning</option><option value="suspension">Suspension</option><option value="technical">Technical</option><option value="other">Other</option>
-        </select>
-        <select className="rounded-xl border border-white/15 bg-[#11183b] px-3 py-2" value={side} onChange={(event) => setSide(event.target.value as typeof side)}>
-          <option value="">No team</option><option value="A">Team A</option><option value="B">Team B</option>
-        </select>
-        <input className="rounded-xl border border-white/15 bg-[#11183b] px-3 py-2" placeholder="Incident note" value={note} onChange={(event) => setNote(event.target.value)} />
-        <button className="rounded-xl border border-white/20 px-4 py-2 font-bold disabled:opacity-40" disabled={disabled || note.trim().length < 3} onClick={() => { void run(type, note.trim(), side || undefined); setNote(""); }}>Record</button>
+      <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
+        <button className="min-h-14 rounded-xl bg-[#f5c84c] px-5 py-3 font-bold text-[#0b1029] disabled:opacity-40" disabled={disabled || !["ready", "live"].includes(status) || running || period >= 4} onClick={() => run("start_period")}>Start next period</button>
+        <button className="min-h-14 rounded-xl bg-emerald-400 px-5 py-3 font-bold text-[#071b15] disabled:opacity-40" disabled={disabled || status !== "live" || running} onClick={() => run("start_clock")}>Start clock</button>
+        <button className="min-h-14 rounded-xl bg-white px-5 py-3 font-bold text-[#0b1029] disabled:opacity-40" disabled={disabled || !running} onClick={() => run("stop_clock")}>Stop clock</button>
+        <button className="min-h-14 rounded-xl border border-white/20 px-5 py-3 font-bold disabled:opacity-40" disabled={disabled || status !== "live"} onClick={() => run("end_period")}>End period</button>
+        <button className="min-h-12 rounded-xl border border-red-400/40 px-5 py-3 font-bold text-red-200 disabled:opacity-40" disabled={disabled || status !== "live"} onClick={() => { const reason = window.prompt("Suspension reason?"); if (reason) void run("suspend", reason); }}>Suspend match</button>
+        <button className="min-h-12 rounded-xl border border-white/20 px-5 py-3 font-bold disabled:opacity-40" disabled={disabled || status !== "suspended"} onClick={() => run("resume")}>Resume match</button>
       </div>
     </ActionPanel>
   );

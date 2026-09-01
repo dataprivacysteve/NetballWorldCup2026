@@ -11,16 +11,22 @@ import { JwtService } from '@nestjs/jwt';
 import {
   DeleteObjectCommand,
   GetObjectCommand,
+  PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
 import { Pool } from 'pg';
 import { drizzle, NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { and, asc, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNotNull, ne, sql } from 'drizzle-orm';
 import { PRIVILEGED_POOL } from '../db/db.tokens';
 import * as schema from '../db/schema';
 import { isMinor } from '../teams/age';
 import { rosterSubmissionProblems } from '../teams/roster-rules';
-import type { OfflineScanEventDto } from './admin.dto';
+import type {
+  OfflineScanEventDto,
+  SaveAdvertisementDto,
+  SaveNewsArticleDto,
+} from './admin.dto';
+import { normalizeAdvertisingCreative, normalizeNewsImage } from './advertising.util';
 import { buildNwcSubmissionWorkbook } from './nwc-submission-export';
 
 // STOPGAP OC admin / committee. Runs on the privileged (superuser) pool, which
@@ -32,6 +38,8 @@ export class AdminService {
   private readonly s3: S3Client;
   private readonly photoBucket: string;
   private readonly identityBucket: string;
+  private readonly advertisingBucket: string;
+  private readonly publicApiBase: string;
 
   constructor(
     @Inject(PRIVILEGED_POOL) private readonly pool: Pool,
@@ -54,6 +62,10 @@ export class AdminService {
       'S3_BUCKET_IDENTITY',
       'gameday-identity',
     );
+    this.advertisingBucket = config.getOrThrow<string>('S3_BUCKET_BADGES');
+    this.publicApiBase = config
+      .get<string>('API_BASE_URL', 'https://api.netballamericas.test')
+      .replace(/\/$/, '');
   }
 
   // ---- Registration approval (gate that unlocks roster building) ----
@@ -171,47 +183,54 @@ export class AdminService {
       .where(eq(schema.delegation.id, delegationId));
     if (!del) throw new NotFoundException('Delegation not found');
 
-    const [players, photos, consents, creds, identityDocuments, reviews, event] =
-      await Promise.all([
-        this.db
-          .select()
-          .from(schema.player)
-          .where(eq(schema.player.delegationId, delegationId))
-          .orderBy(asc(schema.player.lastName), asc(schema.player.firstName)),
-        this.db
-          .select()
-          .from(schema.playerPhoto)
-          .where(eq(schema.playerPhoto.delegationId, delegationId)),
-        this.db
-          .select()
-          .from(schema.consentRecord)
-          .where(eq(schema.consentRecord.delegationId, delegationId)),
-        this.db
-          .select()
-          .from(schema.credential)
-          .where(eq(schema.credential.delegationId, delegationId)),
-        this.db
-          .select()
-          .from(schema.identityDocument)
-          .where(eq(schema.identityDocument.delegationId, delegationId)),
-        this.db
-          .select()
-          .from(schema.personAccreditationReview)
-          .where(eq(schema.personAccreditationReview.delegationId, delegationId)),
-        this.db
-          .select({
-            eligibilityDate: schema.tournament.eligibilityDate,
-            identityRequiredCategories:
-              schema.tournament.identityRequiredCategories,
-            consentRequiredCategories:
-              schema.tournament.consentRequiredCategories,
-            accessZoneMatrix: schema.tournament.accessZoneMatrix,
-            brandPrimaryLogoUrl: schema.tournament.brandPrimaryLogoUrl,
-          })
-          .from(schema.tournament)
-          .where(eq(schema.tournament.id, del.tournamentId))
-          .then((rows) => rows[0]),
-      ]);
+    const [
+      players,
+      photos,
+      consents,
+      creds,
+      identityDocuments,
+      reviews,
+      event,
+    ] = await Promise.all([
+      this.db
+        .select()
+        .from(schema.player)
+        .where(eq(schema.player.delegationId, delegationId))
+        .orderBy(asc(schema.player.lastName), asc(schema.player.firstName)),
+      this.db
+        .select()
+        .from(schema.playerPhoto)
+        .where(eq(schema.playerPhoto.delegationId, delegationId)),
+      this.db
+        .select()
+        .from(schema.consentRecord)
+        .where(eq(schema.consentRecord.delegationId, delegationId)),
+      this.db
+        .select()
+        .from(schema.credential)
+        .where(eq(schema.credential.delegationId, delegationId)),
+      this.db
+        .select()
+        .from(schema.identityDocument)
+        .where(eq(schema.identityDocument.delegationId, delegationId)),
+      this.db
+        .select()
+        .from(schema.personAccreditationReview)
+        .where(eq(schema.personAccreditationReview.delegationId, delegationId)),
+      this.db
+        .select({
+          eligibilityDate: schema.tournament.eligibilityDate,
+          identityRequiredCategories:
+            schema.tournament.identityRequiredCategories,
+          consentRequiredCategories:
+            schema.tournament.consentRequiredCategories,
+          accessZoneMatrix: schema.tournament.accessZoneMatrix,
+          brandPrimaryLogoUrl: schema.tournament.brandPrimaryLogoUrl,
+        })
+        .from(schema.tournament)
+        .where(eq(schema.tournament.id, del.tournamentId))
+        .then((rows) => rows[0]),
+    ]);
     const withPhoto = new Set(
       photos
         .filter((photo) => !photo.objectKey.endsWith('/seed.png'))
@@ -229,7 +248,9 @@ export class AdminService {
     const identityByPlayer = new Map(
       identityDocuments.map((document) => [document.playerId, document]),
     );
-    const reviewByPlayer = new Map(reviews.map((review) => [review.playerId, review]));
+    const reviewByPlayer = new Map(
+      reviews.map((review) => [review.playerId, review]),
+    );
 
     const people = players.map((p) => {
       const minor = isMinor(p.dateOfBirth, event?.eligibilityDate);
@@ -251,13 +272,18 @@ export class AdminService {
       const review = reviewByPlayer.get(p.id);
       const evidenceDates = [
         p.updatedAt,
-        ...photos.filter((item) => item.playerId === p.id).map((item) => item.uploadedAt),
-        ...consents.filter((item) => item.playerId === p.id).map((item) => item.consentedAt),
+        ...photos
+          .filter((item) => item.playerId === p.id)
+          .map((item) => item.uploadedAt),
+        ...consents
+          .filter((item) => item.playerId === p.id)
+          .map((item) => item.consentedAt),
         identity?.uploadedAt,
         identity?.verifiedAt,
       ].filter((value): value is Date => value instanceof Date);
       const reviewCurrent =
-        !!review && evidenceDates.every((changedAt) => changedAt <= review.reviewedAt);
+        !!review &&
+        evidenceDates.every((changedAt) => changedAt <= review.reviewedAt);
       return {
         id: p.id,
         firstName: p.firstName,
@@ -311,9 +337,11 @@ export class AdminService {
           dobReady &&
           consent &&
           (!identityRequired || identity?.status === 'verified'),
-        verificationStatus: reviewCurrent ? review?.status ?? 'pending' : 'pending',
-        verificationNote: reviewCurrent ? review?.note ?? null : null,
-        reviewedAt: reviewCurrent ? review?.reviewedAt ?? null : null,
+        verificationStatus: reviewCurrent
+          ? (review?.status ?? 'pending')
+          : 'pending',
+        verificationNote: reviewCurrent ? (review?.note ?? null) : null,
+        reviewedAt: reviewCurrent ? (review?.reviewedAt ?? null) : null,
         credentialId: credByPlayer.get(p.id)?.id ?? null,
         credentialStatus: credByPlayer.get(p.id)?.status ?? null,
       };
@@ -347,9 +375,12 @@ export class AdminService {
   ) {
     const detail = await this.reviewDetail(delegationId);
     const person = detail.people.find((item) => item.id === playerId);
-    if (!person) throw new NotFoundException('Person is not on this delegation');
+    if (!person)
+      throw new NotFoundException('Person is not on this delegation');
     if (status === 'verified' && !person.ready) {
-      throw new BadRequestException('Complete and verify this person’s required record first');
+      throw new BadRequestException(
+        'Complete and verify this person’s required record first',
+      );
     }
     if (status === 'returned' && !note?.trim()) {
       throw new BadRequestException('A correction note is required');
@@ -860,7 +891,7 @@ export class AdminService {
     }
 
     const generatedAt = new Date();
-    const buffer = await buildNwcSubmissionWorkbook({
+    const buffer = buildNwcSubmissionWorkbook({
       tournament: {
         name: event.name,
         shortName: event.shortName,
@@ -952,6 +983,246 @@ export class AdminService {
       targetId,
       details,
     });
+  }
+
+  // ---- Website and in-house advertising ----
+  async listAdvertisements() {
+    const [event] = await this.db.select().from(schema.tournament).limit(1);
+    if (!event) throw new NotFoundException('No tournament is configured');
+    return this.db
+      .select()
+      .from(schema.sponsor)
+      .where(eq(schema.sponsor.tournamentId, event.id))
+      .orderBy(asc(schema.sponsor.sortOrder), asc(schema.sponsor.name));
+  }
+
+  async saveAdvertisement(dto: SaveAdvertisementDto, actorUserId: string) {
+    const [event] = await this.db.select().from(schema.tournament).limit(1);
+    if (!event) throw new NotFoundException('No tournament is configured');
+    const values = {
+      tournamentId: event.id,
+      name: dto.name.trim(),
+      tier: dto.tier,
+      logoUrl: dto.logoUrl?.trim() || null,
+      destinationUrl: dto.destinationUrl?.trim() || null,
+      websiteEnabled: dto.websiteEnabled ?? true,
+      displayImageUrl: dto.displayImageUrl?.trim() || null,
+      displayEnabled: dto.displayEnabled ?? false,
+      displaySeconds: dto.displaySeconds ?? 10,
+      active: dto.active ?? true,
+      sortOrder: dto.sortOrder ?? 0,
+    };
+    const [advertisement] = dto.id
+      ? await this.db
+          .update(schema.sponsor)
+          .set(values)
+          .where(
+            and(
+              eq(schema.sponsor.id, dto.id),
+              eq(schema.sponsor.tournamentId, event.id),
+            ),
+          )
+          .returning()
+      : await this.db.insert(schema.sponsor).values(values).returning();
+    if (!advertisement) throw new NotFoundException('Advertisement not found');
+    if (advertisement.websiteEnabled && advertisement.active) {
+      await this.db
+        .update(schema.sponsor)
+        .set({ websiteEnabled: false })
+        .where(
+          and(
+            eq(schema.sponsor.tournamentId, event.id),
+            eq(schema.sponsor.tier, advertisement.tier),
+            ne(schema.sponsor.id, advertisement.id),
+          ),
+        );
+    }
+    await this.audit(
+      actorUserId,
+      'advertisement.saved',
+      'advertisement',
+      advertisement.id,
+      {
+        websiteEnabled: advertisement.websiteEnabled,
+        displayEnabled: advertisement.displayEnabled,
+        tier: advertisement.tier,
+      },
+    );
+    return advertisement;
+  }
+
+  async uploadAdvertisementCreative(
+    id: string,
+    surface: string,
+    file: Express.Multer.File | undefined,
+    actorUserId: string,
+  ) {
+    if (surface !== 'website' && surface !== 'display') {
+      throw new BadRequestException('Creative surface must be website or display');
+    }
+    const [advertisement] = await this.db
+      .select()
+      .from(schema.sponsor)
+      .where(eq(schema.sponsor.id, id));
+    if (!advertisement) throw new NotFoundException('Advertisement not found');
+    const normalized = await normalizeAdvertisingCreative(
+      file,
+      surface,
+      advertisement.tier as 'gold' | 'silver' | 'bronze' | 'supporter',
+    );
+    const key = `advertising/${id}/${surface}.webp`;
+    await this.s3.send(
+      new PutObjectCommand({
+        Bucket: this.advertisingBucket,
+        Key: key,
+        Body: normalized.buffer,
+        ContentType: normalized.contentType,
+        CacheControl: 'public, max-age=300',
+      }),
+    );
+    const imageUrl =
+      `${this.publicApiBase}/public/advertising/${id}/${surface}?v=${Date.now()}`;
+    const [updated] = await this.db
+      .update(schema.sponsor)
+      .set(
+        surface === 'website'
+          ? { logoUrl: imageUrl, websiteEnabled: true }
+          : { displayImageUrl: imageUrl, displayEnabled: true },
+      )
+      .where(eq(schema.sponsor.id, id))
+      .returning();
+    await this.audit(
+      actorUserId,
+      'advertisement.creative_uploaded',
+      'advertisement',
+      id,
+      { surface, width: normalized.width, height: normalized.height },
+    );
+    return updated;
+  }
+
+  async deleteAdvertisement(id: string, actorUserId: string) {
+    const [removed] = await this.db
+      .delete(schema.sponsor)
+      .where(eq(schema.sponsor.id, id))
+      .returning();
+    if (!removed) throw new NotFoundException('Advertisement not found');
+    await Promise.allSettled(
+      ['website', 'display'].map((surface) =>
+        this.s3.send(
+          new DeleteObjectCommand({
+            Bucket: this.advertisingBucket,
+            Key: `advertising/${id}/${surface}.webp`,
+          }),
+        ),
+      ),
+    );
+    await this.audit(
+      actorUserId,
+      'advertisement.removed',
+      'advertisement',
+      id,
+      { name: removed.name },
+    );
+    return { ok: true };
+  }
+
+  // ---- Website news ----
+  async listNewsArticles() {
+    const [event] = await this.db.select().from(schema.tournament).limit(1);
+    if (!event) throw new NotFoundException('No tournament is configured');
+    return this.db
+      .select()
+      .from(schema.newsArticle)
+      .where(eq(schema.newsArticle.tournamentId, event.id))
+      .orderBy(desc(schema.newsArticle.publishedAt), desc(schema.newsArticle.createdAt));
+  }
+
+  async saveNewsArticle(dto: SaveNewsArticleDto, actorUserId: string) {
+    const [event] = await this.db.select().from(schema.tournament).limit(1);
+    if (!event) throw new NotFoundException('No tournament is configured');
+    const [current] = dto.id
+      ? await this.db.select().from(schema.newsArticle).where(eq(schema.newsArticle.id, dto.id))
+      : [];
+    const published = dto.published ?? current?.published ?? false;
+    const values = {
+      tournamentId: event.id,
+      slug: dto.slug.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+      title: dto.title.trim(),
+      summary: dto.summary.trim(),
+      body: dto.body?.trim() || null,
+      imageUrl:
+        dto.imageUrl !== undefined
+          ? dto.imageUrl.trim() || null
+          : current?.imageUrl ?? null,
+      published,
+      publishedAt: published ? current?.publishedAt ?? new Date() : null,
+    };
+    const [article] = dto.id
+      ? await this.db
+          .update(schema.newsArticle)
+          .set(values)
+          .where(and(eq(schema.newsArticle.id, dto.id), eq(schema.newsArticle.tournamentId, event.id)))
+          .returning()
+      : await this.db.insert(schema.newsArticle).values(values).returning();
+    if (!article) throw new NotFoundException('News article not found');
+    await this.audit(actorUserId, 'news.saved', 'news_article', article.id, {
+      title: article.title,
+      published: article.published,
+    });
+    return article;
+  }
+
+  async uploadNewsImage(
+    id: string,
+    file: Express.Multer.File | undefined,
+    actorUserId: string,
+  ) {
+    const [article] = await this.db
+      .select()
+      .from(schema.newsArticle)
+      .where(eq(schema.newsArticle.id, id));
+    if (!article) throw new NotFoundException('News article not found');
+    const normalized = await normalizeNewsImage(file);
+    await this.s3.send(
+      new PutObjectCommand({
+        Bucket: this.advertisingBucket,
+        Key: `news/${id}/image.webp`,
+        Body: normalized.buffer,
+        ContentType: normalized.contentType,
+      }),
+    );
+    const imageUrl = `${this.publicApiBase}/public/news/${id}/image?v=${Date.now()}`;
+    const [updated] = await this.db
+      .update(schema.newsArticle)
+      .set({ imageUrl })
+      .where(eq(schema.newsArticle.id, id))
+      .returning();
+    await this.audit(actorUserId, 'news.image_uploaded', 'news_article', id, {
+      width: normalized.width,
+      height: normalized.height,
+    });
+    return updated;
+  }
+
+  async deleteNewsArticle(id: string, actorUserId: string) {
+    const [removed] = await this.db
+      .delete(schema.newsArticle)
+      .where(eq(schema.newsArticle.id, id))
+      .returning();
+    if (!removed) throw new NotFoundException('News article not found');
+    await this.s3
+      .send(
+        new DeleteObjectCommand({
+          Bucket: this.advertisingBucket,
+          Key: `news/${id}/image.webp`,
+        }),
+      )
+      .catch(() => undefined);
+    await this.audit(actorUserId, 'news.removed', 'news_article', id, {
+      title: removed.title,
+    });
+    return { ok: true };
   }
 
   // ---- Badges + gate scan ----

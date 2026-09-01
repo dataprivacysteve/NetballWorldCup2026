@@ -8,7 +8,9 @@ import {
   AdminGuard,
   GameDayOfficialGuard,
   LocOfficerGuard,
+  MediaCommsGuard,
   SportsbbAdminGuard,
+  StatsGuard,
 } from './auth.guard';
 import { AuthRateLimitService } from './auth-rate-limit.service';
 
@@ -32,7 +34,9 @@ import { AuthRateLimitService } from './auth-rate-limit.service';
     AdminGuard,
     GameDayOfficialGuard,
     LocOfficerGuard,
+    MediaCommsGuard,
     SportsbbAdminGuard,
+    StatsGuard,
     AuthRateLimitService,
   ],
   // Export JwtModule too so other modules (admin credential issuance) can sign
@@ -43,7 +47,9 @@ import { AuthRateLimitService } from './auth-rate-limit.service';
     AdminGuard,
     GameDayOfficialGuard,
     LocOfficerGuard,
+    MediaCommsGuard,
     SportsbbAdminGuard,
+    StatsGuard,
     JwtModule,
   ],
 })

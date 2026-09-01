@@ -22,9 +22,17 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/db/migrate.ts",
     "db:seed": "tsx src/db/seed.ts",
+    "db:prepare-rehearsal": "tsx src/db/prepare-rehearsal.ts",
+    "db:prepare-demo-teams": "tsx src/db/prepare-demo-teams.ts",
+    "rehearse:gameday": "tsx src/rehearsal/gameday-rehearsal.ts",
+    "rehearse:accreditation": "tsx src/rehearsal/accreditation-rehearsal.ts",
+    "rehearse:presentation-readiness": "tsx src/rehearsal/presentation-readiness.ts",
+    "rehearse:edge-recovery": "tsx src/rehearsal/edge-recovery-rehearsal.ts",
     "db:bootstrap-control": "tsx src/db/bootstrap-control.ts",
     "db:bootstrap-loc": "tsx src/db/bootstrap-loc.ts",
-    "edge:sync": "tsx src/edge/edge-agent.ts"
+    "edge:sync": "tsx src/edge/edge-agent.ts",
+    "db:bootstrap-media-comms": "tsx src/db/bootstrap-media-comms.ts",
+    "db:bootstrap-stats": "tsx src/db/bootstrap-stats.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1066.0",

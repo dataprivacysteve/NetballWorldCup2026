@@ -59,6 +59,19 @@ export class LocOfficerGuard implements CanActivate {
 }
 
 @Injectable()
+export class MediaCommsGuard implements CanActivate {
+  canActivate(ctx: ExecutionContext): boolean {
+    const req = ctx.switchToHttp().getRequest<SessionRequest>();
+    if (
+      !['loc_officer', 'media_comms'].includes(req.user?.platformRole ?? '')
+    ) {
+      throw new ForbiddenException('Media and communications account required');
+    }
+    return true;
+  }
+}
+
+@Injectable()
 export class SportsbbAdminGuard implements CanActivate {
   canActivate(ctx: ExecutionContext): boolean {
     const req = ctx.switchToHttp().getRequest<SessionRequest>();
@@ -70,18 +83,22 @@ export class SportsbbAdminGuard implements CanActivate {
 }
 
 @Injectable()
-export class GameDayOfficialGuard implements CanActivate {
+export class StatsGuard implements CanActivate {
   canActivate(ctx: ExecutionContext): boolean {
     const req = ctx.switchToHttp().getRequest<SessionRequest>();
     if (
-      ![
-        'match_supervisor',
-        'scorer',
-        'timekeeper',
-        'stats_lineup',
-        'result_approver',
-      ].includes(req.user?.platformRole ?? '')
+      !['stats_lineup', 'stats_host'].includes(req.user?.platformRole ?? '')
     ) {
+      throw new ForbiddenException('Match statistics account required');
+    }
+    return true;
+  }
+}
+@Injectable()
+export class GameDayOfficialGuard implements CanActivate {
+  canActivate(ctx: ExecutionContext): boolean {
+    const req = ctx.switchToHttp().getRequest<SessionRequest>();
+    if (!['scorer', 'timekeeper'].includes(req.user?.platformRole ?? '')) {
       throw new ForbiddenException('GameDay official account required');
     }
     return true;

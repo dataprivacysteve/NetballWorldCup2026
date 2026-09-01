@@ -1,6 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import Advertising from "./advertising";
+import WebNews from "./web-news";
 import {
   api,
   ApiError,
@@ -21,7 +24,7 @@ import {
   type ReviewQueueItem,
   type Stage,
 } from "./lib/api";
-import { countryLabel } from "./lib/countries";
+import { countryFlag, countryLabel } from "./lib/countries";
 
 const labelCls =
   "mb-1 block font-mono text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-ink-muted";
@@ -38,7 +41,8 @@ const panel = "enterprise-panel";
 function auditTarget(event: AuditEvent) {
   if (event.countryCode) {
     const country = countryLabel(event.countryCode);
-    return event.targetName && !country.toLowerCase().startsWith(event.targetName.toLowerCase())
+    return event.targetName &&
+      !country.toLowerCase().startsWith(event.targetName.toLowerCase())
       ? `${event.targetName} · ${country}`
       : country;
   }
@@ -60,7 +64,6 @@ type IconName =
   | "matches"
   | "badges"
   | "settings"
-  | "scan"
   | "arrow"
   | "check"
   | "clock"
@@ -117,11 +120,6 @@ function Icon({
       <>
         <circle cx="12" cy="12" r="3" />
         <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.6v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1z" />
-      </>
-    ),
-    scan: (
-      <>
-        <path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3M7 12h10" />
       </>
     ),
     arrow: (
@@ -365,17 +363,9 @@ export default function Page() {
     );
   if (!me?.user) return <SignIn onAuthed={refresh} />;
   if (me.user.platformRole === "sportsbb_admin") return <ControlRedirect />;
-  if (
-    [
-      "match_supervisor",
-      "scorer",
-      "timekeeper",
-      "stats_lineup",
-      "result_approver",
-    ].includes(me.user.platformRole ?? "")
-  )
+  if (["scorer", "timekeeper"].includes(me.user.platformRole ?? ""))
     return <GameDayRedirect />;
-  if (me.user.platformRole !== "loc_officer")
+  if (!["loc_officer", "media_comms"].includes(me.user.platformRole ?? ""))
     return <NotAuthorised onSignOut={() => setMe(null)} />;
   return <Console me={me} onSignOut={() => setMe(null)} />;
 }
@@ -396,6 +386,21 @@ function ControlRedirect() {
   );
 }
 
+function StatsRedirect() {
+  useEffect(() => {
+    window.location.replace("https://stats.netballamericas.test/org");
+  }, []);
+  return (
+    <div
+      className="flex min-h-screen items-center justify-center"
+      role="status"
+    >
+      <p className="font-mono text-xs uppercase tracking-[0.12em] text-ink-muted">
+        Opening match statistics…
+      </p>
+    </div>
+  );
+}
 function GameDayRedirect() {
   useEffect(() => {
     window.location.replace("/gameday");
@@ -509,13 +514,13 @@ function SignIn({ onAuthed }: { onAuthed: () => void }) {
           >
             <div>
               <p className="font-mono text-[0.65rem] font-bold uppercase tracking-[0.14em] text-navy">
-                LOC secure access
+                Platform secure access
               </p>
               <h1 className="mt-1 font-display text-3xl font-bold tracking-tight text-ink">
                 Welcome back
               </h1>
               <p className="mt-2 text-sm leading-6 text-ink-soft">
-                Sign in with the authorised organising committee account.
+                Sign in with your authorised tournament operations account.
               </p>
             </div>
             <ErrorBanner error={error} />
@@ -590,17 +595,22 @@ type Section =
   | "review"
   | "matches"
   | "badges"
+  | "advertising"
+  | "news"
   | "settings";
 
 function Console({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
-  const [section, setSection] = useState<Section>("overview");
+  const isMediaComms = me.user?.platformRole === "media_comms";
+  const [section, setSection] = useState<Section>(
+    isMediaComms ? "news" : "overview",
+  );
 
   async function signOut() {
     await api.logout().catch(() => {});
     onSignOut();
   }
 
-  const tabs: {
+  const allTabs: {
     id: Section;
     label: string;
     description: string;
@@ -637,12 +647,27 @@ function Console({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
       icon: "badges",
     },
     {
+      id: "advertising",
+      label: "Advertising",
+      description: "Website and venue display",
+      icon: "activity",
+    },
+    {
+      id: "news",
+      label: "Website News",
+      description: "Public newsroom updates",
+      icon: "review",
+    },
+    {
       id: "settings",
       label: "Settings",
       description: "Window and audit",
       icon: "settings",
     },
   ];
+  const tabs = isMediaComms
+    ? allTabs.filter((tab) => ["advertising", "news"].includes(tab.id))
+    : allTabs;
   const current = tabs.find((tab) => tab.id === section)!;
 
   return (
@@ -655,41 +680,42 @@ function Console({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
               NetballAmericas
             </div>
             <div className="font-mono text-[0.55rem] uppercase tracking-[0.16em] text-gold-bright">
-              GameDay operations
+              {isMediaComms ? "Media & Comms" : "GameDay operations"}
             </div>
           </div>
           <div className="ml-5 hidden h-7 border-l border-white/15 pl-5 text-xs text-white/60 md:block">
             <span className="font-semibold text-white/90">
               Americas Qualifier 2026
             </span>
-            <span className="ml-2">LOC control centre</span>
+            <span className="ml-2">
+              {isMediaComms ? "Media & Comms centre" : "LOC control centre"}
+            </span>
           </div>
           <div className="ml-auto flex items-center gap-2 sm:gap-4">
-            <a
-              href="/scan"
-              className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-white/15 bg-white/[0.06] px-3 text-xs font-semibold text-white hover:bg-white/10"
-            >
-              <Icon name="scan" className="h-4 w-4 text-gold-bright" />
-              <span className="hidden sm:inline">Gate scanner</span>
-            </a>
-            <a
-              href="/broadcast"
-              className="hidden min-h-10 items-center rounded-lg border border-white/15 bg-white/[0.06] px-3 text-xs font-semibold text-white hover:bg-white/10 sm:inline-flex"
-            >
-              Broadcast
-            </a>
-            <a
-              href="/venue"
-              className="hidden min-h-10 items-center rounded-lg border border-white/15 bg-white/[0.06] px-3 text-xs font-semibold text-white hover:bg-white/10 sm:inline-flex"
-            >
-              Venue resilience
-            </a>
+            {!isMediaComms && (
+              <>
+                <a
+                  href="/broadcast"
+                  className="hidden min-h-10 items-center rounded-lg border border-white/15 bg-white/[0.06] px-3 text-xs font-semibold text-white hover:bg-white/10 sm:inline-flex"
+                >
+                  Broadcast
+                </a>
+                <a
+                  href="/venue"
+                  className="hidden min-h-10 items-center rounded-lg border border-white/15 bg-white/[0.06] px-3 text-xs font-semibold text-white hover:bg-white/10 sm:inline-flex"
+                >
+                  Venue resilience
+                </a>
+              </>
+            )}
             <div className="hidden text-right md:block">
               <div className="text-sm font-semibold">
                 {me.user?.displayName}
               </div>
               <div className="font-mono text-[0.53rem] uppercase tracking-[0.08em] text-white/55">
-                authorised LOC officer
+                {isMediaComms
+                  ? "media & comms assistant"
+                  : "authorised LOC officer"}
               </div>
             </div>
             <button
@@ -704,7 +730,11 @@ function Console({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
       <div className="mx-auto grid max-w-[90rem] gap-7 px-4 py-5 sm:px-6 lg:grid-cols-[250px_minmax(0,1fr)] lg:px-8 lg:py-8">
         <aside className="no-print lg:sticky lg:top-[102px] lg:self-start">
           <nav
-            aria-label="Operations console"
+            aria-label={
+              isMediaComms
+                ? "Media and communications console"
+                : "Operations console"
+            }
             className={`${panel} enterprise-table-scroll flex gap-1 overflow-x-auto p-2 lg:flex-col lg:gap-1.5 lg:p-3`}
           >
             {tabs.map((t) => (
@@ -762,6 +792,10 @@ function Console({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
             <Matches />
           ) : section === "badges" ? (
             <Badges />
+          ) : section === "advertising" ? (
+            <Advertising />
+          ) : section === "news" ? (
+            <WebNews />
           ) : (
             <Settings />
           )}
@@ -1272,11 +1306,11 @@ function Settings() {
                 Netball World Cup submission
               </h2>
               <p className="mt-1 text-sm leading-6 text-ink-soft">
-                Download the complete team roster for every submitted
-                delegation as an Excel workbook, including active players,
-                reserves, and all team officials. Identity files, credential
-                tokens, internal IDs, and LOC review notes are excluded. Every
-                export is recorded below.
+                Download the complete team roster for every submitted delegation
+                as an Excel workbook, including active players, reserves, and
+                all team officials. Identity files, credential tokens, internal
+                IDs, and LOC review notes are excluded. Every export is recorded
+                below.
               </p>
               <p className="mt-2 text-xs font-semibold leading-5 text-warn">
                 Contains personal data. Keep it encrypted, use only the approved
@@ -1346,8 +1380,8 @@ function Settings() {
               LOC audit history
             </h2>
             <p className="mt-1 text-sm text-ink-soft">
-              Append-only record of registration, team, and restricted
-              identity actions performed through the single LOC officer account.
+              Append-only record of registration, team, and restricted identity
+              actions performed through the single LOC officer account.
             </p>
           </div>
           {audit === null ? (
@@ -1387,75 +1421,43 @@ function Settings() {
   );
 }
 
-// Per-country badge theming, derived from each nation's flag (DESIGN-SYSTEM:
-// country colour leads). `primary` carries the header + access block + avatar;
-// `secondary` is the diagonal flag accent. Static for now; could move to
-// eligible_country once the OC signs off the palette.
-type CountryTheme = {
-  name: string;
-  flag: string;
-  primary: string;
-  secondary: string;
-};
-const COUNTRY_THEME: Record<string, CountryTheme> = {
-  JAM: {
-    name: "Jamaica",
-    flag: "JAM",
-    primary: "#009639",
-    secondary: "#FED100",
-  },
-  TTO: {
-    name: "Trinidad & Tobago",
-    flag: "TTO",
-    primary: "#DA1A35",
-    secondary: "#0b0b0b",
-  },
-  BRB: {
-    name: "Barbados",
-    flag: "BRB",
-    primary: "#00267F",
-    secondary: "#FFC726",
-  },
-  LCA: {
-    name: "Saint Lucia",
-    flag: "LCA",
-    primary: "#1187C9",
-    secondary: "#FCD116",
-  },
-  GUY: {
-    name: "Guyana",
-    flag: "GUY",
-    primary: "#009E49",
-    secondary: "#FCD116",
-  },
-  ARG: {
-    name: "Argentina",
-    flag: "ARG",
-    primary: "#3C8DC4",
-    secondary: "#F6B40E",
-  },
-  USA: {
-    name: "United States",
-    flag: "USA",
-    primary: "#3C3B6E",
-    secondary: "#B22234",
-  },
-  CAN: {
-    name: "Canada",
-    flag: "CAN",
-    primary: "#D52B1E",
-    secondary: "#0b0b0b",
-  },
-};
-function countryTheme(code: string, fallbackName: string): CountryTheme {
-  return (
-    COUNTRY_THEME[code] ?? {
-      name: fallbackName,
-      flag: "INTL",
-      primary: "#1b2a6b",
-      secondary: "#f4c430",
-    }
-  );
+type BadgeTheme = "red" | "green" | "yellow";
+
+function badgePresentation(category: string): {
+  theme: BadgeTheme;
+  categoryLabel: string;
+  accessTitle: string;
+  defaultFunction: string;
+} {
+  if (category === "official") {
+    return {
+      theme: "red",
+      categoryLabel: "OFFICIAL",
+      accessTitle: "RED ZONE",
+      defaultFunction: "Team Official",
+    };
+  }
+  if (category === "player") {
+    return {
+      theme: "green",
+      categoryLabel: "ATHLETE",
+      accessTitle: "GREEN ZONE",
+      defaultFunction: "Athlete",
+    };
+  }
+  return {
+    theme: "yellow",
+    categoryLabel: "VOLUNTEER",
+    accessTitle: "YELLOW ZONE",
+    defaultFunction:
+      category === "technical"
+        ? "Technical Team"
+        : category === "media"
+          ? "Media"
+          : category === "broadcast"
+            ? "Broadcast"
+            : "Volunteer",
+  };
 }
 
 // Access zones by accreditation category. The full accreditation matrix is an
@@ -1544,7 +1546,8 @@ function Badges() {
             {detail.delegation.name} — badges
           </h1>
           <p className="text-sm text-ink-muted">
-            {detail.people.length} credentials. Prints four per US-Letter page.
+            {detail.people.length} credentials. Prints four badges per US-Letter
+            page.
           </p>
         </div>
         {credentialMessage && (
@@ -1561,8 +1564,8 @@ function Badges() {
               Credential status and replacement
             </h2>
             <p className="mt-0.5 text-xs text-ink-muted">
-              A revoked QR stops validating immediately. Reissue creates a new
-              secure QR.
+              Revocation blocks a credential immediately. Reissue creates a new
+              credential record for badge production.
             </p>
           </div>
           <div className="divide-y divide-line">
@@ -1610,6 +1613,9 @@ function Badges() {
               person={p}
               countryCode={detail.delegation.countryCode}
               countryName={detail.delegation.name}
+              organisation={
+                detail.delegation.associationName ?? detail.delegation.name
+              }
               accessZones={
                 detail.configuration.accessZoneMatrix[p.category] ?? []
               }
@@ -1672,16 +1678,17 @@ function BadgeCard({
   person,
   countryCode,
   countryName,
+  organisation,
   accessZones,
 }: {
   person: ReviewPerson;
   countryCode: string;
   countryName: string;
+  organisation: string;
   accessZones: string[];
 }) {
   const [photo, setPhoto] = useState<string | null>(null);
   const [photoOk, setPhotoOk] = useState(false);
-  const [qr, setQr] = useState<string | null>(null);
 
   useEffect(() => {
     let r: string | null = null;
@@ -1693,152 +1700,180 @@ function BadgeCard({
       if (r) URL.revokeObjectURL(r);
     };
   }, [person.id]);
-  useEffect(() => {
-    if (!person.credentialId || person.credentialStatus !== "issued") return;
-    let r: string | null = null;
-    api.blobUrl(`/admin/credentials/${person.credentialId}/qr`).then((u) => {
-      r = u;
-      setQr(u);
-    });
-    return () => {
-      if (r) URL.revokeObjectURL(r);
-    };
-  }, [person.credentialId, person.credentialStatus]);
 
-  const theme = countryTheme(countryCode, countryName);
+  const presentation = badgePresentation(person.category);
   const zones = accessZones.length
     ? accessZones
     : (ACCESS_ZONES[person.category] ?? ACCESS_ZONES.player);
   const initials =
     `${person.firstName.charAt(0)}${person.lastName.charAt(0)}`.toUpperCase();
-  // Readable badge reference (AFN-<code>-XXXX) derived from the credential id.
-  const ref = person.credentialId
-    ? `AFN-${countryCode}-${person.credentialId.replace(/-/g, "").slice(0, 4).toUpperCase()}`
-    : "AFN — pending";
 
   return (
-    <div className="badge mx-auto flex w-full max-w-[300px] flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-line">
-      {/* Header — country primary with a horizontal flag-coloured accent */}
-      <div
-        className="relative overflow-hidden px-4 pb-4 pt-3 text-white"
-        style={{ background: theme.primary }}
-      >
-        <div
-          aria-hidden
-          className="absolute bottom-0 left-0 h-3 w-full"
-          style={{ background: theme.secondary }}
-        />
-        <div className="relative flex items-start justify-between">
-          <div className="leading-[0.92]">
-            <div className="font-display text-[1.05rem] font-extrabold tracking-tight">
-              NETBALL
-            </div>
-            <div className="font-display text-[1.05rem] font-extrabold tracking-tight">
-              AMERICAS
-            </div>
-            <div className="mt-1.5 font-mono text-[0.46rem] uppercase tracking-[0.16em] text-white/80">
-              Americas Qualifier 2026
-            </div>
-          </div>
-          <span className="font-mono text-[0.62rem] font-bold uppercase tracking-[0.12em]">
-            {person.category}
-          </span>
-        </div>
-      </div>
+    <section className={`badge loc-badge loc-badge--${presentation.theme}`}>
+      <header className="loc-badge__header">
+        <div className="loc-badge__slot" aria-hidden />
+        <div className="loc-badge__category">{presentation.categoryLabel}</div>
+      </header>
 
-      {/* Body — flag-coloured avatar (photo when present), name, country */}
-      <div className="relative flex flex-1 flex-col items-center px-4 pt-4 text-center">
-        <NetballWatermark />
-        <div
-          className="relative h-36 w-36 overflow-hidden rounded-3xl shadow-sm ring-1 ring-black/5"
-          style={{ background: theme.primary }}
-        >
-          <span className="absolute inset-0 flex items-center justify-center font-display text-5xl font-extrabold text-white">
-            {initials}
-          </span>
-          {photo && (
-            // eslint-disable-next-line @next/next/no-img-element
+      <div className="loc-badge__content">
+        <div className="loc-badge__identity">
+          <div className="loc-badge__brand">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={photo}
-              alt=""
-              onLoad={(e) => setPhotoOk(e.currentTarget.naturalWidth >= 32)}
-              onError={() => setPhotoOk(false)}
-              className={
-                photoOk
-                  ? "absolute inset-0 h-full w-full object-cover"
-                  : "hidden"
-              }
+              className="loc-badge__qualifier-logo"
+              src="/event-brand/nwc-2027-regional-qualifier-americas-portrait.png"
+              alt="Netball World Cup Sydney 2027 Regional Qualifier Americas"
             />
-          )}
-        </div>
-        <div className="relative mt-2 font-display text-xl font-bold leading-tight text-ink">
-          {person.firstName.charAt(0)}. {person.lastName}
-        </div>
-        <div className="relative font-body text-sm text-ink-soft">
-          {person.role || person.category}
-        </div>
-        <div
-          className="relative mt-1.5 flex items-center justify-center gap-1.5 font-bold"
-          style={{ color: theme.primary }}
-        >
-          <span className="text-base leading-none">{theme.flag}</span>
-          <span className="font-mono text-[0.7rem] uppercase tracking-[0.08em]">
-            {theme.name}
-          </span>
-        </div>
-      </div>
+          </div>
 
-      {/* Access block — country-coloured, carries QR + zones + reference */}
-      <div
-        className="m-3 mt-2 rounded-xl px-3 py-2 text-white"
-        style={{ background: theme.primary }}
-      >
-        <div className="flex items-center gap-3">
-          <div className="shrink-0 rounded-md bg-white p-1">
-            {qr ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={qr} alt="" className="h-14 w-14" />
-            ) : (
-              <div className="h-14 w-14" />
-            )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="font-mono text-[0.55rem] font-bold uppercase tracking-[0.14em] text-gold-bright">
-              Access
+          <div className="loc-badge__portrait-stack">
+            <div className="loc-badge__portrait">
+              <span className="loc-badge__initials">{initials}</span>
+              {photo && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={photo}
+                  alt={`${person.firstName} ${person.lastName}`}
+                  onLoad={(event) =>
+                    setPhotoOk(event.currentTarget.naturalWidth >= 32)
+                  }
+                  onError={() => setPhotoOk(false)}
+                  className={photoOk ? "loc-badge__photo" : "hidden"}
+                />
+              )}
             </div>
-            <ul className="mt-0.5 space-y-px">
-              {zones.map((z) => (
-                <li
-                  key={z}
-                  className="font-body text-[0.62rem] leading-tight text-white/90"
-                >
-                  {z}
-                </li>
-              ))}
-            </ul>
+            <div className="loc-badge__flag-chip">
+              <span className="loc-badge__flag" aria-hidden>
+                {countryFlag(countryCode)}
+              </span>
+              <span>{countryName}</span>
+            </div>
           </div>
         </div>
-        <div className="mt-2 border-t border-white/20 pt-1 font-mono text-[0.55rem] tracking-[0.1em] text-white/75">
-          {ref}
+
+        <div className="loc-badge__name">
+          {person.firstName} {person.lastName}
+        </div>
+        <div className="loc-badge__role">
+          {person.role || presentation.defaultFunction}
+        </div>
+        <div className="loc-badge__organisation">{organisation}</div>
+
+        <div className="loc-badge__divider" />
+
+        <div className="loc-badge__details-wrap">
+          <div className="loc-badge__details">
+            <BadgeDetail icon="pin">Regional Qualifier Americas</BadgeDetail>
+            <BadgeDetail icon="venue">Garfield Sobers Gymnasium</BadgeDetail>
+            <BadgeDetail icon="calendar">October 19 – 26, 2026</BadgeDetail>
+          </div>
+          <div className="loc-badge__loc-card">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/event-brand/barbados-loc-logo.png"
+              alt="Barbados local organising committee"
+            />
+            <div>Local Organising Committee</div>
+          </div>
+        </div>
+
+        <div className="loc-badge__divider" />
+
+        <div className="loc-badge__access">
+          <div className="loc-badge__access-icon">
+            <BadgeAccessIcon category={person.category} />
+          </div>
+          <div>
+            <div className="loc-badge__access-title">
+              {presentation.accessTitle}
+            </div>
+            <div className="loc-badge__access-copy">{zones.join(" / ")}</div>
+          </div>
         </div>
       </div>
+    </section>
+  );
+}
+
+function BadgeDetail({
+  icon,
+  children,
+}: {
+  icon: "pin" | "venue" | "calendar";
+  children: React.ReactNode;
+}) {
+  const paths = {
+    pin: (
+      <>
+        <path d="M12 22s7-6.2 7-13a7 7 0 1 0-14 0c0 6.8 7 13 7 13Z" />
+        <circle cx="12" cy="9" r="2.6" fill="white" />
+      </>
+    ),
+    venue: (
+      <>
+        <path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-5h6v5" />
+        <path d="M9 10h.01M15 10h.01" />
+      </>
+    ),
+    calendar: (
+      <>
+        <rect x="3" y="5" width="18" height="16" rx="2" />
+        <path d="M16 3v4M8 3v4M3 10h18" />
+      </>
+    ),
+  };
+  return (
+    <div className="loc-badge__detail">
+      <svg
+        aria-hidden
+        viewBox="0 0 24 24"
+        fill={icon === "pin" ? "currentColor" : "none"}
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        {paths[icon]}
+      </svg>
+      <span>{children}</span>
     </div>
   );
 }
 
-function NetballWatermark() {
+function BadgeAccessIcon({ category }: { category: string }) {
+  if (category === "official") {
+    return (
+      <svg
+        aria-hidden
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      >
+        <rect x="5" y="11" width="14" height="10" rx="2" />
+        <path d="M8 11V8a4 4 0 1 1 8 0v3" />
+      </svg>
+    );
+  }
+  if (category === "player") {
+    return (
+      <svg
+        aria-hidden
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      >
+        <circle cx="15" cy="4.5" r="2" />
+        <path d="M6 12l4-3 2 2 3-1 3 2M10 11l-2 4-3 2M12 12l3 4 4 1M10 15l2 5" />
+      </svg>
+    );
+  }
   return (
-    <svg
-      aria-hidden
-      viewBox="0 0 100 100"
-      className="pointer-events-none absolute -right-6 top-2 h-44 w-44 text-ink opacity-[0.04]"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2.5}
-    >
-      <circle cx="50" cy="50" r="46" />
-      <path d="M50 4 V96 M4 50 H96" />
-      <path d="M14 22 Q50 50 14 78 M86 22 Q50 50 86 78" />
+    <svg aria-hidden viewBox="0 0 24 24" fill="currentColor">
+      <circle cx="8" cy="9" r="3" />
+      <circle cx="16" cy="9" r="3" />
+      <path d="M3 20c0-3 2.5-5 5-5s5 2 5 5H3ZM11 20c.3-2.5 2.4-4.2 5-4.2 2.4 0 4.8 1.8 5 4.2H11Z" />
     </svg>
   );
 }
@@ -1921,17 +1956,42 @@ function Matches() {
       <PageHeading
         eyebrow="Match centre"
         title="Fixtures and results"
-        description="Schedule matches, manage competition stages and publish confirmed scores to the public standings."
+        description="Schedule knockout fixtures, manage competition rounds and publish confirmed results."
       />
+      {process.env.NODE_ENV === "development" && (
+        <Link
+          href="/gameday-demo"
+          className="enterprise-panel enterprise-panel-interactive flex flex-col gap-3 border-gold/45 bg-navy-deep p-5 text-white sm:flex-row sm:items-center"
+        >
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gold font-display text-xl font-black text-navy-deep">
+            N
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="font-mono text-[0.6rem] font-bold uppercase tracking-[0.14em] text-gold">
+              Local-only integration sandbox
+            </p>
+            <h2 className="mt-1 font-display text-xl font-bold">
+              Open GameDay Capture Demo
+            </h2>
+            <p className="mt-1 text-sm text-white/55">
+              Test full-stat and score-only capture without API calls or
+              database writes.
+            </p>
+          </div>
+          <span className="rounded-lg border border-white/15 px-4 py-2 text-sm font-bold text-white/80">
+            Launch demo →
+          </span>
+        </Link>
+      )}
       <ErrorBanner error={error} />
-
-      <VenueManager venues={venues ?? []} onChange={reload} />
 
       <NewMatchForm
         nations={nations ?? []}
         stages={stages ?? []}
         venues={venues ?? []}
         onCreated={reload}
+        onStagesChange={reload}
+        onVenuesChange={reload}
       />
 
       <section>
@@ -1962,11 +2022,6 @@ function Matches() {
         </div>
       </section>
 
-      <GroupsManager
-        nations={nations ?? []}
-        stages={stages ?? []}
-        onChange={reload}
-      />
       <GameDayStaffing
         matches={matches ?? []}
         accounts={gameDayAccounts ?? []}
@@ -1979,9 +2034,11 @@ function Matches() {
 function VenueManager({
   venues,
   onChange,
+  embedded = false,
 }: {
   venues: MatchVenue[];
   onChange: () => void;
+  embedded?: boolean;
 }) {
   const [venueName, setVenueName] = useState("");
   const [address, setAddress] = useState("");
@@ -2024,14 +2081,13 @@ function VenueManager({
       setBusy(false);
     }
   }
-  return (
-    <section className="space-y-3">
-      <h2 className={labelCls}>Venues &amp; courts</h2>
+  const forms = (
+    <>
       <ErrorBanner error={error} />
       <div className="grid gap-4 lg:grid-cols-2">
         <form
           onSubmit={addVenue}
-          className={`${panel} grid gap-3 p-5 sm:grid-cols-2`}
+          className={`${embedded ? "rounded-xl border border-line bg-paper/55" : panel} grid gap-3 p-5 sm:grid-cols-2`}
         >
           <h3 className="font-display text-lg font-bold text-ink sm:col-span-2">
             Add venue
@@ -2058,7 +2114,7 @@ function VenueManager({
         </form>
         <form
           onSubmit={addCourt}
-          className={`${panel} grid gap-3 p-5 sm:grid-cols-2`}
+          className={`${embedded ? "rounded-xl border border-line bg-paper/55" : panel} grid gap-3 p-5 sm:grid-cols-2`}
         >
           <h3 className="font-display text-lg font-bold text-ink sm:col-span-2">
             Add court
@@ -2091,16 +2147,44 @@ function VenueManager({
           </button>
         </form>
       </div>
+    </>
+  );
+
+  if (embedded) {
+    return (
+      <details className="group mt-5 border-t border-line pt-4">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 rounded-lg px-1 py-2 text-sm font-bold text-navy-deep marker:content-none">
+          <span>
+            Need to add a venue or court?
+            <span className="ml-2 font-normal text-ink-muted">
+              One-time setup
+            </span>
+          </span>
+          <span
+            aria-hidden
+            className="text-lg text-gold-dark transition-transform group-open:rotate-45"
+          >
+            +
+          </span>
+        </summary>
+        <div className="mt-3 space-y-3">{forms}</div>
+      </details>
+    );
+  }
+
+  return (
+    <section className="space-y-3">
+      <h2 className={labelCls}>Venues &amp; courts</h2>
+      {forms}
     </section>
   );
 }
 
 const GAME_DAY_ROLES: { value: GameDayRole; label: string }[] = [
-  { value: "match_supervisor", label: "Match supervisor" },
-  { value: "scorer", label: "Scorer" },
-  { value: "timekeeper", label: "Timekeeper" },
-  { value: "stats_lineup", label: "Statistics & lineup" },
-  { value: "result_approver", label: "Result approver" },
+  { value: "scorer", label: "Scorer + match clock" },
+  { value: "timekeeper", label: "Dedicated timekeeper" },
+  { value: "stats_lineup", label: "Stats recorder (optional)" },
+  { value: "stats_host", label: "Match host · read only (optional)" },
 ];
 
 function GameDayStaffing({
@@ -2277,8 +2361,8 @@ function GameDayStaffing({
           })}
           {matchId && (
             <p className="text-xs text-ink-muted">
-              {assignments.length}/5 required roles assigned. The supervisor
-              cannot mark the match ready until all five are present.
+              A scorer is required. Timekeeper, stats recorder and host access
+              are optional.
             </p>
           )}
         </div>
@@ -2292,11 +2376,15 @@ function NewMatchForm({
   stages,
   venues,
   onCreated,
+  onStagesChange,
+  onVenuesChange,
 }: {
   nations: MatchNation[];
   stages: Stage[];
   venues: MatchVenue[];
   onCreated: () => void;
+  onStagesChange: () => void;
+  onVenuesChange: () => void;
 }) {
   const [stageId, setStageId] = useState("");
   const [teamA, setTeamA] = useState("");
@@ -2339,95 +2427,105 @@ function NewMatchForm({
   }
 
   return (
-    <form onSubmit={submit} className={`${panel} space-y-3 p-5`}>
+    <section className={`${panel} p-5`}>
       <h2 className="font-display text-lg font-bold text-ink">Add a fixture</h2>
-      {err && <p className="text-sm text-bad">{err}</p>}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div>
-          <label className={labelCls}>Team A</label>
-          <select
-            className={inputCls}
-            value={teamA}
-            onChange={(e) => setTeamA(e.target.value)}
-          >
-            <option value="">Select nation…</option>
-            {nations.map((n) => (
-              <option key={n.id} value={n.id}>
-                {n.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className={labelCls}>Team B</label>
-          <select
-            className={inputCls}
-            value={teamB}
-            onChange={(e) => setTeamB(e.target.value)}
-          >
-            <option value="">Select nation…</option>
-            {nations.map((n) => (
-              <option key={n.id} value={n.id}>
-                {n.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className={labelCls}>Group / stage</label>
-          <select
-            className={inputCls}
-            value={stageId}
-            onChange={(e) => setStageId(e.target.value)}
-          >
-            <option value="">— none —</option>
-            {stages.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className={labelCls}>Date &amp; time</label>
-          <input
-            type="datetime-local"
-            className={inputCls}
-            value={at}
-            onChange={(e) => setAt(e.target.value)}
-          />
-        </div>
-        <div className="sm:col-span-2">
-          <label className={labelCls}>Venue and court</label>
-          <select
-            className={inputCls}
-            value={courtId}
-            onChange={(e) => setCourtId(e.target.value)}
-          >
-            <option value="">Court to be confirmed</option>
-            {venues.flatMap((venue) =>
-              venue.courts.map((court) => (
-                <option key={court.id} value={court.id}>
-                  {venue.name} · {court.name}
+      <form onSubmit={submit} className="mt-3 space-y-3">
+        {err && <p className="text-sm text-bad">{err}</p>}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label className={labelCls}>Team A</label>
+            <select
+              className={inputCls}
+              value={teamA}
+              onChange={(e) => setTeamA(e.target.value)}
+            >
+              <option value="">Select nation…</option>
+              {nations.map((n) => (
+                <option key={n.id} value={n.id}>
+                  {n.name}
                 </option>
-              )),
-            )}
-          </select>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>Team B</label>
+            <select
+              className={inputCls}
+              value={teamB}
+              onChange={(e) => setTeamB(e.target.value)}
+            >
+              <option value="">Select nation…</option>
+              {nations.map((n) => (
+                <option key={n.id} value={n.id}>
+                  {n.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>Knockout round</label>
+            <select
+              className={inputCls}
+              value={stageId}
+              onChange={(e) => setStageId(e.target.value)}
+            >
+              <option value="">Round to be confirmed</option>
+              {stages
+                .filter((stage) => stage.kind === "knockout")
+                .map((stage) => (
+                  <option key={stage.id} value={stage.id}>
+                    {stage.name}
+                  </option>
+                ))}
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>Date &amp; time</label>
+            <input
+              type="datetime-local"
+              className={inputCls}
+              value={at}
+              onChange={(e) => setAt(e.target.value)}
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <label className={labelCls}>Venue and court</label>
+            <select
+              className={inputCls}
+              value={courtId}
+              onChange={(e) => setCourtId(e.target.value)}
+            >
+              <option value="">Court to be confirmed</option>
+              {venues.flatMap((venue) =>
+                venue.courts.map((court) => (
+                  <option key={court.id} value={court.id}>
+                    {venue.name} · {court.name}
+                  </option>
+                )),
+              )}
+            </select>
+          </div>
+          <div className="sm:col-span-2">
+            <label className={labelCls}>Match label (optional)</label>
+            <input
+              className={inputCls}
+              placeholder="Semifinal 1"
+              value={round}
+              onChange={(e) => setRound(e.target.value)}
+            />
+          </div>
         </div>
-        <div className="sm:col-span-2">
-          <label className={labelCls}>Round label (optional)</label>
-          <input
-            className={inputCls}
-            placeholder="Group A · Round 2"
-            value={round}
-            onChange={(e) => setRound(e.target.value)}
-          />
-        </div>
-      </div>
-      <button className={btnGold} disabled={busy || !valid}>
-        {busy ? "Adding…" : "Add fixture"}
-      </button>
-    </form>
+        <button className={btnGold} disabled={busy || !valid}>
+          {busy ? "Adding…" : "Add fixture"}
+        </button>
+      </form>
+      <KnockoutRoundsManager
+        stages={stages}
+        onChange={onStagesChange}
+        embedded
+      />
+      <VenueManager venues={venues} onChange={onVenuesChange} embedded />
+    </section>
   );
 }
 
@@ -2572,24 +2670,37 @@ function MatchRow({
   );
 }
 
-function GroupsManager({
-  nations,
+function KnockoutRoundsManager({
   stages,
   onChange,
+  embedded = false,
 }: {
-  nations: MatchNation[];
   stages: Stage[];
   onChange: () => void;
+  embedded?: boolean;
 }) {
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
+  const knockoutStages = stages.filter((stage) => stage.kind === "knockout");
+  const suggestedRounds = [
+    "Quarterfinals",
+    "Semifinals",
+    "Third-place playoff",
+    "Final",
+  ].filter(
+    (round) =>
+      !knockoutStages.some(
+        (stage) => stage.name.toLowerCase() === round.toLowerCase(),
+      ),
+  );
 
-  async function createStage(e: React.FormEvent) {
-    e.preventDefault();
-    if (!name.trim()) return;
+  async function addStage(stageName: string) {
+    if (!stageName.trim()) return;
     setBusy(true);
     try {
-      await api.createStage(name.trim(), "group", stages.length + 1);
+      const nextSortOrder =
+        Math.max(0, ...stages.map((stage) => stage.sortOrder)) + 1;
+      await api.createStage(stageName.trim(), "knockout", nextSortOrder);
       setName("");
       onChange();
     } finally {
@@ -2597,77 +2708,91 @@ function GroupsManager({
     }
   }
 
-  return (
-    <section className="space-y-3">
-      <h2 className={labelCls}>Groups &amp; stages</h2>
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        {stages.map((s) => {
-          const inGroup = new Set(s.entries.map((e) => e.delegationId));
-          const available = nations.filter((n) => !inGroup.has(n.id));
-          return (
-            <div key={s.id} className={`${panel} p-4`}>
-              <div className="mb-2 font-display text-lg font-bold text-ink">
-                {s.name}
-              </div>
-              <div className="mb-3 flex flex-wrap gap-1.5">
-                {s.entries.length === 0 && (
-                  <span className="text-xs text-ink-faded">
-                    No nations yet.
-                  </span>
-                )}
-                {s.entries.map((e) => (
-                  <span
-                    key={e.delegationId}
-                    className="inline-flex items-center gap-1 rounded-full bg-bg-soft px-2 py-0.5 text-xs font-semibold text-ink"
-                  >
-                    {e.name}
-                    <button
-                      onClick={async () => {
-                        await api.removeEntry(s.id, e.delegationId);
-                        onChange();
-                      }}
-                      className="text-ink-faded hover:text-bad"
-                      aria-label={`Remove ${e.name} from ${s.name}`}
-                    >
-                      <Icon name="close" className="h-3.5 w-3.5" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-              <select
-                className={inputCls}
-                value=""
-                onChange={async (ev) => {
-                  if (!ev.target.value) return;
-                  await api.addEntry(s.id, ev.target.value);
-                  onChange();
-                }}
+  async function createStage(e: React.FormEvent) {
+    e.preventDefault();
+    await addStage(name);
+  }
+
+  const content = (
+    <div className="space-y-3">
+      {knockoutStages.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {knockoutStages.map((stage) => (
+            <span
+              key={stage.id}
+              className="rounded-full border border-line bg-bg-soft px-3 py-1 text-xs font-semibold text-ink"
+            >
+              {stage.name}
+            </span>
+          ))}
+        </div>
+      )}
+      {suggestedRounds.length > 0 && (
+        <div>
+          <p className={labelCls}>Quick setup</p>
+          <div className="flex flex-wrap gap-2">
+            {suggestedRounds.map((round) => (
+              <button
+                key={round}
+                type="button"
+                className={btnGhost}
+                disabled={busy}
+                onClick={() => void addStage(round)}
               >
-                <option value="">Add a nation…</option>
-                {available.map((n) => (
-                  <option key={n.id} value={n.id}>
-                    {n.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          );
-        })}
-      </div>
-      <form onSubmit={createStage} className="flex items-end gap-2">
+                + {round}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      <form
+        onSubmit={createStage}
+        className="flex flex-col gap-2 sm:flex-row sm:items-end"
+      >
         <div className="flex-1">
-          <label className={labelCls}>New group / stage</label>
+          <label className={labelCls}>New knockout round</label>
           <input
             className={inputCls}
-            placeholder="Group C"
+            placeholder="Quarterfinals, Semifinals or Final"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
         </div>
         <button className={btnGhost} disabled={busy || !name.trim()}>
-          Add stage
+          Add round
         </button>
       </form>
+    </div>
+  );
+
+  if (embedded) {
+    return (
+      <details className="group mt-5 border-t border-line pt-4">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-4 rounded-lg px-1 py-2 text-sm font-bold text-navy-deep marker:content-none">
+          <span>
+            Need to add a knockout round?
+            <span className="ml-2 font-normal text-ink-muted">
+              One-time setup
+            </span>
+          </span>
+          <span
+            aria-hidden
+            className="text-lg text-gold-dark transition-transform group-open:rotate-45"
+          >
+            +
+          </span>
+        </summary>
+        <div className="mt-3 rounded-xl border border-line bg-paper/55 p-5">
+          {content}
+        </div>
+      </details>
+    );
+  }
+
+  return (
+    <section className="space-y-3">
+      <h2 className={labelCls}>Knockout rounds</h2>
+      <div className={`${panel} p-5`}>{content}</div>
     </section>
   );
 }
@@ -2692,7 +2817,9 @@ function Registrations() {
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [view, setView] = useState<"queue" | "registry">("queue");
-  const [statusFilter, setStatusFilter] = useState<"all" | RegistrationRecord["registrationStatus"]>("all");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | RegistrationRecord["registrationStatus"]
+  >("all");
   const [search, setSearch] = useState("");
 
   const load = useCallback(async () => {
@@ -2805,102 +2932,104 @@ function Registrations() {
           onClick={() => setView("registry")}
           className={view === "registry" ? btnPrimary : btnGhost}
         >
-          All registered teams {registrations ? `(${registrations.length})` : ""}
+          All registered teams{" "}
+          {registrations ? `(${registrations.length})` : ""}
         </button>
       </div>
-      {view === "queue" && (pending === null ? (
-        <LoadingBlock rows={4} />
-      ) : pending.length === 0 ? (
-        <EmptyState
-          icon="registration"
-          title="No delegations awaiting approval"
-          description="New national association registrations will appear here for LOC review."
-        />
-      ) : (
-        <div className="grid gap-4 xl:grid-cols-2">
-          {pending.map((d) => (
-            <div
-              key={d.id}
-              className={`${panel} enterprise-panel-interactive p-5 sm:p-6`}
-            >
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="font-display text-lg font-bold text-ink">
-                      {d.name}
-                    </h2>
-                    <span className="rounded bg-[rgba(27,42,107,0.12)] px-1.5 py-0.5 font-mono text-[0.58rem] font-bold uppercase tracking-[0.04em] text-navy">
-                      {d.countryCode}
-                    </span>
+      {view === "queue" &&
+        (pending === null ? (
+          <LoadingBlock rows={4} />
+        ) : pending.length === 0 ? (
+          <EmptyState
+            icon="registration"
+            title="No delegations awaiting approval"
+            description="New national association registrations will appear here for LOC review."
+          />
+        ) : (
+          <div className="grid gap-4 xl:grid-cols-2">
+            {pending.map((d) => (
+              <div
+                key={d.id}
+                className={`${panel} enterprise-panel-interactive p-5 sm:p-6`}
+              >
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="font-display text-lg font-bold text-ink">
+                        {d.name}
+                      </h2>
+                      <span className="rounded bg-[rgba(27,42,107,0.12)] px-1.5 py-0.5 font-mono text-[0.58rem] font-bold uppercase tracking-[0.04em] text-navy">
+                        {d.countryCode}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-sm text-ink-soft">
+                      {d.associationName}
+                    </p>
                   </div>
-                  <p className="mt-0.5 text-sm text-ink-soft">
-                    {d.associationName}
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => act(d, "approve")}
-                    disabled={busyId === d.id}
-                    className={btnGold}
-                  >
-                    Approve
-                  </button>
-                  <button
-                    onClick={() => {
-                      setRejectingId(d.id);
-                      setRejectReason("");
-                    }}
-                    disabled={busyId === d.id}
-                    className={`${btnGhost} text-bad`}
-                  >
-                    Reject
-                  </button>
-                </div>
-              </div>
-              <dl className="mt-4 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-                <Field
-                  k="Team manager"
-                  v={d.contactName ?? d.headOfDelegation}
-                />
-                <Field k="Contact email" v={d.contactEmail} />
-                <Field k="Contact phone" v={d.contactPhone} />
-                <Field k="Expected squad" v={d.expectedSquadSize} />
-              </dl>
-              {rejectingId === d.id && (
-                <div className="mt-5 rounded-xl border border-bad-line bg-bad-soft p-4">
-                  <label className={labelCls}>Reason for rejection</label>
-                  <textarea
-                    autoFocus
-                    rows={2}
-                    className={inputCls}
-                    value={rejectReason}
-                    onChange={(event) => setRejectReason(event.target.value)}
-                    placeholder="State what the association must correct before registering again."
-                  />
-                  <div className="mt-3 flex flex-wrap gap-2">
+                  <div className="flex gap-2">
                     <button
-                      onClick={() => act(d, "reject")}
-                      disabled={busyId === d.id || !rejectReason.trim()}
-                      className={`${btnPrimary} bg-bad hover:bg-bad`}
+                      onClick={() => act(d, "approve")}
+                      disabled={busyId === d.id}
+                      className={btnGold}
                     >
-                      Confirm rejection
+                      Approve
                     </button>
                     <button
                       onClick={() => {
-                        setRejectingId(null);
+                        setRejectingId(d.id);
                         setRejectReason("");
                       }}
-                      className={btnGhost}
+                      disabled={busyId === d.id}
+                      className={`${btnGhost} text-bad`}
                     >
-                      Cancel
+                      Reject
                     </button>
                   </div>
                 </div>
-              )}
-            </div>
-          ))}
-        </div>
-      ))}
+                <dl className="mt-4 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+                  <Field
+                    k="Team manager"
+                    v={d.contactName ?? d.headOfDelegation}
+                  />
+                  <Field k="Contact email" v={d.contactEmail} />
+                  <Field k="Contact phone" v={d.contactPhone} />
+                  <Field k="Expected squad" v={d.expectedSquadSize} />
+                </dl>
+                {rejectingId === d.id && (
+                  <div className="mt-5 rounded-xl border border-bad-line bg-bad-soft p-4">
+                    <label className={labelCls}>Reason for rejection</label>
+                    <textarea
+                      autoFocus
+                      rows={2}
+                      className={inputCls}
+                      value={rejectReason}
+                      onChange={(event) => setRejectReason(event.target.value)}
+                      placeholder="State what the association must correct before registering again."
+                    />
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        onClick={() => act(d, "reject")}
+                        disabled={busyId === d.id || !rejectReason.trim()}
+                        className={`${btnPrimary} bg-bad hover:bg-bad`}
+                      >
+                        Confirm rejection
+                      </button>
+                      <button
+                        onClick={() => {
+                          setRejectingId(null);
+                          setRejectReason("");
+                        }}
+                        className={btnGhost}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ))}
       {view === "registry" && registrations && (
         <section className={`${panel} overflow-hidden`}>
           <div className="border-b border-line px-5 py-4 sm:px-6">
@@ -2911,7 +3040,8 @@ function Registrations() {
               All delegation registrations
             </h2>
             <p className="mt-1 text-sm text-ink-muted">
-              A permanent record of every team that has registered, including approved and returned submissions.
+              A permanent record of every team that has registered, including
+              approved and returned submissions.
             </p>
             <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(220px,1fr)_auto]">
               <input
@@ -2922,14 +3052,20 @@ function Registrations() {
                 aria-label="Search registered teams"
               />
               <div className="flex flex-wrap gap-2">
-                {(["all", "submitted", "approved", "rejected", "draft"] as const).map((status) => (
+                {(
+                  ["all", "submitted", "approved", "rejected", "draft"] as const
+                ).map((status) => (
                   <button
                     key={status}
                     type="button"
                     onClick={() => setStatusFilter(status)}
                     className={statusFilter === status ? btnPrimary : btnGhost}
                   >
-                    {status === "all" ? "All" : status === "submitted" ? "Pending" : status}
+                    {status === "all"
+                      ? "All"
+                      : status === "submitted"
+                        ? "Pending"
+                        : status}
                     {status === "all"
                       ? ` ${registrations.length}`
                       : ` ${statusCounts?.[status] ?? 0}`}
@@ -2994,15 +3130,28 @@ function Registrations() {
                     </td>
                     <td className="px-5 py-3">
                       <span className="block font-semibold text-ink">
-                        {record.playerCount} players · {record.officialCount} officials
+                        {record.playerCount} players · {record.officialCount}{" "}
+                        officials
                       </span>
                       <span className="text-xs capitalize text-ink-muted">
                         {record.rosterStatus}
                       </span>
                     </td>
                     <td className="px-5 py-3">
-                      <StatusPill tone={record.accreditedAt ? "success" : record.rosterSubmittedAt ? "warning" : "neutral"}>
-                        {record.accreditedAt ? "Accredited" : record.rosterSubmittedAt ? "Under review" : "Not submitted"}
+                      <StatusPill
+                        tone={
+                          record.accreditedAt
+                            ? "success"
+                            : record.rosterSubmittedAt
+                              ? "warning"
+                              : "neutral"
+                        }
+                      >
+                        {record.accreditedAt
+                          ? "Accredited"
+                          : record.rosterSubmittedAt
+                            ? "Under review"
+                            : "Not submitted"}
                       </StatusPill>
                     </td>
                     <td className="max-w-xs px-5 py-3 text-xs text-ink-muted">
@@ -3238,13 +3387,34 @@ function ReviewDetailView({ id, onBack }: { id: string; onBack: () => void }) {
       <ErrorBanner error={error} />
 
       {!accredited && (
-        <div className={`${panel} mb-5 flex flex-wrap items-center gap-3 p-4 text-sm`}>
+        <div
+          className={`${panel} mb-5 flex flex-wrap items-center gap-3 p-4 text-sm`}
+        >
           <strong className="text-ink">Rolling LOC review:</strong>
-          {([
-            ["verified", verifiedCount, "approved", "border-ok-line bg-ok-soft text-ok"],
-            ["returned", returnedCount, "returned", returnedCount ? "border-bad-line bg-bad-soft text-bad" : "border-line bg-navy-tint text-navy"],
-            ["pending", detail.people.length - verifiedCount - returnedCount, "pending", "border-warn-line bg-warn-soft text-warn"],
-          ] as const).map(([status, count, label, colors]) => {
+          {(
+            [
+              [
+                "verified",
+                verifiedCount,
+                "approved",
+                "border-ok-line bg-ok-soft text-ok",
+              ],
+              [
+                "returned",
+                returnedCount,
+                "returned",
+                returnedCount
+                  ? "border-bad-line bg-bad-soft text-bad"
+                  : "border-line bg-navy-tint text-navy",
+              ],
+              [
+                "pending",
+                detail.people.length - verifiedCount - returnedCount,
+                "pending",
+                "border-warn-line bg-warn-soft text-warn",
+              ],
+            ] as const
+          ).map(([status, count, label, colors]) => {
             const active = statusFilter === status;
             return (
               <button
@@ -3260,12 +3430,18 @@ function ReviewDetailView({ id, onBack }: { id: string; onBack: () => void }) {
             );
           })}
           {statusFilter !== "all" && (
-            <button type="button" className="text-xs font-semibold text-navy hover:underline" onClick={() => setStatusFilter("all")}>
+            <button
+              type="button"
+              className="text-xs font-semibold text-navy hover:underline"
+              onClick={() => setStatusFilter("all")}
+            >
               Show all ({detail.people.length})
             </button>
           )}
           <span className="text-ink-muted">
-            Approve complete people now so they can be selected on match sheets; final team accreditation remains locked until every team requirement is met.
+            Approve complete people now so they can be selected on match sheets;
+            final team accreditation remains locked until every team requirement
+            is met.
           </span>
         </div>
       )}
@@ -3303,7 +3479,7 @@ function ReviewDetailView({ id, onBack }: { id: string; onBack: () => void }) {
           <Icon name="check" className="mt-0.5 h-5 w-5 shrink-0" />
           <span>
             <strong>Team accredited.</strong> Credentials have been issued and
-            each person’s QR is available below.
+            the team is ready for badge production.
           </span>
         </div>
       )}
@@ -3321,8 +3497,14 @@ function ReviewDetailView({ id, onBack }: { id: string; onBack: () => void }) {
         ))}
         {visiblePeople.length === 0 && (
           <div className={`${panel} p-8 text-center`}>
-            <p className="font-display text-lg font-bold text-ink">No people in this status</p>
-            <button type="button" className="mt-2 text-sm font-semibold text-navy hover:underline" onClick={() => setStatusFilter("all")}>
+            <p className="font-display text-lg font-bold text-ink">
+              No people in this status
+            </p>
+            <button
+              type="button"
+              className="mt-2 text-sm font-semibold text-navy hover:underline"
+              onClick={() => setStatusFilter("all")}
+            >
               Show all team members
             </button>
           </div>
@@ -3358,7 +3540,6 @@ function PersonRow({
   onError: (error: unknown) => void;
 }) {
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
-  const [qrUrl, setQrUrl] = useState<string | null>(null);
   const [documentUrl, setDocumentUrl] = useState<string | null>(null);
   const [identityNote, setIdentityNote] = useState("");
   const [identityBusy, setIdentityBusy] = useState(false);
@@ -3395,18 +3576,6 @@ function PersonRow({
       if (revoke) URL.revokeObjectURL(revoke);
     };
   }, [person.id]);
-
-  useEffect(() => {
-    if (!person.credentialId) return;
-    let revoke: string | null = null;
-    api.blobUrl(`/admin/credentials/${person.credentialId}/qr`).then((u) => {
-      revoke = u;
-      setQrUrl(u);
-    });
-    return () => {
-      if (revoke) URL.revokeObjectURL(revoke);
-    };
-  }, [person.credentialId]);
 
   useEffect(() => {
     return () => {
@@ -3510,7 +3679,11 @@ function PersonRow({
                   onClick={() => decidePerson("verified")}
                   disabled={reviewBusy || !person.ready}
                   className={btnGold}
-                  title={person.ready ? "Approve this individual for match selection" : "Complete this person’s required checks first"}
+                  title={
+                    person.ready
+                      ? "Approve this individual for match selection"
+                      : "Complete this person’s required checks first"
+                  }
                 >
                   Approve person
                 </button>
@@ -3526,25 +3699,12 @@ function PersonRow({
             )}
           </div>
         )}
-        {accredited && qrUrl && (
-          <a
-            href={qrUrl}
-            download={`credential-${person.lastName}.png`}
-            title="Download QR credential"
-            className="shrink-0"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={qrUrl}
-              alt="QR credential"
-              className="h-16 w-16 rounded-md ring-1 ring-line"
-            />
-          </a>
-        )}
       </div>
       {returningPerson && !accredited && (
         <div className="mt-3 rounded-xl border border-bad-line bg-bad-soft p-3">
-          <label className={labelCls}>Correction required for this person</label>
+          <label className={labelCls}>
+            Correction required for this person
+          </label>
           <textarea
             className={inputCls}
             rows={2}
@@ -3561,7 +3721,11 @@ function PersonRow({
             >
               Return this person
             </button>
-            <button type="button" onClick={() => setReturningPerson(false)} className={btnGhost}>
+            <button
+              type="button"
+              onClick={() => setReturningPerson(false)}
+              className={btnGhost}
+            >
               Cancel
             </button>
           </div>
@@ -3596,10 +3760,12 @@ function PersonRow({
             k="Head of delegation/delegate"
             v={person.isHeadOfDelegation ? "Yes" : "No"}
           />
-          {person.category === "player" && <Field
-            k="Nationality matches team"
-            v={person.nationalityMatchesTeam ? "Yes" : "No"}
-          />}
+          {person.category === "player" && (
+            <Field
+              k="Nationality matches team"
+              v={person.nationalityMatchesTeam ? "Yes" : "No"}
+            />
+          )}
           {person.category === "player" && !person.nationalityMatchesTeam && (
             <>
               <Field
@@ -3642,7 +3808,8 @@ function PersonRow({
               <p className={labelCls}>Identity verification</p>
               <p className="text-sm text-ink-soft">
                 {person.identityDocument.documentType.replace("_", " ")} ·
-                issued by {countryLabel(person.identityDocument.issuingCountry)} · nationality{" "}
+                issued by {countryLabel(person.identityDocument.issuingCountry)}{" "}
+                · nationality{" "}
                 {countryLabel(person.identityDocument.nationality)}
                 {person.identityDocument.expiresOn
                   ? ` · expires ${person.identityDocument.expiresOn}`

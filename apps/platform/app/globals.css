@@ -145,12 +145,425 @@ button:disabled {
   }
 }
 
-/* Four-up badge printing: hide app chrome, lay out 2x2 per US-Letter page at a
-   respectable size (each badge ~3.6in x 4.85in — readable at arm's length). */
+/* LOC-approved front badge: 88 × 142 mm, with category colour controlling the
+   header, detail accents and access zone. Container units preserve the exact
+   proportions in both the on-screen preview and the printed credential. */
+.loc-badge {
+  container-type: inline-size;
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  aspect-ratio: 88 / 142;
+  overflow: hidden;
+  border: 1px solid #dfe4ed;
+  border-radius: 20px;
+  background: #fff;
+  color: #0d1b4b;
+  font-family: Arial, Helvetica, sans-serif;
+  box-shadow: 0 8px 22px rgba(15, 27, 57, 0.14);
+}
+
+.loc-badge::after {
+  content: "";
+  position: absolute;
+  right: -6cqw;
+  top: 22cqw;
+  width: 55%;
+  height: 47%;
+  opacity: 0.22;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 30% 22%, transparent 0 18cqw, #d5dbe5 18.2cqw 18.8cqw, transparent 19cqw),
+    linear-gradient(90deg, transparent 49%, #d5dbe5 50%, transparent 51%);
+}
+
+.loc-badge__header {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  height: 16.3cqw;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 2.3cqw;
+}
+
+.loc-badge--red .loc-badge__header,
+.loc-badge--red .loc-badge__access {
+  background: linear-gradient(180deg, #d92531, #c21b27);
+  color: #fff;
+}
+
+.loc-badge--green .loc-badge__header,
+.loc-badge--green .loc-badge__access {
+  background: linear-gradient(180deg, #4f9d43, #3f8435);
+  color: #fff;
+}
+
+.loc-badge--yellow .loc-badge__header,
+.loc-badge--yellow .loc-badge__access {
+  background: linear-gradient(180deg, #e9c248, #d5b43e);
+  color: #111;
+}
+
+.loc-badge__slot {
+  position: absolute;
+  top: 2.3cqw;
+  left: 50%;
+  width: 21cqw;
+  height: 4.7cqw;
+  transform: translateX(-50%);
+  border-radius: 2.8cqw;
+  background: #fbfbfb;
+  box-shadow: inset 0 1px 7px rgba(0, 0, 0, 0.25), 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.loc-badge__category {
+  position: relative;
+  z-index: 2;
+  max-width: 92%;
+  overflow: hidden;
+  font-size: 5.45cqw;
+  font-weight: 900;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.loc-badge__content {
+  position: relative;
+  z-index: 2;
+  padding: 3.1cqw 4.3cqw 0;
+}
+
+.loc-badge__identity {
+  display: grid;
+  grid-template-columns: 1fr 1.18fr;
+  gap: 3.1cqw;
+  align-items: start;
+}
+
+.loc-badge__brand {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 0.4cqw;
+}
+
+.loc-badge__qualifier-logo {
+  display: block;
+  width: 100%;
+  height: 33.4cqw;
+  object-fit: contain;
+}
+
+.loc-badge__portrait-stack {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 0.4cqw;
+}
+
+.loc-badge__portrait {
+  position: relative;
+  width: 88%;
+  aspect-ratio: 1 / 1.05;
+  overflow: hidden;
+  border: 1px solid #e5e8ee;
+  border-radius: 2.7cqw;
+  background: #eef1f5;
+}
+
+.loc-badge__initials {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #728096;
+  font-size: 8cqw;
+  font-weight: 900;
+}
+
+.loc-badge__photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.loc-badge__flag-chip {
+  display: flex;
+  max-width: 100%;
+  align-items: center;
+  gap: 1.9cqw;
+  margin-top: 1.55cqw;
+  padding: 1.15cqw 1.95cqw;
+  overflow: hidden;
+  border: 1px solid #dbe2ec;
+  border-radius: 2.3cqw;
+  background: #f7f9fc;
+  font-size: 2.15cqw;
+  font-weight: 900;
+  letter-spacing: 0.1cqw;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.loc-badge__flag {
+  font-size: 3.9cqw;
+  line-height: 1;
+}
+
+.loc-badge__name {
+  margin-top: 2.3cqw;
+  font-size: 5.65cqw;
+  font-weight: 900;
+  letter-spacing: -0.15cqw;
+  line-height: 1;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.loc-badge__role {
+  margin-top: 1.15cqw;
+  font-size: 3.5cqw;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.loc-badge__organisation {
+  margin-top: 1.15cqw;
+  font-size: 2.55cqw;
+  font-weight: 900;
+  letter-spacing: 0.075cqw;
+  line-height: 1.1;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.loc-badge--red .loc-badge__organisation,
+.loc-badge--red .loc-badge__divider,
+.loc-badge--red .loc-badge__detail {
+  color: #d92531;
+}
+
+.loc-badge--green .loc-badge__organisation,
+.loc-badge--green .loc-badge__divider,
+.loc-badge--green .loc-badge__detail {
+  color: #3f8435;
+}
+
+.loc-badge--yellow .loc-badge__organisation,
+.loc-badge--yellow .loc-badge__divider,
+.loc-badge--yellow .loc-badge__detail {
+  color: #2c767e;
+}
+
+.loc-badge__divider {
+  height: 0.4cqw;
+  margin: 2.7cqw 0 2.3cqw;
+  background: currentColor;
+}
+
+.loc-badge__details-wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 30.3cqw;
+  gap: 2.3cqw;
+  align-items: start;
+}
+
+.loc-badge__details {
+  display: grid;
+  gap: 1.95cqw;
+  color: #0d1b4b;
+  font-size: 2.9cqw;
+  line-height: 1.2;
+}
+
+.loc-badge__detail {
+  display: grid;
+  grid-template-columns: 4.65cqw 1fr;
+  gap: 1.75cqw;
+  align-items: center;
+}
+
+.loc-badge__detail span {
+  color: #0d1b4b;
+}
+
+.loc-badge__detail svg {
+  width: 3.7cqw;
+  height: 3.7cqw;
+}
+
+.loc-badge__loc-card {
+  display: flex;
+  min-height: 21.75cqw;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.95cqw 1.55cqw;
+  border: 1px solid #d7dde7;
+  border-radius: 2.7cqw;
+  background: #f8fafe;
+  color: #6c7584;
+  font-size: 1.95cqw;
+  font-weight: 800;
+  letter-spacing: 0.075cqw;
+  line-height: 1.15;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.loc-badge__loc-card img {
+  display: block;
+  width: auto;
+  max-width: 16.7cqw;
+  height: auto;
+  max-height: 12cqw;
+  margin-bottom: 1.55cqw;
+  object-fit: contain;
+}
+
+.loc-badge__access {
+  display: grid;
+  min-height: 16.3cqw;
+  grid-template-columns: 17.1cqw 1fr;
+  gap: 1.95cqw;
+  align-items: center;
+  margin: 0 -4.3cqw;
+  padding: 1.55cqw 2.7cqw;
+}
+
+.loc-badge__access-icon {
+  display: grid;
+  width: 12.4cqw;
+  height: 12.4cqw;
+  place-items: center;
+  border: 0.6cqw solid currentColor;
+  border-radius: 50%;
+}
+
+.loc-badge__access-icon svg {
+  width: 6.4cqw;
+  height: 6.4cqw;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.loc-badge__access-title {
+  font-size: 4.85cqw;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.loc-badge__access-copy {
+  margin-top: 0.95cqw;
+  font-size: 2.25cqw;
+  font-weight: 600;
+  line-height: 1.17;
+}
+
+@keyframes sportsbb-stinger-wipe {
+  0% {
+    clip-path: inset(0 100% 0 0);
+  }
+  24%,
+  76% {
+    clip-path: inset(0 0 0 0);
+  }
+  100% {
+    clip-path: inset(0 0 0 100%);
+  }
+}
+
+@keyframes sportsbb-stinger-brand {
+  0%,
+  15% {
+    opacity: 0;
+    transform: translateY(1.5rem) scale(0.94);
+  }
+  32%,
+  70% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  88%,
+  100% {
+    opacity: 0;
+    transform: translateY(-1rem) scale(1.03);
+  }
+}
+
+.sportsbb-stinger {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(75, 126, 187, 0.36), transparent 38%),
+    linear-gradient(135deg, #071022 0%, #16235c 48%, #071022 100%);
+  animation: sportsbb-stinger-wipe 3s cubic-bezier(0.72, 0, 0.2, 1) both;
+  will-change: clip-path;
+}
+
+.sportsbb-stinger__beam {
+  position: absolute;
+  left: -10%;
+  width: 120%;
+  height: clamp(0.65rem, 1.2vw, 1.35rem);
+  background: linear-gradient(90deg, transparent, #ecd13f 14%, #ecd13f 86%, transparent);
+  box-shadow: 0 0 2.2rem rgba(236, 209, 63, 0.45);
+  transform: rotate(-4deg);
+}
+
+.sportsbb-stinger__beam--top {
+  top: 16%;
+}
+
+.sportsbb-stinger__beam--bottom {
+  bottom: 16%;
+}
+
+.sportsbb-stinger__brand {
+  width: min(68vw, 70rem);
+  animation: sportsbb-stinger-brand 3s ease both;
+  text-align: center;
+}
+
+.sportsbb-stinger__brand p {
+  margin-bottom: clamp(0.75rem, 1.5vw, 1.4rem);
+  color: rgba(255, 255, 255, 0.78);
+  font-family: var(--font-jetbrains), monospace;
+  font-size: clamp(0.55rem, 0.9vw, 0.9rem);
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+.sportsbb-stinger__brand img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: clamp(0.7rem, 1.3vw, 1.25rem);
+  box-shadow: 0 2rem 6rem rgba(0, 0, 0, 0.42);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sportsbb-stinger,
+  .sportsbb-stinger__brand {
+    animation-duration: 0.01ms;
+  }
+}
+
 @media print {
   @page {
     size: letter;
-    margin: 0.35in;
+    margin: 0.2in;
   }
   body {
     background: #fff;
@@ -166,21 +579,17 @@ button:disabled {
     display: grid !important;
     grid-template-columns: 1fr 1fr;
     justify-items: center;
-    gap: 0.15in;
+    align-items: start;
+    gap: 0.12in 0.15in;
   }
   .badge {
-    width: 2.95in;
-    height: 4.5in;
-    min-height: 0; /* cancel the on-screen min-height so the row fits */
+    width: 3.1in;
+    height: 5in;
     max-width: none;
     break-inside: avoid;
+    border-radius: 0.08in;
     box-shadow: none !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
-}
-
-/* On-screen badge sizing so the preview matches the printed portrait proportions. */
-.badge {
-  min-height: 470px;
 }

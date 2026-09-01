@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Netball Americas — Registration to GameDay Data Workflow</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,600;0,700;0,800;1,600&family=Geist+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box}
+    :root{
+      --paper:#faf7f0;--paper-2:#f2eddf;--ink:#0e1230;--muted:#3d4163;--soft:#6b6e8e;
+      --rule:rgba(14,18,48,.12);--rule-strong:#a0a4b8;--accent:#f4c430;
+      --accent-tint:rgba(244,196,48,.12);--link:#1b2a6b;--white:#fff;
+      --private:#b85450;--quality:#5a7d9a;--live:#4a7c59;
+      --sans:'Manrope',system-ui,sans-serif;--serif:'Fraunces',Georgia,serif;
+      --mono:'Geist Mono',ui-monospace,Menlo,monospace
+    }
+    body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.55}
+    .page{max-width:1280px;margin:0 auto;padding:48px 32px 64px}
+    .eyebrow{margin:0 0 12px;font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--link)}
+    h1{max-width:920px;margin:0;font-family:var(--serif);font-size:clamp(40px,6vw,72px);font-weight:700;line-height:1.02;letter-spacing:-.035em}
+    .lede{max-width:900px;margin:20px 0 0;font-size:18px;color:var(--muted)}
+    .status-strip{display:grid;grid-template-columns:1.2fr 1fr;margin:36px 0 48px;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+    .status-strip>div{padding:20px 0}.status-strip>div+div{padding-left:28px;border-left:1px solid var(--rule)}
+    .status-strip strong{display:block;font-size:15px}.status-strip span{display:block;margin-top:5px;color:var(--muted);font-size:13px}
+    section{margin-top:56px}
+    h2{margin:0;font-family:var(--serif);font-size:34px;line-height:1.1}
+    .section-copy{max-width:880px;margin:10px 0 24px;color:var(--muted)}
+    .figure{margin:0;padding:24px;background:rgba(255,255,255,.62);border:1px solid var(--rule);border-radius:8px;overflow-x:auto}
+    svg{display:block;width:100%;min-width:920px;height:auto}
+    .cards{display:grid;grid-template-columns:1.15fr .85fr;gap:20px;margin-top:24px}
+    .card{padding:22px;background:#fff;border:1px solid var(--rule);border-radius:8px}
+    .card h3{margin:0 0 10px;font-size:17px}.card p{margin:0;color:var(--muted);font-size:14px}
+    .card ul{margin:12px 0 0;padding-left:20px;color:var(--muted);font-size:14px}.card li+li{margin-top:8px}
+    .warning{border-color:rgba(184,84,80,.42);background:rgba(184,84,80,.05)}
+    .warning h3{color:#853e3b}
+    .decision{border-color:rgba(244,196,48,.78);background:var(--accent-tint)}
+    table{width:100%;border-collapse:collapse;margin-top:22px;background:#fff;border:1px solid var(--rule)}
+    th,td{padding:14px 16px;border-bottom:1px solid var(--rule);text-align:left;vertical-align:top;font-size:13px}
+    th{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--link);background:var(--paper-2)}
+    tr:last-child td{border-bottom:0}
+    code{font-family:var(--mono);font-size:.92em;color:var(--link)}
+    .sources{margin-top:40px;padding-top:20px;border-top:1px solid var(--rule);color:var(--soft);font-family:var(--mono);font-size:11px;line-height:1.7}
+    @media(max-width:760px){.page{padding:32px 18px 48px}.status-strip,.cards{grid-template-columns:1fr}.status-strip>div+div{padding-left:0;border-left:0;border-top:1px solid var(--rule)}}
+    @media print{body{background:#fff}.page{max-width:none;padding:20px}.figure,.card,table{break-inside:avoid}}
+  </style>
+</head>
+<body>
+<main class="page">
+  <header>
+    <p class="eyebrow">SportsBB Administrator · Current-state data workflow</p>
+    <h1>From team registration to the public scoreboard</h1>
+    <p class="lede">A complete view of who enters data, where it is approved, what stays private, how match-day actions become scores and time, and which public and broadcast channels receive the result.</p>
+  </header>
+
+  <div class="status-strip">
+    <div><strong>The API-backed workflow already exists.</strong><span>Registration, accreditation, team sheets, the match event ledger, public feeds and derived standings are connected through the main database.</span></div>
+    <div><strong>The open GameDay demo is separate.</strong><span><code>/gameday-demo</code> currently synchronizes only between browser tabs using local storage. It is safe for testing but is not yet the real public-data path.</span></div>
+  </div>
+
+  <section>
+    <p class="eyebrow">Flow 01 · Registration and match preparation</p>
+    <h2>Private registration becomes approved competition data</h2>
+    <p class="section-copy">Registration approval publishes only the team identity. Roster accreditation is a second gate that publishes a limited squad view. Sensitive evidence remains inside the tenant-protected registration boundary.</p>
+    <figure class="figure">
+      <svg viewBox="0 0 840 436" role="img" aria-labelledby="registration-flow-title registration-flow-desc">
+        <title id="registration-flow-title">Registration to match preparation data flow</title>
+        <desc id="registration-flow-desc">Role-scoped flow showing team registration, SportsBB approval, roster accreditation, fixture creation, team-sheet submission, private storage and controlled public views.</desc>
+        <defs>
+          <marker id="r-arr-muted" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#3d4163"/></marker>
+          <marker id="r-arr-accent" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#f4c430"/></marker>
+          <marker id="r-arr-link" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#1b2a6b"/></marker>
+        </defs>
+
+        <rect width="840" height="436" fill="#faf7f0"/>
+        <rect x="0" y="36" width="840" height="80" fill="rgba(14,18,48,.018)"/>
+        <rect x="0" y="196" width="840" height="80" fill="rgba(14,18,48,.018)"/>
+        <g stroke="rgba(14,18,48,.12)" stroke-width=".8">
+          <line x1="0" y1="36" x2="840" y2="36"/><line x1="0" y1="116" x2="840" y2="116"/>
+          <line x1="0" y1="196" x2="840" y2="196"/><line x1="0" y1="276" x2="840" y2="276"/>
+          <line x1="0" y1="356" x2="840" y2="356"/><line x1="140" y1="36" x2="140" y2="356"/>
+        </g>
+
+        <g font-family="'Geist Mono',monospace" text-anchor="middle">
+          <g font-size="8" font-weight="600">
+            <rect x="180" y="6" width="32" height="16" rx="8" fill="rgba(14,18,48,.12)"/><text x="196" y="18" fill="#0e1230">01</text><text x="196" y="31" fill="#3d4163">REGISTER</text>
+            <rect x="292" y="6" width="32" height="16" rx="8" fill="rgba(14,18,48,.12)"/><text x="308" y="18" fill="#0e1230">02</text><text x="308" y="31" fill="#3d4163">APPROVE</text>
+            <rect x="404" y="6" width="32" height="16" rx="8" fill="rgba(14,18,48,.12)"/><text x="420" y="18" fill="#0e1230">03</text><text x="420" y="31" fill="#3d4163">ROSTER</text>
+            <rect x="516" y="6" width="32" height="16" rx="8" fill="rgba(244,196,48,.24)"/><text x="532" y="18" fill="#0e1230">04</text><text x="532" y="31" fill="#b8860b">ACCREDIT</text>
+            <rect x="628" y="6" width="32" height="16" rx="8" fill="rgba(14,18,48,.12)"/><text x="644" y="18" fill="#0e1230">05</text><text x="644" y="31" fill="#3d4163">SCHEDULE</text>
+            <rect x="740" y="6" width="32" height="16" rx="8" fill="rgba(14,18,48,.12)"/><text x="756" y="18" fill="#0e1230">06</text><text x="756" y="31" fill="#3d4163">TEAM SHEET</text>
+          </g>
+          <g fill="#3d4163" font-size="8" font-weight="600" letter-spacing=".08em">
+            <text x="70" y="72">TEAM</text><text x="70" y="84">DELEGATION</text>
+            <text x="70" y="152">SPORTSBB</text><text x="70" y="164">LOC ADMIN</text>
+            <text x="70" y="232">PRIVATE</text><text x="70" y="244">DATA</text>
+            <text x="70" y="312">PUBLIC</text><text x="70" y="324">PROJECTION</text>
+          </g>
+        </g>
+
+        <!-- connectors before nodes -->
+        <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M246 76 H300 Q308 76 308 84 V124" stroke="#3d4163" marker-end="url(#r-arr-muted)"/>
+          <path d="M308 188 V204" stroke="#3d4163" marker-end="url(#r-arr-muted)"/>
+          <path d="M308 268 V284" stroke="#1b2a6b" marker-end="url(#r-arr-link)"/>
+          <path d="M470 76 H524 Q532 76 532 84 V124" stroke="#f4c430" stroke-width="1.2" marker-end="url(#r-arr-accent)"/>
+          <rect x="476" y="52" width="52" height="12" rx="2" fill="#faf7f0" stroke="none"/>
+          <text x="502" y="61" fill="#8a6b00" font-family="'Geist Mono',monospace" font-size="8" text-anchor="middle">ROSTER DATA</text>
+          <path d="M532 188 V204" stroke="#3d4163" marker-end="url(#r-arr-muted)"/>
+          <path d="M532 268 V284" stroke="#1b2a6b" marker-end="url(#r-arr-link)"/>
+          <path d="M644 188 V204" stroke="#3d4163" marker-end="url(#r-arr-muted)"/>
+          <path d="M644 268 V284" stroke="#1b2a6b" marker-end="url(#r-arr-link)"/>
+          <path d="M756 108 V204" stroke="#3d4163" marker-end="url(#r-arr-muted)"/>
+        </g>
+
+        <!-- nodes -->
+        <g font-family="'Manrope',sans-serif" text-anchor="middle">
+          <g><rect x="146" y="44" width="100" height="64" rx="6" fill="#fff" stroke="rgba(14,18,48,.25)"/><rect x="150" y="48" width="18" height="10" rx="3" fill="rgba(14,18,48,.12)"/><text x="159" y="56" font-family="'Geist Mono',monospace" font-size="6" font-weight="600">TMS</text><text x="196" y="70" font-size="9" font-weight="600">Team registration</text><text x="196" y="82" fill="#3d4163" font-size="6.5">country · contacts</text><text x="196" y="94" fill="#6b6e8e" font-size="6.5">teams portal</text><rect x="226" y="98" width="16" height="8" rx="3" fill="#5e7a9b"/><text x="234" y="104" fill="#fff" font-size="5" font-weight="700">DB</text></g>
+          <g><rect x="258" y="124" width="100" height="64" rx="6" fill="#fff" stroke="rgba(14,18,48,.25)"/><rect x="262" y="128" width="18" height="10" rx="3" fill="rgba(14,18,48,.12)"/><text x="271" y="136" font-family="'Geist Mono',monospace" font-size="6" font-weight="600">LOC</text><text x="308" y="150" font-size="9" font-weight="600">Approve team</text><text x="308" y="162" fill="#3d4163" font-size="6.5">submitted → approved</text><text x="308" y="174" fill="#6b6e8e" font-size="6.5">SportsBB Administrator</text><rect x="262" y="178" width="16" height="8" rx="3" fill="#5e7a9b"/><text x="270" y="184" fill="#fff" font-size="5" font-weight="700">DB</text><rect x="338" y="178" width="16" height="8" rx="3" fill="#5e7a9b"/><text x="346" y="184" fill="#fff" font-size="5" font-weight="700">DB</text></g>
+          <g><rect x="258" y="204" width="100" height="64" rx="6" fill="rgba(14,18,48,.04)" stroke="#3d4163"/><rect x="262" y="208" width="18" height="10" rx="3" fill="rgba(14,18,48,.12)"/><text x="271" y="216" font-family="'Geist Mono',monospace" font-size="6" font-weight="600">PVT</text><text x="308" y="230" font-size="9" font-weight="600">Delegation record</text><text x="308" y="242" fill="#3d4163" font-size="6.5">contact + application</text><text x="308" y="254" fill="#6b6e8e" font-size="6.5">tenant RLS boundary</text><rect x="262" y="258" width="16" height="8" rx="3" fill="#5e7a9b"/><text x="270" y="264" fill="#fff" font-size="5" font-weight="700">DB</text><rect x="338" y="258" width="16" height="8" rx="3" fill="#b8915a"/><text x="346" y="264" fill="#fff" font-size="5" font-weight="700">TB</text></g>
+          <g><rect x="258" y="284" width="100" height="64" rx="6" fill="#fff" stroke="#1b2a6b"/><rect x="262" y="288" width="18" height="10" rx="3" fill="rgba(27,42,107,.15)"/><text x="271" y="296" fill="#1b2a6b" font-family="'Geist Mono',monospace" font-size="6" font-weight="600">PUB</text><text x="308" y="310" font-size="9" font-weight="600">Nation view</text><text x="308" y="322" fill="#3d4163" font-size="6.5">code + team name</text><text x="308" y="334" fill="#6b6e8e" font-size="6.5">approved teams only</text><rect x="262" y="338" width="16" height="8" rx="3" fill="#b8915a"/><text x="270" y="344" fill="#fff" font-size="5" font-weight="700">TB</text><rect x="338" y="338" width="16" height="8" rx="3" fill="#6e6479"/><text x="346" y="344" fill="#fff" font-size="5" font-weight="700">WB</text></g>
+
+          <g><rect x="370" y="44" width="100" height="64" rx="6" fill="#fff" stroke="rgba(14,18,48,.25)"/><rect x="374" y="48" width="18" height="10" rx="3" fill="rgba(14,18,48,.12)"/><text x="383" y="56" font-family="'Geist Mono',monospace" font-size="6" font-weight="600">TMS</text><text x="420" y="70" font-size="9" font-weight="600">Roster + evidence</text><text x="420" y="82" fill="#3d4163" font-size="6.5">people · photos · consent</text><text x="420" y="94" fill="#6b6e8e" font-size="6.5">identity documents</text><rect x="450" y="98" width="16" height="8" rx="3" fill="#5e7a9b"/><text x="458" y="104" fill="#fff" font-size="5" font-weight="700">DB</text></g>
+          <g><rect x="482" y="124" width="100" height="64" rx="6" fill="rgba(244,196,48,.12)" stroke="#f4c430" stroke-width="1.2"/><rect x="486" y="128" width="18" height="10" rx="3" fill="rgba(244,196,48,.28)"/><text x="495" y="136" font-family="'Geist Mono',monospace" font-size="6" font-weight="600">LOC</text><text x="532" y="150" font-size="9" font-weight="700">Accredit roster</text><text x="532" y="162" fill="#3d4163" font-size="6.5">verify each person</text><text x="532" y="174" fill="#6b6e8e" font-size="6.5">issue credentials</text><rect x="486" y="178" width="16" height="8" rx="3" fill="#5e7a9b"/><text x="494" y="184" fill="#fff" font-size="5" font-weight="700">DB</text><rect x="562" y="178" width="16" height="8" rx="3" fill="#b8915a"/><text x="570" y="184" fill="#fff" font-size="5" font-weight="700">TB</text></g>
+          <g><rect x="482" y="204" width="100" height="64" rx="6" fill="rgba(14,18,48,.04)" stroke="#3d4163"/><rect x="486" y="208" width="18" height="10" rx="3" fill="rgba(14,18,48,.12)"/><text x="495" y="216" font-family="'Geist Mono',monospace" font-size="6" font-weight="600">PVT</text><text x="532" y="230" font-size="9" font-weight="600">Approved roster</text><text x="532" y="242" fill="#3d4163" font-size="6.5">full person records</text><text x="532" y="254" fill="#6b6e8e" font-size="6.5">restricted evidence stays</text><rect x="486" y="258" width="16" height="8" rx="3" fill="#5e7a9b"/><text x="494" y="264" fill="#fff" font-size="5" font-weight="700">DB</text><rect x="562" y="258" width="16" height="8" rx="3" fill="#b8915a"/><text x="570" y="264" fill="#fff" font-size="5" font-weight="700">TB</text></g>
+          <g><rect x="482" y="284" width="100" height="64" rx="6" fill="#fff" stroke="#1b2a6b"/><rect x="486" y="288" width="18" height="10" rx="3" fill="rgba(27,42,107,.15)"/><text x="495" y="296" fill="#1b2a6b" font-family="'Geist Mono',monospace" font-size="6" font-weight="600">PUB</text><text x="532" y="310" font-size="9" font-weight="600">Squad view</text><text x="532" y="322" fill="#3d4163" font-size="6.5">name · role · jersey</text><text x="532" y="334" fill="#6b6e8e" font-size="6.5">accredited roster only</text><rect x="486" y="338" width="16" height="8" rx="3" fill="#b8915a"/><text x="494" y="344" fill="#fff" font-size="5" font-weight="700">TB</text><rect x="562" y="338" width="16" height="8" rx="3" fill="#6e6479"/><text x="570" y="344" fill="#fff" font-size="5" font-weight="700">WB</text></g>
+
+          <g><rect x="594" y="124" width="100" height="64" rx="6" fill="#fff" stroke="rgba(14,18,48,.25)"/><rect x="598" y="128" width="18" height="10" rx="3" fill="rgba(14,18,48,.12)"/><text x="607" y="136" font-family="'Geist Mono',monospace" font-size="6" font-weight="600">LOC</text><text x="644" y="150" font-size="9" font-weight="600">Configure fixture</text><text x="644" y="162" fill="#3d4163" font-size="6.5">teams · court · stage</text><text x="644" y="174" fill="#6b6e8e" font-size="6.5">SportsBB Administrator</text><rect x="674" y="178" width="16" height="8" rx="3" fill="#5e7a9b"/><text x="682" y="184" fill="#fff" font-size="5" font-weight="700">DB</text></g>
+          <g><rect x="594" y="204" width="100" height="64" rx="6" fill="rgba(14,18,48,.04)" stroke="#3d4163"/><rect x="598" y="208" width="18" height="10" rx="3" fill="rgba(14,18,48,.12)"/><text x="607" y="216" font-family="'Geist Mono',monospace" font-size="6" font-weight="600">PVT</text><text x="644" y="230" font-size="9" font-weight="600">Match record</text><text x="644" y="242" fill="#3d4163" font-size="6.5">schedule + assignments</text><text x="644" y="254" fill="#6b6e8e" font-size="6.5">operational state</text><rect x="598" y="258" width="16" height="8" rx="3" fill="#5e7a9b"/><text x="606" y="264" fill="#fff" font-size="5" font-weight="700">DB</text><rect x="674" y="258" width="16" height="8" rx="3" fill="#b8915a"/><text x="682" y="264" fill="#fff" font-size="5" font-weight="700">TB</text></g>
+          <g><rect x="594" y="284" width="100" height="64" rx="6" fill="#fff" stroke="#1b2a6b"/><rect x="598" y="288" width="18" height="10" rx="3" fill="rgba(27,42,107,.15)"/><text x="607" y="296" fill="#1b2a6b" font-family="'Geist Mono',monospace" font-size="6" font-weight="600">PUB</text><text x="644" y="310" font-size="9" font-weight="600">Fixture listing</text><text x="644" y="322" fill="#3d4163" font-size="6.5">time · venue · teams</text><text x="644" y="334" fill="#6b6e8e" font-size="6.5">public schedule</text><rect x="598" y="338" width="16" height="8" rx="3" fill="#b8915a"/><text x="606" y="344" fill="#fff" font-size="5" font-weight="700">TB</text><rect x="674" y="338" width="16" height="8" rx="3" fill="#6e6479"/><text x="682" y="344" fill="#fff" font-size="5" font-weight="700">WB</text></g>
+
+          <g><rect x="706" y="44" width="100" height="64" rx="6" fill="#fff" stroke="rgba(14,18,48,.25)"/><rect x="710" y="48" width="18" height="10" rx="3" fill="rgba(14,18,48,.12)"/><text x="719" y="56" font-family="'Geist Mono',monospace" font-size="6" font-weight="600">TMS</text><text x="756" y="70" font-size="9" font-weight="600">Match team sheet</text><text x="756" y="82" fill="#3d4163" font-size="6.5">12 selected players</text><text x="756" y="94" fill="#6b6e8e" font-size="6.5">positions + captain</text><rect x="786" y="98" width="16" height="8" rx="3" fill="#5e7a9b"/><text x="794" y="104" fill="#fff" font-size="5" font-weight="700">DB</text></g>
+          <g><rect x="706" y="204" width="100" height="64" rx="6" fill="rgba(14,18,48,.04)" stroke="#3d4163"/><rect x="710" y="208" width="18" height="10" rx="3" fill="rgba(14,18,48,.12)"/><text x="719" y="216" font-family="'Geist Mono',monospace" font-size="6" font-weight="600">PVT</text><text x="756" y="230" font-size="9" font-weight="600">Submitted sheet</text><text x="756" y="242" fill="#3d4163" font-size="6.5">per match + team</text><text x="756" y="254" fill="#6b6e8e" font-size="6.5">locks when ready</text><rect x="710" y="258" width="16" height="8" rx="3" fill="#5e7a9b"/><text x="718" y="264" fill="#fff" font-size="5" font-weight="700">DB</text></g>
+        </g>
+
+        <!-- legend -->
+        <g font-family="'Geist Mono',monospace" font-size="7">
+          <text x="16" y="374" fill="#3d4163" font-weight="600" letter-spacing=".12em">STEPS</text>
+          <text x="144" y="374" fill="#3d4163">register → approve → roster → accredit → schedule → team sheet</text>
+          <text x="16" y="396" fill="#3d4163" font-weight="600" letter-spacing=".12em">DATA TYPE</text>
+          <rect x="144" y="388" width="16" height="8" rx="3" fill="#5e7a9b"/><text x="152" y="395" fill="#fff" text-anchor="middle" font-size="5">DB</text><text x="166" y="396" fill="#3d4163">record</text>
+          <rect x="212" y="388" width="16" height="8" rx="3" fill="#b8915a"/><text x="220" y="395" fill="#fff" text-anchor="middle" font-size="5">TB</text><text x="234" y="396" fill="#3d4163">approved view</text>
+          <rect x="320" y="388" width="16" height="8" rx="3" fill="#6e6479"/><text x="328" y="395" fill="#fff" text-anchor="middle" font-size="5">WB</text><text x="342" y="396" fill="#3d4163">public web data · left=input · right=output</text>
+          <text x="16" y="418" fill="#3d4163" font-weight="600" letter-spacing=".12em">FLOW</text>
+          <line x1="144" y1="415" x2="172" y2="415" stroke="#3d4163" marker-end="url(#r-arr-muted)"/><text x="180" y="418" fill="#3d4163">internal</text>
+          <line x1="248" y1="415" x2="276" y2="415" stroke="#f4c430" marker-end="url(#r-arr-accent)"/><text x="284" y="418" fill="#3d4163">approval focus</text>
+          <line x1="392" y1="415" x2="420" y2="415" stroke="#1b2a6b" marker-end="url(#r-arr-link)"/><text x="428" y="418" fill="#3d4163">published</text>
+        </g>
+      </svg>
+    </figure>
+  </section>
+
+  <section>
+    <p class="eyebrow">Flow 02 · Internal scoring to public output</p>
+    <h2>Every match-day action writes once; public channels read a safe projection</h2>
+    <p class="section-copy">The match event ledger keeps the operational history. The match row carries the current score, status, period and clock snapshot. A read-only public database role exposes only approved public tables and views.</p>
+    <figure class="figure">
+      <svg viewBox="0 0 840 436" role="img" aria-labelledby="gameday-flow-title gameday-flow-desc">
+        <title id="gameday-flow-title">GameDay scoring to public channels data flow</title>
+        <desc id="gameday-flow-desc">Flow showing team sheets and official readiness, scorer and timekeeper commands, the append-only event ledger, result confirmation, public read API, venue scoreboards, the website, broadcast feeds and standings.</desc>
+        <defs>
+          <marker id="g-arr-muted" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#3d4163"/></marker>
+          <marker id="g-arr-accent" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#f4c430"/></marker>
+          <marker id="g-arr-link" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#1b2a6b"/></marker>
+        </defs>
+        <rect width="840" height="436" fill="#faf7f0"/>
+        <rect x="0" y="36" width="840" height="80" fill="rgba(14,18,48,.018)"/>
+        <rect x="0" y="196" width="840" height="80" fill="rgba(14,18,48,.018)"/>
+        <g stroke="rgba(14,18,48,.12)" stroke-width=".8">
+          <line x1="0" y1="36" x2="840" y2="36"/><line x1="0" y1="116" x2="840" y2="116"/>
+          <line x1="0" y1="196" x2="840" y2="196"/><line x1="0" y1="276" x2="840" y2="276"/>
+          <line x1="0" y1="356" x2="840" y2="356"/><line x1="140" y1="36" x2="140" y2="356"/>
+        </g>
+        <g font-family="'Geist Mono',monospace" text-anchor="middle">
+          <g font-size="8" font-weight="600">
+            <rect x="180" y="6" width="32" height="16" rx="8" fill="rgba(14,18,48,.12)"/><text x="196" y="18">01</text><text x="196" y="31" fill="#3d4163">PREPARE</text>
+            <rect x="292" y="6" width="32" height="16" rx="8" fill="rgba(14,18,48,.12)"/><text x="308" y="18">02</text><text x="308" y="31" fill="#3d4163">AUTHORIZE</text>
+            <rect x="404" y="6" width="32" height="16" rx="8" fill="rgba(14,18,48,.12)"/><text x="420" y="18">03</text><text x="420" y="31" fill="#3d4163">OPERATE</text>
+            <rect x="516" y="6" width="32" height="16" rx="8" fill="rgba(14,18,48,.12)"/><text x="532" y="18">04</text><text x="532" y="31" fill="#3d4163">RECORD</text>
+            <rect x="628" y="6" width="32" height="16" rx="8" fill="rgba(14,18,48,.12)"/><text x="644" y="18">05</text><text x="644" y="31" fill="#3d4163">CONFIRM</text>
+            <rect x="740" y="6" width="32" height="16" rx="8" fill="rgba(244,196,48,.24)"/><text x="756" y="18">06</text><text x="756" y="31" fill="#b8860b">EXPOSE</text>
+          </g>
+          <g fill="#3d4163" font-size="8" font-weight="600" letter-spacing=".08em">
+            <text x="70" y="72">TEAM</text><text x="70" y="84">MANAGERS</text>
+            <text x="70" y="152">GAMEDAY</text><text x="70" y="164">OFFICIALS</text>
+            <text x="70" y="232">CORE DATA</text><text x="70" y="244">SERVICES</text>
+            <text x="70" y="312">PUBLIC</text><text x="70" y="324">CHANNELS</text>
+          </g>
+        </g>
+
+        <!-- connectors before nodes -->
+        <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M196 108 V124" stroke="#3d4163" marker-end="url(#g-arr-muted)"/>
+          <path d="M246 156 H308" stroke="#3d4163" stroke-dasharray="4 3" marker-end="url(#g-arr-muted)"/>
+          <path d="M358 156 H412 Q420 156 420 164 V204" stroke="#3d4163" marker-end="url(#g-arr-muted)"/>
+          <path d="M470 236 H482" stroke="#3d4163" marker-end="url(#g-arr-muted)"/>
+          <path d="M582 236 H706" stroke="#f4c430" stroke-width="1.2" marker-end="url(#g-arr-accent)"/>
+          <rect x="616" y="212" width="64" height="12" rx="2" fill="#faf7f0" stroke="none"/>
+          <text x="648" y="221" fill="#8a6b00" font-family="'Geist Mono',monospace" font-size="8" text-anchor="middle">SAFE SCORE</text>
+          <path d="M756 268 V284" stroke="#1b2a6b" marker-end="url(#g-arr-link)"/>
+          <path d="M582 228 H636 Q644 228 644 220 V188" stroke="#3d4163" marker-end="url(#g-arr-muted)"/>
+          <path d="M660 188 H732 Q740 188 740 196 V204" stroke="#3d4163" marker-end="url(#g-arr-muted)"/>
+        </g>
+
+        <!-- nodes -->
+        <g font-family="'Manrope',sans-serif" text-anchor="middle">
+          <g><rect x="146" y="44" width="100" height="64" rx="6" fill="#fff" stroke="rgba(14,18,48,.25)"/><rect x="150" y="48" width="18" height="10" rx="3" fill="rgba(14,18,48,.12)"/><text x="159" y="56" font-family="'Geist Mono',monospace" font-size="6" font-weight="600">TMS</text><text x="196" y="70" font-size="9" font-weight="600">Team sheets</text><text x="196" y="82" fill="#3d4163" font-size="6.5">both teams submit</text><text x="196" y="94" fill="#6b6e8e" font-size="6.5">eligible players only</text><rect x="226" y="98" width="16" height="8" rx="3" fill="#5e7a9b"/><text x="234" y="104" fill="#fff" font-size="5" font-weight="700">DB</text></g>
+          <g><rect x="146" y="124" width="100" height="64" rx="6" fill="#fff" stroke="rgba(14,18,48,.25)"/><rect x="150" y="128" width="18" height="10" rx="3" fill="rgba(14,18,48,.12)"/><text x="159" y="136" font-family="'Geist Mono',monospace" font-size="6" font-weight="600">SUP</text><text x="196" y="150" font-size="9" font-weight="600">Readiness gate</text><text x="196" y="162" fill="#3d4163" font-size="6.5">sheets + assigned roles</text><text x="196" y="174" fill="#6b6e8e" font-size="6.5">locks team sheets</text><rect x="150" y="178" width="16" height="8" rx="3" fill="#5e7a9b"/><text x="158" y="184" fill="#fff" font-size="5" font-weight="700">DB</text><rect x="226" y="178" width="16" height="8" rx="3" fill="#4a7c59"/><text x="234" y="184" fill="#fff" font-size="5" font-weight="700">LS</text></g>
+          <g><rect x="258" y="124" width="100" height="64" rx="6" fill="#fff" stroke="rgba(14,18,48,.25)"/><rect x="262" y="128" width="18" height="10" rx="3" fill="rgba(14,18,48,.12)"/><text x="271" y="136" font-family="'Geist Mono',monospace" font-size="6" font-weight="600">ADM</text><text x="308" y="150" font-size="9" font-weight="600">Official access</text><text x="308" y="162" fill="#3d4163" font-size="6.5">account role = assignment</text><text x="308" y="174" fill="#6b6e8e" font-size="6.5">currently fixed crew</text><rect x="262" y="178" width="16" height="8" rx="3" fill="#5e7a9b"/><text x="270" y="184" fill="#fff" font-size="5" font-weight="700">DB</text><rect x="338" y="178" width="16" height="8" rx="3" fill="#b8915a"/><text x="346" y="184" fill="#fff" font-size="5" font-weight="700">TB</text></g>
+          <g><rect x="370" y="124" width="100" height="64" rx="6" fill="#fff" stroke="rgba(14,18,48,.25)"/><rect x="374" y="128" width="18" height="10" rx="3" fill="rgba(14,18,48,.12)"/><text x="383" y="136" font-family="'Geist Mono',monospace" font-size="6" font-weight="600">OPS</text><text x="420" y="150" font-size="9" font-weight="600">Score + clock</text><text x="420" y="162" fill="#3d4163" font-size="6.5">goals · period · time</text><text x="420" y="174" fill="#6b6e8e" font-size="6.5">guarded commands</text><rect x="374" y="178" width="16" height="8" rx="3" fill="#b8915a"/><text x="382" y="184" fill="#fff" font-size="5" font-weight="700">TB</text><rect x="450" y="178" width="16" height="8" rx="3" fill="#4a7c59"/><text x="458" y="184" fill="#fff" font-size="5" font-weight="700">LS</text></g>
+          <g><rect x="370" y="204" width="100" height="64" rx="6" fill="rgba(14,18,48,.04)" stroke="#3d4163"/><rect x="374" y="208" width="18" height="10" rx="3" fill="rgba(14,18,48,.12)"/><text x="383" y="216" font-family="'Geist Mono',monospace" font-size="6" font-weight="600">API</text><text x="420" y="230" font-size="9" font-weight="600">GameDay commands</text><text x="420" y="242" fill="#3d4163" font-size="6.5">version checked</text><text x="420" y="254" fill="#6b6e8e" font-size="6.5">role + match assignment</text><rect x="374" y="258" width="16" height="8" rx="3" fill="#4a7c59"/><text x="382" y="264" fill="#fff" font-size="5" font-weight="700">LS</text><rect x="450" y="258" width="16" height="8" rx="3" fill="#5e7a9b"/><text x="458" y="264" fill="#fff" font-size="5" font-weight="700">DB</text></g>
+          <g><rect x="482" y="204" width="100" height="64" rx="6" fill="rgba(14,18,48,.04)" stroke="#3d4163"/><rect x="486" y="208" width="18" height="10" rx="3" fill="rgba(14,18,48,.12)"/><text x="495" y="216" font-family="'Geist Mono',monospace" font-size="6" font-weight="600">DB</text><text x="532" y="230" font-size="9" font-weight="600">Match + event ledger</text><text x="532" y="242" fill="#3d4163" font-size="6.5">append-only history</text><text x="532" y="254" fill="#6b6e8e" font-size="6.5">current score snapshot</text><rect x="486" y="258" width="16" height="8" rx="3" fill="#5e7a9b"/><text x="494" y="264" fill="#fff" font-size="5" font-weight="700">DB</text><rect x="562" y="258" width="16" height="8" rx="3" fill="#b8915a"/><text x="570" y="264" fill="#fff" font-size="5" font-weight="700">TB</text></g>
+          <g><rect x="594" y="124" width="100" height="64" rx="6" fill="#fff" stroke="rgba(14,18,48,.25)"/><rect x="598" y="128" width="18" height="10" rx="3" fill="rgba(14,18,48,.12)"/><text x="607" y="136" font-family="'Geist Mono',monospace" font-size="6" font-weight="600">APR</text><text x="644" y="150" font-size="9" font-weight="600">Confirm result</text><text x="644" y="162" fill="#3d4163" font-size="6.5">awaiting confirmation</text><text x="644" y="174" fill="#6b6e8e" font-size="6.5">status → final</text><rect x="598" y="178" width="16" height="8" rx="3" fill="#5e7a9b"/><text x="606" y="184" fill="#fff" font-size="5" font-weight="700">DB</text><rect x="674" y="178" width="16" height="8" rx="3" fill="#b8915a"/><text x="682" y="184" fill="#fff" font-size="5" font-weight="700">TB</text></g>
+          <g><rect x="706" y="204" width="100" height="64" rx="6" fill="rgba(244,196,48,.12)" stroke="#f4c430" stroke-width="1.2"/><rect x="710" y="208" width="18" height="10" rx="3" fill="rgba(244,196,48,.28)"/><text x="719" y="216" font-family="'Geist Mono',monospace" font-size="6" font-weight="600">PUB</text><text x="756" y="230" font-size="9" font-weight="700">Public read API</text><text x="756" y="242" fill="#3d4163" font-size="6.5">SELECT-only role</text><text x="756" y="254" fill="#6b6e8e" font-size="6.5">safe tables + views</text><rect x="710" y="258" width="16" height="8" rx="3" fill="#b8915a"/><text x="718" y="264" fill="#fff" font-size="5" font-weight="700">TB</text><rect x="786" y="258" width="16" height="8" rx="3" fill="#6e6479"/><text x="794" y="264" fill="#fff" font-size="5" font-weight="700">WB</text></g>
+          <g><rect x="706" y="284" width="100" height="64" rx="6" fill="#fff" stroke="#1b2a6b"/><rect x="710" y="288" width="18" height="10" rx="3" fill="rgba(27,42,107,.15)"/><text x="719" y="296" fill="#1b2a6b" font-family="'Geist Mono',monospace" font-size="6" font-weight="600">OUT</text><text x="756" y="310" font-size="9" font-weight="600">Public channels</text><text x="756" y="322" fill="#3d4163" font-size="6.5">live · final · standings</text><text x="756" y="334" fill="#6b6e8e" font-size="6.5">website · display · vMix</text><rect x="710" y="338" width="16" height="8" rx="3" fill="#6e6479"/><text x="718" y="344" fill="#fff" font-size="5" font-weight="700">WB</text></g>
+        </g>
+
+        <g font-family="'Geist Mono',monospace" font-size="7">
+          <text x="16" y="374" fill="#3d4163" font-weight="600" letter-spacing=".12em">STEPS</text><text x="144" y="374" fill="#3d4163">prepare → authorize → operate → record → confirm → expose</text>
+          <text x="16" y="396" fill="#3d4163" font-weight="600" letter-spacing=".12em">DATA TYPE</text>
+          <rect x="144" y="388" width="16" height="8" rx="3" fill="#4a7c59"/><text x="152" y="395" fill="#fff" text-anchor="middle" font-size="5">LS</text><text x="166" y="396" fill="#3d4163">live event</text>
+          <rect x="232" y="388" width="16" height="8" rx="3" fill="#5e7a9b"/><text x="240" y="395" fill="#fff" text-anchor="middle" font-size="5">DB</text><text x="254" y="396" fill="#3d4163">record</text>
+          <rect x="312" y="388" width="16" height="8" rx="3" fill="#b8915a"/><text x="320" y="395" fill="#fff" text-anchor="middle" font-size="5">TB</text><text x="334" y="396" fill="#3d4163">safe view</text>
+          <rect x="404" y="388" width="16" height="8" rx="3" fill="#6e6479"/><text x="412" y="395" fill="#fff" text-anchor="middle" font-size="5">WB</text><text x="426" y="396" fill="#3d4163">public payload · left=input · right=output</text>
+          <text x="16" y="418" fill="#3d4163" font-weight="600" letter-spacing=".12em">FLOW</text>
+          <line x1="144" y1="415" x2="172" y2="415" stroke="#3d4163" marker-end="url(#g-arr-muted)"/><text x="180" y="418" fill="#3d4163">guarded internal</text>
+          <line x1="288" y1="415" x2="316" y2="415" stroke="#f4c430" marker-end="url(#g-arr-accent)"/><text x="324" y="418" fill="#3d4163">public boundary</text>
+          <line x1="432" y1="415" x2="460" y2="415" stroke="#1b2a6b" marker-end="url(#g-arr-link)"/><text x="468" y="418" fill="#3d4163">published output</text>
+        </g>
+      </svg>
+    </figure>
+
+    <div class="cards">
+      <article class="card warning">
+        <h3>Important: the current demo is not this flow</h3>
+        <p><code>/gameday-demo</code> writes <code>gameday.capture-demo.state.v1</code> to browser local storage and uses a <code>BroadcastChannel</code>. It never calls the GameDay API, never writes <code>match_event</code>, and cannot update the real website or broadcast feed.</p>
+      </article>
+      <article class="card decision">
+        <h3>Safest integration point</h3>
+        <p>Keep registration untouched. Replace the demo’s browser storage adapter with authenticated GameDay commands, then make the public audience screen consume the existing read-only broadcast JSON feed.</p>
+      </article>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">Publication contract</p>
+    <h2>What can—and cannot—reach the public</h2>
+    <table>
+      <thead><tr><th>Stage</th><th>Publicly available</th><th>Stays internal/private</th><th>Release rule</th></tr></thead>
+      <tbody>
+        <tr><td>Team registration</td><td>Country code and approved team name.</td><td>Contact names, email, phone, travel details, consent and review notes.</td><td><code>registration_status = approved</code></td></tr>
+        <tr><td>Roster accreditation</td><td>First name, last name, playing/official role, jersey number, captain flag and category.</td><td>Date of birth, biography review details, photos, identity documents, guardian consent and verification records.</td><td>Registration approved and roster status approved/accredited.</td></tr>
+        <tr><td>Fixture preparation</td><td>Teams, stage/round, scheduled time, venue, court and approved broadcast links.</td><td>Official accounts, assignments, team-sheet selections before release, readiness checks and audit events.</td><td>Fixture exists against approved delegations.</td></tr>
+        <tr><td>Live match</td><td>Status, quarter, calculated clock, team names/codes/flags, score, venue, court, provisional marker and update time.</td><td>Who entered each event, player-level event history, incidents, corrections, internal notes and assignment data.</td><td>Score appears when status is live, suspended, awaiting confirmation or final.</td></tr>
+        <tr><td>Final result</td><td>Final score, results list and standings calculated from final matches.</td><td>Confirmation note, confirming account and full append-only ledger.</td><td>Result approver changes status from awaiting confirmation to final.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <p class="eyebrow">Current gap and recommended build order</p>
+    <h2>The workflow is sound; the staffing and demo integration are unfinished</h2>
+    <div class="cards">
+      <article class="card">
+        <h3>Current staffing limitation</h3>
+        <ul>
+          <li>One account can hold only one match assignment.</li>
+          <li>Exactly one account can occupy each official role.</li>
+          <li>The readiness gate requires supervisor, scorer, timekeeper, statistics/lineup and result approver.</li>
+          <li>This prevents one person from combining score and clock, and prevents separate Team A and Team B scorers.</li>
+        </ul>
+      </article>
+      <article class="card">
+        <h3>Low-risk sequence</h3>
+        <ul>
+          <li>Add match-specific duties and staffing templates only to the GameDay domain.</li>
+          <li>Connect the local scorer UI to the guarded API in a local database first.</li>
+          <li>Connect the audience screen to <code>/public/broadcast/matches/:id/live.json</code>.</li>
+          <li>Test solo operator, scorer + timekeeper, and two scorers + timekeeper.</li>
+          <li>Deploy additive changes with existing matches defaulting to the current full-crew policy.</li>
+        </ul>
+      </article>
+    </div>
+  </section>
+
+  <footer class="sources">
+    Evidence traced from: apps/api/src/teams/registration.service.ts · apps/api/src/admin/admin.service.ts · apps/api/src/teams/team-sheet.service.ts · apps/api/src/gameday/gameday.service.ts · apps/api/src/public/public.service.ts · apps/api/src/public/broadcast.controller.ts · apps/api/drizzle/0020_publication_stages.sql · apps/platform/app/gameday-demo/demo-state.ts · apps/web/app/components/LiveScore.tsx
+  </footer>
+</main>
+</body>
+</html>

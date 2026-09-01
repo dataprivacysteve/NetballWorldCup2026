@@ -4,6 +4,7 @@ import {
   text,
   date,
   integer,
+  boolean,
   timestamp,
   jsonb,
 } from 'drizzle-orm/pg-core';
@@ -47,6 +48,8 @@ export const tournament = pgTable('tournament', {
     .default({}),
   brandPrimaryLogoUrl: text('brand_primary_logo_url'),
   brandReverseLogoUrl: text('brand_reverse_logo_url'),
+  publicSiteLive: boolean('public_site_live').notNull().default(false),
+  gymDisplayMode: text('gym_display_mode').notNull().default('automatic'),
   configurationStatus: configurationStatus('configuration_status')
     .notNull()
     .default('draft'),

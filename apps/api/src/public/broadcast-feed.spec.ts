@@ -1,4 +1,4 @@
-import { shapeBroadcastFeed } from './public.service';
+import { liveBroadcastFilter, shapeBroadcastFeed } from './public.service';
 
 describe('broadcast feed', () => {
   it('uses neutral Team A and Team B fields and a server-derived clock', () => {
@@ -34,6 +34,7 @@ describe('broadcast feed', () => {
       Status: 'LIVE',
       Quarter: 'Q2',
       Clock: '09:50',
+      ClockRunning: true,
       TeamAAbbr: 'BRB',
       TeamAScore: 12,
       TeamBAbbr: 'JAM',
@@ -42,5 +43,12 @@ describe('broadcast feed', () => {
     });
     expect(feed.TeamAFlag).toBe('https://example.test/flags/brb.svg');
     expect(Object.keys(feed).some((key) => /home|away/i.test(key))).toBe(false);
+  });
+
+  it('allows the explicitly featured scheduled fixture to drive pre-match outputs', () => {
+    expect(liveBroadcastFilter()).toContain(
+      "COALESCE(mb.featured, false) = true AND m.status = 'scheduled'",
+    );
+    expect(liveBroadcastFilter('match-id')).toBe('WHERE m.id = $1');
   });
 });

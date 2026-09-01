@@ -17,6 +17,16 @@ async function get<T>(path: string, fallback: T): Promise<T> {
   }
 }
 
+async function getFresh<T>(path: string, fallback: T): Promise<T> {
+  try {
+    const res = await fetch(`${ORIGIN}/public${path}`, { cache: "no-store" });
+    if (!res.ok) return fallback;
+    return (await res.json()) as T;
+  } catch {
+    return fallback;
+  }
+}
+
 export type Tournament = {
   name: string;
   slug: string;
@@ -27,6 +37,7 @@ export type Tournament = {
   timezone: string;
   brandPrimaryLogoUrl: string | null;
   brandReverseLogoUrl: string | null;
+  publicSiteLive: boolean;
 };
 export type Sponsor = {
   id: string;
@@ -34,6 +45,10 @@ export type Sponsor = {
   tier: "gold" | "silver" | "bronze" | "supporter";
   logoUrl: string | null;
   destinationUrl: string | null;
+  websiteEnabled: boolean;
+  displayImageUrl: string | null;
+  displayEnabled: boolean;
+  displaySeconds: number;
 };
 export type NewsArticle = {
   id: string;
@@ -110,6 +125,8 @@ export type SquadMember = {
   jerseyNumber: number | null;
   isCaptain: boolean;
   category: string;
+  biography: string;
+  photoAssetPath: string | null;
 };
 export type Squad = {
   nation: { countryCode: string; name: string };
@@ -117,8 +134,11 @@ export type Squad = {
 };
 
 export const publicApi = {
+  siteMode: () => getFresh<{ live: boolean }>("/site-mode", { live: false }),
   tournament: () => get<Tournament | null>("/tournament", null),
   experience: () => get<PublicExperience | null>("/experience", null),
+  newsArticle: (slug: string) =>
+    get<NewsArticle | null>(`/news/${encodeURIComponent(slug)}`, null),
   nations: () => get<Nation[]>("/nations", []),
   fixtures: () => get<Match[]>("/fixtures", []),
   results: () => get<Match[]>("/results", []),

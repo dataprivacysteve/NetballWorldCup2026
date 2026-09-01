@@ -36,7 +36,7 @@ export const federation = {
     // Big hero background photo (e.g. the players jumping). Served from
     // apps/web/public/. Drop the file there and it shows behind the scrim;
     // falls back to the gradient if missing. Use a wide, compressed JPG/WebP.
-    image: "/photos/hero.jpg" as string | null,
+    image: "/photos/netball-action-shot.png" as string | null,
   },
 
   // External destinations (demo: alert stubs; swap for real URLs).
@@ -70,14 +70,16 @@ export const federation = {
   // site, mirroring the accreditation badge palette. Fallback handles any code
   // not listed (shows the ISO monogram).
   nations: {
-    JAM: { flag: "🇯🇲", color: "#009639" },
-    TTO: { flag: "🇹🇹", color: "#DA1A35" },
     BRB: { flag: "🇧🇧", color: "#00267F" },
-    LCA: { flag: "🇱🇨", color: "#1187C9" },
-    GUY: { flag: "🇬🇾", color: "#009E49" },
-    ARG: { flag: "🇦🇷", color: "#3C8DC4" },
-    USA: { flag: "🇺🇸", color: "#3C3B6E" },
     CAN: { flag: "🇨🇦", color: "#D52B1E" },
+    GRD: { flag: "🇬🇩", color: "#007A5E" },
+    JAM: { flag: "🇯🇲", color: "#009639" },
+    KNA: { flag: "🇰🇳", color: "#009E49" },
+    LCA: { flag: "🇱🇨", color: "#1187C9" },
+    SVG: { flag: "🇻🇨", color: "#009E60" },
+    TTO: { flag: "🇹🇹", color: "#DA1A35" },
+    USA: { flag: "🇺🇸", color: "#3C3B6E" },
+    VGB: { flag: "🇻🇬", color: "#0067B1" },
   } as Record<string, { flag: string; color: string }>,
 } as const;
 

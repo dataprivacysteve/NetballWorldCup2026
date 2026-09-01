@@ -25,6 +25,7 @@ import {
   StatisticDto,
   type GameDayRole,
 } from './gameday.dto';
+import { CorrectStatsEventDto, RecordStatsEventDto } from './stats.dto';
 import { clockRemaining } from './gameday-rules';
 
 type Db = NodePgDatabase<typeof schema>;
@@ -418,6 +419,7 @@ export class GameDayService {
   ) {
     return this.transaction(async (db) => {
       await this.requireAssignment(db, matchId, userId, platformRole, [
+        'scorer',
         'timekeeper',
       ]);
       const match = await this.lockMatch(db, matchId, dto.expectedVersion);
@@ -467,7 +469,11 @@ export class GameDayService {
         patch.clockRemainingSeconds = remaining;
         patch.clockRunning = false;
         patch.clockStartedAt = null;
-        if (match.currentPeriod === 4) patch.status = 'awaiting_confirmation';
+        if (match.currentPeriod === 4) {
+          patch.status = 'final';
+          patch.resultConfirmedAt = now;
+          patch.resultConfirmedBy = userId;
+        }
       } else if (dto.action === 'suspend') {
         if (match.status !== 'live')
           throw new BadRequestException('Only a live match can be suspended');
@@ -637,6 +643,143 @@ export class GameDayService {
     });
   }
 
+  recordStatsEvent(
+    matchId: string,
+    userId: string,
+    platformRole: PlatformRole | null,
+    dto: RecordStatsEventDto,
+  ) {
+    return this.transaction(async (db) => {
+      await this.requireAssignment(db, matchId, userId, platformRole, [
+        'stats_lineup',
+      ]);
+      const match = await this.lockMatch(db, matchId, dto.expectedVersion);
+      if (!['live', 'suspended'].includes(match.status)) {
+        throw new BadRequestException(
+          'Match statistics can be recorded only while the match is live or suspended',
+        );
+      }
+      if (
+        ['goal_made', 'goal_miss'].includes(dto.statisticType) &&
+        !dto.playerId
+      ) {
+        throw new BadRequestException('Select the shooter for every attempt');
+      }
+      if (dto.statisticType === 'penalty' && !dto.penaltyType) {
+        throw new BadRequestException('Choose the penalty type');
+      }
+      if (dto.playerId) {
+        const entry = await this.matchSheetPlayer(db, matchId, dto.playerId);
+        const playerSide =
+          entry.delegationId === match.teamADelegationId ? 'A' : 'B';
+        if (playerSide !== dto.teamSide) {
+          throw new BadRequestException(
+            'The selected player is not on that team side',
+          );
+        }
+      }
+      const payload = {
+        ...(dto.penaltyType ? { penaltyType: dto.penaltyType } : {}),
+        ...(dto.note?.trim() ? { note: dto.note.trim() } : {}),
+      };
+      const sequence = await this.nextSequence(db, matchId);
+      const [event] = await db
+        .insert(schema.matchEvent)
+        .values({
+          matchId,
+          sequence,
+          eventType: `stat.${dto.statisticType}`,
+          teamSide: dto.teamSide,
+          playerId: dto.playerId ?? null,
+          period: match.currentPeriod,
+          clockSeconds: clockRemaining(
+            match.clockRemainingSeconds,
+            match.clockRunning,
+            match.clockStartedAt,
+          ),
+          payload: Object.keys(payload).length ? payload : null,
+          recordedBy: userId,
+        })
+        .returning();
+      const [updated] = await db
+        .update(schema.match)
+        .set({ version: match.version + 1, updatedAt: new Date() })
+        .where(eq(schema.match.id, matchId))
+        .returning();
+      return { match: updated, event };
+    });
+  }
+
+  correctStatsEvent(
+    matchId: string,
+    userId: string,
+    platformRole: PlatformRole | null,
+    dto: CorrectStatsEventDto,
+  ) {
+    return this.transaction(async (db) => {
+      await this.requireAssignment(db, matchId, userId, platformRole, [
+        'stats_lineup',
+      ]);
+      const match = await this.lockMatch(db, matchId, dto.expectedVersion);
+      if (
+        !['live', 'suspended', 'awaiting_confirmation'].includes(match.status)
+      ) {
+        throw new BadRequestException(
+          'This match is no longer open for statistics corrections',
+        );
+      }
+      const [original] = await db
+        .select()
+        .from(schema.matchEvent)
+        .where(
+          and(
+            eq(schema.matchEvent.id, dto.eventId),
+            eq(schema.matchEvent.matchId, matchId),
+          ),
+        );
+      if (
+        !original?.eventType.startsWith('stat.') ||
+        original.reversesEventId
+      ) {
+        throw new NotFoundException('Statistics event not found');
+      }
+      const [alreadyReversed] = await db
+        .select({ id: schema.matchEvent.id })
+        .from(schema.matchEvent)
+        .where(eq(schema.matchEvent.reversesEventId, original.id));
+      if (alreadyReversed) {
+        throw new ConflictException(
+          'This statistics event is already corrected',
+        );
+      }
+      const sequence = await this.nextSequence(db, matchId);
+      const [event] = await db
+        .insert(schema.matchEvent)
+        .values({
+          matchId,
+          sequence,
+          eventType: 'stat.correction',
+          teamSide: original.teamSide,
+          playerId: original.playerId,
+          period: match.currentPeriod,
+          clockSeconds: clockRemaining(
+            match.clockRemainingSeconds,
+            match.clockRunning,
+            match.clockStartedAt,
+          ),
+          payload: { reason: dto.reason.trim() },
+          reversesEventId: original.id,
+          recordedBy: userId,
+        })
+        .returning();
+      const [updated] = await db
+        .update(schema.match)
+        .set({ version: match.version + 1, updatedAt: new Date() })
+        .where(eq(schema.match.id, matchId))
+        .returning();
+      return { match: updated, event };
+    });
+  }
   readyMatch(
     matchId: string,
     userId: string,
@@ -645,6 +788,7 @@ export class GameDayService {
   ) {
     return this.transaction(async (db) => {
       await this.requireAssignment(db, matchId, userId, platformRole, [
+        'scorer',
         'match_supervisor',
       ]);
       const match = await this.lockMatch(db, matchId, expectedVersion);
@@ -677,13 +821,10 @@ export class GameDayService {
         .select({ role: schema.matchOfficialAssignment.role })
         .from(schema.matchOfficialAssignment)
         .where(eq(schema.matchOfficialAssignment.matchId, matchId));
-      const required: GameDayRole[] = [
-        'match_supervisor',
-        'scorer',
-        'timekeeper',
-        'stats_lineup',
-        'result_approver',
-      ];
+      // A named scorer is the minimum viable crew and may also operate the
+      // server-anchored clock. Additional officials remain optional so the
+      // fixture can scale from one operator to a full table crew.
+      const required: GameDayRole[] = ['scorer'];
       const roles = new Set(assigned.map((assignment) => assignment.role));
       const missing = required.filter((role) => !roles.has(role));
       if (missing.length) {
@@ -711,6 +852,29 @@ export class GameDayService {
         })
         .where(eq(schema.match.id, matchId))
         .returning();
+      const [provenance] = await db
+        .insert(schema.historicalMatchProvenance)
+        .values({
+          matchId,
+          datasetId: schema.SYSTEM_OF_RECORD_DATASET_ID,
+          sourceRecordId: matchId,
+          confidence: 'high',
+          recordStatus: 'official',
+        })
+        .onConflictDoNothing()
+        .returning({ id: schema.historicalMatchProvenance.id });
+      if (provenance) {
+        await db.insert(schema.historicalGovernanceEvent).values({
+          actorUserId: userId,
+          action: 'match.provenance.created',
+          targetType: 'match',
+          targetId: matchId,
+          details: {
+            datasetId: schema.SYSTEM_OF_RECORD_DATASET_ID,
+            recordStatus: 'official',
+          },
+        });
+      }
       return updated;
     });
   }
@@ -761,7 +925,7 @@ export class GameDayService {
     matchId: string,
     userId: string,
     platformRole: PlatformRole | null,
-    allowed?: GameDayRole[],
+    allowed?: PlatformRole[],
   ) {
     const [assignment] = await db
       .select()

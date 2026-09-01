@@ -36,3 +36,9 @@ platform.netballamericas.test {
 	import tls_local
 	reverse_proxy host.docker.internal:3003
 }
+
+# Optional live match statistics recorder and host data desk — Next.js.
+stats.netballamericas.test {
+	import tls_local
+	reverse_proxy host.docker.internal:3004
+}

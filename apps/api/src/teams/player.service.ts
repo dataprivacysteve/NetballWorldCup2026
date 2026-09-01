@@ -58,7 +58,7 @@ export class PlayerService {
   }
 
   private async ruleConfig(): Promise<RosterRuleConfig> {
-    const { db } = getTenant();
+    const { db, delegationId } = getTenant();
     const [event] = await db
       .select({
         activePlayerMinimum: schema.tournament.activePlayerMinimum,
@@ -72,8 +72,17 @@ export class PlayerService {
         consentRequiredCategories: schema.tournament.consentRequiredCategories,
       })
       .from(schema.tournament)
+      .innerJoin(
+        schema.delegation,
+        eq(schema.delegation.tournamentId, schema.tournament.id),
+      )
+      .where(eq(schema.delegation.id, delegationId))
       .limit(1);
-    if (!event) throw new BadRequestException('No tournament is configured');
+    if (!event) {
+      throw new BadRequestException(
+        'No tournament is configured for this delegation',
+      );
+    }
     return event;
   }
 
@@ -143,8 +152,7 @@ export class PlayerService {
       );
       const consentRequired =
         config.consentRequiredCategories.includes(p.category) && minor;
-      const hasRequiredConsent =
-        !consentRequired || hasGuardianConsent;
+      const hasRequiredConsent = !consentRequired || hasGuardianConsent;
       const identityRequired = config.identityRequiredCategories.includes(
         p.category,
       );
@@ -177,7 +185,8 @@ export class PlayerService {
         identity?.verifiedAt,
       ].filter((value): value is Date => value instanceof Date);
       const reviewCurrent =
-        !!review && evidenceDates.every((changedAt) => changedAt <= review.reviewedAt);
+        !!review &&
+        evidenceDates.every((changedAt) => changedAt <= review.reviewedAt);
       return {
         ...p,
         isMinor: minor,
@@ -187,9 +196,7 @@ export class PlayerService {
         hasRequiredConsent,
         identityRequired,
         identityStatus,
-        verificationStatus: reviewCurrent
-          ? review.status
-          : 'pending',
+        verificationStatus: reviewCurrent ? review.status : 'pending',
         ready,
       };
     });

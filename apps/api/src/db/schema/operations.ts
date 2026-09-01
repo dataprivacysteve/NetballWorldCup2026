@@ -93,6 +93,10 @@ export const sponsor = pgTable('sponsor', {
   tier: text('tier').notNull().default('supporter'),
   logoUrl: text('logo_url'),
   destinationUrl: text('destination_url'),
+  websiteEnabled: boolean('website_enabled').notNull().default(true),
+  displayImageUrl: text('display_image_url'),
+  displayEnabled: boolean('display_enabled').notNull().default(false),
+  displaySeconds: integer('display_seconds').notNull().default(10),
   active: boolean('active').notNull().default(true),
   sortOrder: integer('sort_order').notNull().default(0),
 });

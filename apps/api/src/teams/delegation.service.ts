@@ -215,10 +215,19 @@ export class DelegationService {
             schema.tournament.consentRequiredCategories,
         })
         .from(schema.tournament)
+        .innerJoin(
+          schema.delegation,
+          eq(schema.delegation.tournamentId, schema.tournament.id),
+        )
+        .where(eq(schema.delegation.id, delegationId))
         .limit(1)
         .then((rows) => rows[0]),
     ]);
-    if (!event) throw new BadRequestException('No tournament is configured');
+    if (!event) {
+      throw new BadRequestException(
+        'No tournament is configured for this delegation',
+      );
+    }
     const withPhoto = new Set(
       photos
         .filter((photo) => !photo.objectKey.endsWith('/seed.png'))

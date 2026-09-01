@@ -20,11 +20,15 @@ function validRegistration(countryCode: string): RegisterDelegationDto {
 describe('RegisterDelegationDto', () => {
   it('accepts a configured tournament code that differs from ISO alpha-3', async () => {
     const errors = await validate(validRegistration('SVG'));
-    expect(errors.find((error) => error.property === 'countryCode')).toBeUndefined();
+    expect(
+      errors.find((error) => error.property === 'countryCode'),
+    ).toBeUndefined();
   });
 
   it('still rejects malformed delegation codes', async () => {
     const errors = await validate(validRegistration('STVG'));
-    expect(errors.find((error) => error.property === 'countryCode')).toBeDefined();
+    expect(
+      errors.find((error) => error.property === 'countryCode'),
+    ).toBeDefined();
   });
 });

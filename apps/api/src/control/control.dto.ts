@@ -105,12 +105,25 @@ export class UpdatePublicExperienceDto {
   @IsOptional() @IsString() delayedUpdatesMessage?: string;
 }
 
+export class UpdatePublicSiteModeDto {
+  @IsBoolean() live!: boolean;
+}
+
+export class UpdateGymDisplayModeDto {
+  @IsIn(['automatic', 'arena', 'lineup', 'live'])
+  mode!: 'automatic' | 'arena' | 'lineup' | 'live';
+}
+
 export class SaveSponsorDto {
   @IsOptional() @IsUUID() id?: string;
   @IsString() @MinLength(2) name!: string;
   @IsIn(['gold', 'silver', 'bronze', 'supporter']) tier!: string;
   @IsOptional() @IsString() logoUrl?: string;
   @IsOptional() @IsString() destinationUrl?: string;
+  @IsOptional() @IsBoolean() websiteEnabled?: boolean;
+  @IsOptional() @IsString() displayImageUrl?: string;
+  @IsOptional() @IsBoolean() displayEnabled?: boolean;
+  @IsOptional() @IsInt() @Min(5) @Max(60) displaySeconds?: number;
   @IsOptional() @IsBoolean() active?: boolean;
   @IsOptional() @IsInt() sortOrder?: number;
 }

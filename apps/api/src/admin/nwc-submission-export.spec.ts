@@ -19,8 +19,8 @@ function storedZipEntries(buffer: Buffer): Map<string, string> {
 }
 
 describe('buildNwcSubmissionWorkbook', () => {
-  it('creates a minimised workbook containing the complete team roster', async () => {
-    const buffer = await buildNwcSubmissionWorkbook({
+  it('creates a minimised workbook containing the complete team roster', () => {
+    const buffer = buildNwcSubmissionWorkbook({
       tournament: {
         name: 'Americas Qualifier 2026',
         shortName: 'AQ26',
@@ -145,9 +145,7 @@ describe('buildNwcSubmissionWorkbook', () => {
       ]),
     );
     expect(entries.get('xl/workbook.xml')).toContain('name="Delegations"');
-    expect(entries.get('xl/workbook.xml')).toContain(
-      'name="Full Team Roster"',
-    );
+    expect(entries.get('xl/workbook.xml')).toContain('name="Full Team Roster"');
     const rosterSheet = entries.get('xl/worksheets/sheet3.xml');
     expect(rosterSheet).toContain('Casey &amp; Co');
     expect(rosterSheet).toContain('Riley');
@@ -155,9 +153,7 @@ describe('buildNwcSubmissionWorkbook', () => {
     expect(rosterSheet).toContain('Morgan');
     expect(rosterSheet).toContain('Manager');
     expect(rosterSheet).toContain('team_manager');
-    expect(rosterSheet).not.toContain(
-      'internal-delegation-id',
-    );
+    expect(rosterSheet).not.toContain('internal-delegation-id');
     expect(buffer.readUInt32LE(buffer.length - 22)).toBe(0x06054b50);
   });
 });

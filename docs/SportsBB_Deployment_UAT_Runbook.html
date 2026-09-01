@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>SportsBB Deployment & UAT Runbook · Americas Regional Qualifier</title>
+  <style>
+    :root {
+      --navy: #061127;
+      --navy-2: #111f49;
+      --blue: #4b7ebb;
+      --gold: #f4c430;
+      --teal: #28c9b1;
+      --green: #23864b;
+      --red: #b42336;
+      --amber: #9a6700;
+      --paper: #f7f4ed;
+      --ink: #10182c;
+      --muted: #657084;
+      --line: #d9dee8;
+      --white: #fff;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; color: var(--ink); background: #e8ebf1; font: 15px/1.5 Inter, Manrope, "Segoe UI", Arial, sans-serif; }
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+    a { color: inherit; }
+    h1, h2, h3, p { margin-top: 0; }
+    h1, h2, h3 { line-height: 1.08; }
+    code { padding: .12em .35em; border-radius: 5px; color: #163d70; background: #edf3fb; font-family: Consolas, monospace; }
+    .document { width: min(1240px, 100%); margin: 0 auto; background: var(--paper); box-shadow: 0 25px 80px rgba(6,17,39,.2); }
+    .hero { position: relative; min-height: 510px; overflow: hidden; padding: 48px 64px; color: white; background: radial-gradient(circle at 80% 15%, rgba(75,126,187,.55), transparent 28%), radial-gradient(circle at 10% 110%, rgba(40,201,177,.22), transparent 35%), linear-gradient(135deg, var(--navy), var(--navy-2)); }
+    .hero::after { content: ""; position: absolute; right: -90px; bottom: -250px; width: 500px; height: 500px; border: 70px solid rgba(244,196,48,.12); border-radius: 50%; }
+    .brand-row { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 28px; }
+    .brand-row img { display: block; object-fit: contain; }
+    .event-logo { width: min(430px, 48%); max-height: 122px; }
+    .sportsbb-logo { width: min(245px, 30%); padding: 10px 14px; border-radius: 12px; background: white; }
+    .eyebrow { position: relative; z-index: 1; margin: 76px 0 12px; color: var(--gold); font-size: 12px; font-weight: 900; letter-spacing: .2em; text-transform: uppercase; }
+    .hero h1 { position: relative; z-index: 1; max-width: 930px; margin-bottom: 18px; font-size: clamp(42px, 6vw, 76px); letter-spacing: -.045em; }
+    .hero-copy { position: relative; z-index: 1; max-width: 790px; color: rgba(255,255,255,.76); font-size: 19px; }
+    .meta-pills { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 10px; margin-top: 30px; }
+    .pill { padding: 8px 12px; border: 1px solid rgba(255,255,255,.18); border-radius: 999px; background: rgba(255,255,255,.07); font-size: 11px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+    .toolbar { position: sticky; top: 0; z-index: 50; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 11px 20px; color: white; background: rgba(6,17,39,.97); box-shadow: 0 6px 20px rgba(6,17,39,.2); }
+    .toolbar nav, .toolbar-actions { display: flex; flex-wrap: wrap; gap: 7px; }
+    .toolbar a, .toolbar button { padding: 8px 10px; border: 0; border-radius: 7px; color: white; background: transparent; font-size: 11px; font-weight: 800; text-decoration: none; }
+    .toolbar a:hover, .toolbar button:hover { background: rgba(255,255,255,.11); }
+    .toolbar .primary { color: var(--navy); background: var(--gold); }
+    .toolbar .danger { color: #ffd8dc; }
+    .progress-shell { position: sticky; top: 53px; z-index: 45; padding: 11px 24px 13px; color: white; background: #17213b; }
+    .progress-head { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 7px; font-size: 12px; font-weight: 800; }
+    .progress-track { height: 9px; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.14); }
+    .progress-bar { width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--teal), var(--gold)); transition: width .2s ease; }
+    .content { padding: 48px 64px 72px; }
+    .section { margin-top: 58px; scroll-margin-top: 125px; }
+    .section:first-child { margin-top: 0; }
+    .section-kicker { margin-bottom: 7px; color: #3c6aa3; font-size: 11px; font-weight: 900; letter-spacing: .18em; text-transform: uppercase; }
+    .section h2 { margin-bottom: 12px; font-size: 35px; letter-spacing: -.035em; }
+    .section-intro { max-width: 860px; color: var(--muted); font-size: 16px; }
+    .notice { display: grid; grid-template-columns: 46px 1fr; gap: 15px; align-items: start; margin: 24px 0; padding: 19px; border: 1px solid #e5c65b; border-radius: 15px; background: #fff8d8; }
+    .notice.danger { border-color: #e7a7b0; background: #fff0f2; }
+    .notice.success { border-color: #9bd5b3; background: #eefbf3; }
+    .notice-icon { display: grid; width: 46px; height: 46px; place-items: center; border-radius: 50%; color: var(--navy); background: var(--gold); font-weight: 900; }
+    .notice.danger .notice-icon { color: white; background: var(--red); }
+    .notice.success .notice-icon { color: white; background: var(--green); }
+    .notice strong { display: block; margin-bottom: 3px; }
+    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+    .card { padding: 22px; border: 1px solid var(--line); border-radius: 17px; background: white; box-shadow: 0 8px 25px rgba(17,31,73,.05); }
+    .card h3 { margin-bottom: 10px; font-size: 20px; }
+    .card p:last-child { margin-bottom: 0; }
+    .topology { overflow-x: auto; margin: 24px 0; }
+    table { width: 100%; border-collapse: collapse; background: white; }
+    th, td { padding: 12px 13px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: white; background: var(--navy-2); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+    td { font-size: 13px; }
+    .form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 24px; }
+    .field { display: grid; gap: 6px; }
+    .field.wide { grid-column: 1 / -1; }
+    label { color: #42506a; font-size: 11px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+    input[type="text"], input[type="date"], input[type="datetime-local"], select, textarea { width: 100%; border: 1px solid #cbd3e0; border-radius: 9px; color: var(--ink); background: white; outline: none; }
+    input[type="text"], input[type="date"], input[type="datetime-local"], select { min-height: 40px; padding: 8px 10px; }
+    textarea { min-height: 100px; padding: 10px 11px; resize: vertical; }
+    input:focus, select:focus, textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(75,126,187,.14); }
+    .phase { margin-top: 25px; border: 1px solid var(--line); border-radius: 17px; background: white; box-shadow: 0 8px 25px rgba(17,31,73,.05); }
+    .phase-head { display: flex; align-items: start; justify-content: space-between; gap: 18px; padding: 19px 21px 15px; border-bottom: 1px solid var(--line); }
+    .phase-title { margin: 0 0 5px; font-size: 21px; }
+    .phase-copy { margin: 0; color: var(--muted); font-size: 13px; }
+    .phase-count { flex: none; padding: 6px 9px; border-radius: 999px; color: #315887; background: #edf3fb; font-size: 11px; font-weight: 900; }
+    .checklist { list-style: none; margin: 0; padding: 0; }
+    .check-item { display: grid; grid-template-columns: 30px minmax(250px, 1fr) 150px 120px; gap: 12px; align-items: start; padding: 15px 20px; border-bottom: 1px solid #edf0f5; }
+    .check-item:last-child { border-bottom: 0; }
+    .check-item.done { background: #f4fbf7; }
+    .check-item.blocked { background: #fff4f5; }
+    .check-item input[type="checkbox"] { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--green); }
+    .check-main strong { display: block; margin-bottom: 3px; font-size: 14px; }
+    .check-main p { margin: 0; color: var(--muted); font-size: 12px; }
+    .critical-tag { display: inline-block; margin-right: 7px; padding: 2px 6px; border-radius: 5px; color: white; background: var(--red); font-size: 9px; font-weight: 900; letter-spacing: .07em; text-transform: uppercase; }
+    .check-tools select { min-height: 34px; padding: 5px 7px; font-size: 11px; }
+    .check-tools input { min-height: 34px; padding: 5px 7px; font-size: 11px; }
+    details { grid-column: 2 / -1; }
+    summary { color: #3c6aa3; font-size: 11px; font-weight: 800; cursor: pointer; }
+    details textarea { min-height: 72px; margin-top: 9px; font-size: 12px; }
+    .issues { margin-top: 20px; }
+    .issues input, .issues select { min-width: 100px; }
+    .issue-actions { display: flex; gap: 8px; margin-top: 12px; }
+    .btn { padding: 9px 13px; border: 0; border-radius: 8px; color: white; background: var(--navy-2); font-weight: 800; }
+    .btn.secondary { color: var(--navy); border: 1px solid var(--line); background: white; }
+    .btn.gold { color: var(--navy); background: var(--gold); }
+    .btn.small { padding: 6px 9px; font-size: 11px; }
+    .decision-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin: 22px 0; }
+    .decision { position: relative; }
+    .decision input { position: absolute; opacity: 0; }
+    .decision label { display: block; min-height: 120px; padding: 19px; border: 2px solid var(--line); border-radius: 15px; color: var(--ink); background: white; cursor: pointer; text-transform: none; letter-spacing: 0; }
+    .decision label strong { display: block; margin-bottom: 7px; font-size: 20px; }
+    .decision input:checked + label { border-color: var(--blue); box-shadow: 0 0 0 4px rgba(75,126,187,.13); }
+    .decision.go input:checked + label { border-color: var(--green); background: #effaf3; }
+    .decision.nogo input:checked + label { border-color: var(--red); background: #fff1f3; }
+    .signature-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 18px; }
+    .handoff { padding: 24px; border-radius: 17px; color: white; background: linear-gradient(135deg, var(--navy), #1d356a); }
+    .handoff textarea { min-height: 180px; color: #eaf0ff; border-color: rgba(255,255,255,.2); background: rgba(255,255,255,.08); }
+    .handoff-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 12px; }
+    .footer { padding: 28px 64px; color: rgba(255,255,255,.68); background: var(--navy); font-size: 12px; }
+    .print-only { display: none; }
+    @media (max-width: 900px) {
+      .hero, .content, .footer { padding-left: 28px; padding-right: 28px; }
+      .toolbar { align-items: start; flex-direction: column; }
+      .progress-shell { top: 91px; }
+      .grid, .form-grid, .decision-grid, .signature-grid { grid-template-columns: 1fr; }
+      .check-item { grid-template-columns: 28px 1fr; }
+      .check-tools { grid-column: 2; }
+      details { grid-column: 2; }
+      .brand-row { align-items: start; }
+    }
+    @media print {
+      body { background: white; font-size: 11px; }
+      .document { width: 100%; box-shadow: none; }
+      .toolbar, .progress-shell, .issue-actions, .handoff-actions, .no-print { display: none !important; }
+      .hero { min-height: auto; padding: 30px 36px; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      .eyebrow { margin-top: 36px; }
+      .hero h1 { font-size: 42px; }
+      .content { padding: 30px 36px; }
+      .section { margin-top: 36px; break-before: page; }
+      .section:first-child { break-before: auto; }
+      .phase { break-inside: avoid; box-shadow: none; }
+      .check-item { grid-template-columns: 24px 1fr 115px 95px; padding: 10px 12px; }
+      details { display: block; }
+      details summary { display: none; }
+      details textarea { border: 0; padding: 0; min-height: 34px; }
+      .print-only { display: block; }
+      input, select, textarea { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+  <main class="document">
+    <header class="hero">
+      <div class="brand-row">
+        <img class="event-logo" src="../apps/platform/public/event-brand/NWC_SYD2027_Logo_Landscape_Full_Colour_Negative_RGB_Regional_Qualifier_Americas.png" alt="Netball World Cup Sydney 2027 Regional Qualifier Americas">
+        <img class="sportsbb-logo" src="../apps/platform/public/event-brand/sportsbb-logo.png" alt="SportsBB — A Digital Sports Network">
+      </div>
+      <p class="eyebrow">Controlled deployment · UAT · venue acceptance</p>
+      <h1>Deployment &amp; UAT Runbook</h1>
+      <p class="hero-copy">A complete, evidence-based checklist for taking SportsBB GameDay from an isolated online test environment through venue rehearsal, production deployment and handoff.</p>
+      <div class="meta-pills"><span class="pill">Interactive checklist</span><span class="pill">Auto-saves locally</span><span class="pill">Exportable evidence</span><span class="pill">No secrets permitted</span></div>
+    </header>
+
+    <div class="toolbar">
+      <nav><a href="#identity">Identity</a><a href="#environment">UAT model</a><a href="#checklist">Checklist</a><a href="#issues">Issues</a><a href="#decision">Decision</a><a href="#handoff">Handoff</a></nav>
+      <div class="toolbar-actions"><button type="button" onclick="window.print()">Print / PDF</button><button class="primary" type="button" id="downloadReport">Download report</button><button class="danger" type="button" id="resetRunbook">Reset</button></div>
+    </div>
+    <div class="progress-shell">
+      <div class="progress-head"><span id="progressText">0 of 0 checks complete</span><span id="blockerText">Critical gates pending</span></div>
+      <div class="progress-track"><div class="progress-bar" id="progressBar"></div></div>
+    </div>
+
+    <div class="content">
+      <section class="section" id="identity">
+        <p class="section-kicker">Step 1 · Control the change</p>
+        <h2>Deployment record</h2>
+        <p class="section-intro">Complete this before anyone changes an environment. Do not place passwords, tokens, identity-document links or private athlete data anywhere in this file.</p>
+        <div class="notice danger"><div class="notice-icon">!</div><div><strong>This checklist is not authorization to deploy.</strong>Production work begins only after the named Release Lead records an approved tag/SHA, backup proof, change window and GO decision.</div></div>
+        <div class="form-grid">
+          <div class="field"><label for="eventName">Event / project</label><input id="eventName" data-save type="text" value="Americas Regional Qualifier · SportsBB GameDay"></div>
+          <div class="field"><label for="environmentName">Target environment</label><select id="environmentName" data-save><option value="">Select</option><option>UAT</option><option>Venue rehearsal</option><option>Production</option><option>Rollback rehearsal</option></select></div>
+          <div class="field"><label for="changeId">Change / ticket ID</label><input id="changeId" data-save type="text" placeholder="e.g. NWC26-DEP-001"></div>
+          <div class="field"><label for="releaseTag">Release tag</label><input id="releaseTag" data-save type="text" placeholder="Approved annotated tag"></div>
+          <div class="field"><label for="releaseSha">Release SHA</label><input id="releaseSha" data-save type="text" placeholder="Full immutable commit SHA"></div>
+          <div class="field"><label for="artifactId">Build / artifact ID</label><input id="artifactId" data-save type="text" placeholder="Promote this same artifact"></div>
+          <div class="field"><label for="testOrigin">Primary test URL</label><input id="testOrigin" data-save type="text" placeholder="https://www.uat.netballamericas.org"></div>
+          <div class="field"><label for="windowStart">Window starts</label><input id="windowStart" data-save type="datetime-local"></div>
+          <div class="field"><label for="windowEnd">Window ends</label><input id="windowEnd" data-save type="datetime-local"></div>
+          <div class="field"><label for="releaseLead">Release Lead</label><input id="releaseLead" data-save type="text"></div>
+          <div class="field"><label for="technicalLead">Technical Lead</label><input id="technicalLead" data-save type="text"></div>
+          <div class="field"><label for="competitionLead">Competition / LOC Lead</label><input id="competitionLead" data-save type="text"></div>
+          <div class="field wide"><label for="scope">Scope and intended outcome</label><textarea id="scope" data-save placeholder="Describe exactly what is changing, what is excluded, and the expected user-visible outcome."></textarea></div>
+        </div>
+      </section>
+
+      <section class="section" id="environment">
+        <p class="section-kicker">Step 2 · Test safely online</p>
+        <h2>Isolated UAT environment</h2>
+        <p class="section-intro">Do not test against the practically-live database. Give the team a separate online environment under a distinct cookie boundary, protected from search engines and public traffic.</p>
+        <div class="grid">
+          <article class="card"><h3>Recommended URLs</h3><p><code>www.uat.netballamericas.org</code><br><code>api.uat.netballamericas.org</code><br><code>teams.uat.netballamericas.org</code><br><code>platform.uat.netballamericas.org</code><br><code>stats.uat.netballamericas.org</code></p><p>Use <code>COOKIE_DOMAIN=.uat.netballamericas.org</code>. A UAT cookie must never be sent to production.</p></article>
+          <article class="card"><h3>Access boundary</h3><p>Protect UAT with VPN, IP allow-list or an outer identity proxy. Add <code>noindex, nofollow</code>, keep robots exclusion enabled, and display a permanent “UAT · SYNTHETIC DATA” banner.</p></article>
+          <article class="card"><h3>Separate data plane</h3><p>Use a separate PostgreSQL database and roles, separate Redis instance/namespace, and separate photo, badge and identity buckets. Never point a UAT variable at a production hostname.</p></article>
+          <article class="card"><h3>Safe integrations</h3><p>Send email to a capture inbox such as Mailpit/MailHog or a restricted test mailbox. Use non-public stream IDs, test sponsor destinations and fake notification recipients.</p></article>
+        </div>
+        <div class="topology">
+          <table>
+            <thead><tr><th>Layer</th><th>UAT</th><th>Production</th><th>Required isolation</th></tr></thead>
+            <tbody>
+              <tr><td>Applications</td><td>Release-candidate artifact</td><td>Promoted approved artifact</td><td>Never rebuild between UAT and production</td></tr>
+              <tr><td>PostgreSQL</td><td><code>gameday_uat</code> with UAT-only roles</td><td><code>gameday</code> production roles</td><td>Separate database/credentials; no cross grants</td></tr>
+              <tr><td>Redis</td><td>Dedicated instance or strict namespace</td><td>Production instance</td><td>Separate passwords and keyspace</td></tr>
+              <tr><td>Object storage</td><td><code>uat-* photos/badges/identity</code></td><td>Production buckets</td><td>Separate keys, policies and lifecycle rules</td></tr>
+              <tr><td>Sessions</td><td><code>.uat.netballamericas.org</code></td><td><code>.netballamericas.org</code></td><td>Different signing secret and cookie domain</td></tr>
+              <tr><td>Email</td><td>Capture/sink or allow-listed recipients</td><td>Approved transactional provider</td><td>No real delegation notifications from UAT</td></tr>
+              <tr><td>People/data</td><td>Synthetic demo people and consent-safe images</td><td>Approved real records</td><td>No production identity documents copied to UAT</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="notice success"><div class="notice-icon">✓</div><div><strong>Promotion rule</strong>Build once from an approved tag, test that artifact in UAT, record its digest/ID, then promote the same artifact and configuration schema to production. Only environment-owned secret values change.</div></div>
+      </section>
+
+      <section class="section" id="checklist">
+        <p class="section-kicker">Steps 3–12 · Execute and prove</p>
+        <h2>Deployment and acceptance checklist</h2>
+        <p class="section-intro">Every critical item must be complete before GO. Select an owner/status and attach an evidence reference or concise note. “N/A” requires an explanation.</p>
+        <div id="checklistMount"></div>
+      </section>
+
+      <section class="section" id="issues">
+        <p class="section-kicker">Step 13 · Record exceptions</p>
+        <h2>Issue and blocker register</h2>
+        <p class="section-intro">Record defects, operational exceptions and follow-ups. Do not hide a known issue by checking the related gate.</p>
+        <div class="topology issues"><table><thead><tr><th>ID</th><th>Severity</th><th>Description</th><th>Owner</th><th>Status / disposition</th><th class="no-print">Action</th></tr></thead><tbody id="issueRows"></tbody></table></div>
+        <div class="issue-actions no-print"><button class="btn" type="button" id="addIssue">Add issue</button></div>
+        <div class="form-grid">
+          <div class="field wide"><label for="generalNotes">General rehearsal and deployment notes</label><textarea id="generalNotes" data-save style="min-height:180px" placeholder="Timings, observations, equipment used, network conditions, deviations and anything the next shift must know."></textarea></div>
+        </div>
+      </section>
+
+      <section class="section" id="decision">
+        <p class="section-kicker">Step 14 · Formal decision</p>
+        <h2>GO / conditional GO / NO-GO</h2>
+        <p class="section-intro">A GO selection does not override an incomplete critical gate. Conditional GO must identify the accepted exceptions and monitoring owner.</p>
+        <div class="decision-grid">
+          <div class="decision go"><input data-save type="radio" name="decision" id="decisionGo" value="GO"><label for="decisionGo"><strong>GO</strong>All critical gates passed; release may proceed within the approved window.</label></div>
+          <div class="decision"><input data-save type="radio" name="decision" id="decisionConditional" value="CONDITIONAL GO"><label for="decisionConditional"><strong>Conditional GO</strong>Only explicitly accepted, non-critical exceptions remain.</label></div>
+          <div class="decision nogo"><input data-save type="radio" name="decision" id="decisionNoGo" value="NO-GO"><label for="decisionNoGo"><strong>NO-GO</strong>Stop, preserve evidence and execute the rollback or recovery plan.</label></div>
+        </div>
+        <div class="form-grid">
+          <div class="field wide"><label for="decisionRationale">Decision rationale / accepted exceptions</label><textarea id="decisionRationale" data-save></textarea></div>
+        </div>
+        <div class="signature-grid">
+          <div class="field"><label for="releaseSignoff">Release Lead sign-off (name and time)</label><input id="releaseSignoff" data-save type="text"></div>
+          <div class="field"><label for="technicalSignoff">Technical Lead sign-off</label><input id="technicalSignoff" data-save type="text"></div>
+          <div class="field"><label for="competitionSignoff">Competition / LOC sign-off</label><input id="competitionSignoff" data-save type="text"></div>
+          <div class="field"><label for="venueSignoff">Venue / Broadcast sign-off</label><input id="venueSignoff" data-save type="text"></div>
+        </div>
+      </section>
+
+      <section class="section" id="handoff">
+        <p class="section-kicker">Step 15 · Return results</p>
+        <h2>Handoff back to Codex</h2>
+        <div class="handoff">
+          <h3>Send the evidence, not just “it passed.”</h3>
+          <p>Use <strong>Download report</strong> to save a Markdown summary, then attach it in this Codex task. If the browser prevents downloads, copy the generated handoff text below and paste it into the conversation.</p>
+          <textarea id="handoffText" readonly aria-label="Generated handoff message"></textarea>
+          <div class="handoff-actions"><button class="btn gold" type="button" id="copyHandoff">Copy handoff text</button><button class="btn secondary" type="button" id="downloadJson">Download full JSON evidence</button><button class="btn secondary" type="button" id="importJson">Import JSON</button><input id="jsonFile" class="no-print" type="file" accept="application/json" hidden></div>
+        </div>
+      </section>
+    </div>
+    <footer class="footer">SportsBB GameDay · Deployment &amp; UAT Runbook · Generated for the Americas Regional Qualifier · This document must never contain passwords, tokens or private identity-document links.</footer>
+  </main>
+
+  <script>
+    const STORAGE_KEY = "sportsbb-deployment-uat-runbook-v1";
+    const ownerOptions = ["Unassigned", "Release Lead", "Technical Lead", "Infrastructure", "Competition / LOC", "Venue Operations", "Broadcast", "Media / Commercial", "Privacy / Governance", "Team Portal tester"];
+    const phases = [
+      { title: "A. Release governance", copy: "Freeze a reproducible candidate before touching UAT or production.", items: [
+        [1,"Approved release tag and full SHA recorded","The tag contains every intended change and excludes backups, secrets, source artwork and local tool files."],
+        [1,"Working tree and staged diff reviewed","No deployment is made from an undocumented dirty checkout."],
+        [1,"Build artifact ID/digest captured","The same immutable artifact will be promoted from UAT to production."],
+        [1,"Change scope, window, owners and rollback authority approved","Every person knows who can proceed, stop or roll back."],
+        [0,"Release notes and known limitations distributed","Operations, LOC and support understand what changed and what remains intentionally unavailable."]
+      ]},
+      { title: "B. UAT isolation", copy: "Prove the test environment cannot affect real users or production state.", items: [
+        [1,"UAT DNS, TLS and permanent UAT banner verified","All UAT surfaces use valid HTTPS and are unmistakably labelled."],
+        [1,"UAT database and roles are separate","Connection hosts/database names are inspected; production credentials are absent."],
+        [1,"UAT Redis and object buckets are separate","No shared cache keys or photo, badge or identity buckets."],
+        [1,"Cookie domain and signing secret are UAT-only","UAT sessions cannot authenticate against production."],
+        [1,"Email is captured or recipient allow-listed","Password resets and notifications cannot reach real delegations."],
+        [1,"Synthetic data only; no real identity documents","Athlete names/images are approved demos or consent-safe test assets."],
+        [0,"Search indexing and public discovery blocked","noindex/noarchive plus VPN, IP allow-list or identity proxy applied."]
+      ]},
+      { title: "C. Infrastructure and recovery", copy: "Validate dependencies, health, persistence and safe rollback.", items: [
+        [1,"PostgreSQL, Redis and object storage healthy","Health checks pass using least-privilege runtime identities."],
+        [1,"Pre-deployment database and object backup captured","Backup ID, checksum, time, destination and owner recorded."],
+        [1,"Latest backup restored in isolation","Known database rows and one test object are verified after restore."],
+        [1,"Process supervision and restart policy verified","API, Web, Teams, Platform and required worker services return after restart."],
+        [1,"Health/readiness endpoints and alert destination tested","A dependency failure is visible before users report it."],
+        [0,"Disk, memory, CPU, certificate expiry and time synchronization checked","Capacity and clock settings are suitable for the event window."]
+      ]},
+      { title: "D. Security and privacy", copy: "Check the authority boundary before inviting testers.", items: [
+        [1,"All local/bootstrap passwords rotated or removed","One-time passwords are removed from runtime configuration after bootstrap."],
+        [1,"Role access matrix tested","SportsBB, LOC, media, team, scorer and timekeeper can access only their intended surfaces/actions."],
+        [1,"Retired accounts and assignments disabled","Supervisor, approver, stats or demo roles not in the operating model cannot sign in."],
+        [1,"Session, logout and reset flows tested","Secure cookies, expiry, session invalidation and one-use reset behavior are confirmed."],
+        [1,"Security headers and TLS baseline checked","HSTS, CSP, content-type, referrer and permissions policy are present where appropriate."],
+        [1,"Lineup publication is explicitly controlled","Submitted starters are not publicly available before the approved presentation window."],
+        [1,"Privacy notice, retention schedule and consent wording approved","Photo, biography, accreditation and identity-document uses are covered."],
+        [0,"Audit records reviewed for privileged actions","Logins, configuration, roster decisions, score changes and restricted document views are attributable."]
+      ]},
+      { title: "E. Application deployment", copy: "Deploy in dependency order and preserve evidence.", items: [
+        [1,"Environment contract validated without exposing values","Every required key is present and every URL points to the intended environment."],
+        [1,"Locked dependencies installed and all production builds pass","API, Web, Teams, Platform and Stats/retired-route decision are recorded."],
+        [1,"Database migration backup taken and migrations applied once","Migration log and final migration version are captured."],
+        [1,"API and application services started from the approved artifact","Listening ports and process identities match the deployment design."],
+        [1,"Reverse proxy, TLS and route map verified","API, public, teams, platform, gym/display and feeds return expected status codes."],
+        [0,"Public Coming Soon/full-site switch set deliberately","The selected public mode is recorded and verified in a private browser."]
+      ]},
+      { title: "F. Core product journeys", copy: "Test complete user outcomes, not only page availability.", items: [
+        [1,"SportsBB Control Centre journey passes","Configuration, public-site mode, advertising and gym mode can be changed and audited."],
+        [1,"LOC registration and accreditation journey passes","Review, identity decision, approval, credential issue/revoke and audit history work."],
+        [1,"Team Portal journey passes","Sign-in, roster, photo, biography, submission, correction and team sheet work."],
+        [1,"Password recovery delivery passes","A captured test email links back to the correct environment and token is single-use."],
+        [1,"Approved public data projection passes","Only approved nations, squads, fixtures, results and content are public."],
+        [0,"Responsive and keyboard checks pass","Critical forms work on laptop/tablet and without a mouse."]
+      ]},
+      { title: "G. Match operations and result authority", copy: "Prove the simplified score-and-clock workflow and escalation rules.", items: [
+        [1,"Active venue, court and displayed match explicitly selected","The selected match cannot be confused with another scheduled or rehearsal fixture."],
+        [1,"Scorer and timekeeper least-privilege logins pass","Each sees only assigned matches and permitted controls."],
+        [1,"Score add/remove and clock start/pause/resume pass","Rapid actions, refreshes and two-device concurrency do not lose or duplicate state."],
+        [1,"Period progression and final-score wording pass","Q1–Q4, interval behavior and FINAL SCORE display are correct."],
+        [1,"Final result authority and correction procedure signed","Named role confirms the paper record and an audited process reopens/corrects a result."],
+        [1,"Stale feed and wrong-match protections tested","Projector/broadcast never silently switches to an unrelated fixture."],
+        [0,"Abandoned, delayed, walkover and tied-match procedures rehearsed","Competition rules define display and publication behavior for exceptions."]
+      ]},
+      { title: "H. Gym, Arena, lineup and stinger", copy: "Run the exact venue presentation using the actual output chain.", items: [
+        [1,"Gym projector URL tested at native resolution","No browser chrome, clipping, white filler, scaling or sleep interruption."],
+        [1,"Arena, Live Score and manual Lineup modes pass","Control Centre changes reach the projector reliably."],
+        [1,"Automatic pause delay behaves as approved","Short stoppages do not trigger unnecessary transitions; manual override remains available."],
+        [1,"SportsBB stinger timing and return path pass","Every transition is fully covered and the lineup reliably returns to Arena after restart/reload."],
+        [1,"Seven opposing-position lineup matchups pass","Correct athletes, teams, positions, flags and photos are displayed in the approved window."],
+        [1,"First-match, between-match and after-final Arena logic passes","Next fixture/results/standings content is correct for each time of day."],
+        [1,"Emergency offline holding screen is available","A locally stored branded screen can be shown without API, network or Docker."],
+        [0,"Actual HDMI/projector/audio/network path recorded","Use the gym equipment, cable path and operator laptop intended for event day."]
+      ]},
+      { title: "I. Broadcast, feeds and advertising", copy: "Verify every external presentation contract.", items: [
+        [1,"live.json and live.xml reconcile","Match ID, teams, scores, period, clock and state agree and refresh without caching."],
+        [1,"vMix or broadcast consumer tested against the approved feed","Disconnect/reconnect and stale-state behavior are recorded."],
+        [1,"Advertisement creatives pass LOC specification","Correct dimensions, safe area, quality, format, legibility and rights approval."],
+        [1,"Ads never obstruct score, clock, team or match-state information","Test each creative on the actual gym display."],
+        [0,"Campaign schedule, rotation and emergency withdrawal tested","Start/end, priority, fallback creative and sponsor removal are operational."],
+        [0,"Proof-of-play or operator display log agreed","Commercial reporting method and owner are documented."]
+      ]},
+      { title: "J. Failure and venue resilience", copy: "Deliberately break dependencies and prove recovery.", items: [
+        [1,"Internet loss during live match rehearsed","Local scoring continues or the approved paper/manual fallback is invoked."],
+        [1,"API restart during Arena/Live/Lineup rehearsed","Display mode, match selection, score and clock recover correctly."],
+        [1,"Operator laptop and Docker/service restart rehearsed","A named operator can restore the stack from the written procedure."],
+        [1,"Duplicate/retried score commands remain safe","No duplicated score or conflicting clock state after reconnect."],
+        [1,"Power-loss and spare-device changeover rehearsed","Equipment, credentials and latest state are available on the fallback device."],
+        [1,"Rollback rehearsal passes","Previous artifact can be restored without improvising destructive database reversal."],
+        [0,"Incident contacts and communications template tested","Technical, competition, venue and public communications escalation is clear."]
+      ]},
+      { title: "K. Final production activation", copy: "Repeat only after UAT approval using the promoted artifact.", items: [
+        [1,"Production backup and deployment evidence captured","Production-specific backup, SHA, artifact ID, migrations and approvers recorded."],
+        [1,"Production DNS, TLS and all required routes pass","No .test or UAT hostname remains in user-facing links, feeds or email."],
+        [1,"Production uses real secret-store values and least-privilege roles","No local, rehearsal or one-time bootstrap password remains."],
+        [1,"Approved content and real schedule validated","Dates, timezone, courts, nations, flags, athletes, sponsors and links are approved."],
+        [1,"Public and operational smoke tests pass with synthetic canary data","Canary records are clearly labelled and removed or retained under an approved policy."],
+        [1,"GO decision and monitoring shift accepted","Named owners watch logs, feeds and user reports through the stabilization window."],
+        [0,"Post-deployment review scheduled","Open items, evidence retention and the next improvement release have owners/dates."]
+      ]}
+    ];
+
+    const state = { issues: [] };
+    const esc = value => String(value ?? "").replace(/[&<>\"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+    const slug = value => value.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"");
+
+    function renderChecklist() {
+      const mount = document.getElementById("checklistMount");
+      mount.innerHTML = phases.map((phase, pIndex) => `<article class="phase" data-phase="${pIndex}"><div class="phase-head"><div><h3 class="phase-title">${esc(phase.title)}</h3><p class="phase-copy">${esc(phase.copy)}</p></div><span class="phase-count" id="phaseCount-${pIndex}">0 / ${phase.items.length}</span></div><ul class="checklist">${phase.items.map((item, iIndex) => {
+        const id = `check-${pIndex}-${iIndex}`;
+        return `<li class="check-item" id="row-${id}" data-critical="${item[0]}"><input id="${id}" data-check type="checkbox"><div class="check-main"><strong>${item[0] ? '<span class="critical-tag">Critical</span>' : ''}${esc(item[1])}</strong><p>${esc(item[2])}</p></div><div class="check-tools"><select id="owner-${id}" data-save aria-label="Owner for ${esc(item[1])}">${ownerOptions.map(x=>`<option>${esc(x)}</option>`).join("")}</select></div><div class="check-tools"><select id="status-${id}" data-save aria-label="Status for ${esc(item[1])}"><option>Pending</option><option>In progress</option><option>Blocked</option><option>N/A</option></select></div><details><summary>Evidence / notes</summary><textarea id="notes-${id}" data-save placeholder="Evidence URL, screenshot filename, command result, exception rationale or follow-up."></textarea></details></li>`;
+      }).join("")}</ul></article>`).join("");
+    }
+
+    function renderIssues() {
+      const rows = document.getElementById("issueRows");
+      rows.innerHTML = state.issues.map((issue, index) => `<tr><td><input data-issue="id" data-index="${index}" type="text" value="${esc(issue.id)}" placeholder="ISS-${index+1}"></td><td><select data-issue="severity" data-index="${index}">${["Critical","High","Medium","Low"].map(v=>`<option ${issue.severity===v?"selected":""}>${v}</option>`).join("")}</select></td><td><input data-issue="description" data-index="${index}" type="text" value="${esc(issue.description)}"></td><td><input data-issue="owner" data-index="${index}" type="text" value="${esc(issue.owner)}"></td><td><input data-issue="status" data-index="${index}" type="text" value="${esc(issue.status)}"></td><td class="no-print"><button class="btn small" data-remove-issue="${index}" type="button">Remove</button></td></tr>`).join("");
+    }
+
+    function collect() {
+      const values = {};
+      document.querySelectorAll("[data-save]").forEach(el => {
+        if (el.type === "radio") { if (el.checked) values[el.name] = el.value; }
+        else values[el.id] = el.value;
+      });
+      const checks = {};
+      document.querySelectorAll("[data-check]").forEach(el => checks[el.id] = el.checked);
+      return { version: 1, savedAt: new Date().toISOString(), values, checks, issues: state.issues };
+    }
+
+    function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(collect())); updateSummary(); }
+    function load(payload) {
+      if (!payload) return;
+      state.issues = Array.isArray(payload.issues) ? payload.issues : [];
+      renderIssues();
+      Object.entries(payload.values || {}).forEach(([key,value]) => {
+        const radios = document.querySelectorAll(`input[type="radio"][name="${CSS.escape(key)}"]`);
+        if (radios.length) radios.forEach(r => r.checked = r.value === value);
+        else { const el = document.getElementById(key); if (el) el.value = value; }
+      });
+      Object.entries(payload.checks || {}).forEach(([key,value]) => { const el = document.getElementById(key); if (el) el.checked = Boolean(value); });
+      updateSummary();
+    }
+
+    function updateSummary() {
+      const checks = [...document.querySelectorAll("[data-check]")];
+      const done = checks.filter(x => x.checked).length;
+      const criticalPending = checks.filter(x => !x.checked && x.closest(".check-item").dataset.critical === "1").length;
+      document.getElementById("progressText").textContent = `${done} of ${checks.length} checks complete (${checks.length ? Math.round(done/checks.length*100) : 0}%)`;
+      document.getElementById("blockerText").textContent = criticalPending ? `${criticalPending} critical gate${criticalPending===1?"":"s"} pending` : "All critical gates complete";
+      document.getElementById("progressBar").style.width = `${checks.length ? done/checks.length*100 : 0}%`;
+      phases.forEach((phase,pIndex) => {
+        const phaseChecks = [...document.querySelectorAll(`[data-phase="${pIndex}"] [data-check]`)];
+        document.getElementById(`phaseCount-${pIndex}`).textContent = `${phaseChecks.filter(x=>x.checked).length} / ${phaseChecks.length}`;
+      });
+      checks.forEach(check => {
+        const row = check.closest(".check-item");
+        row.classList.toggle("done", check.checked);
+        row.classList.toggle("blocked", document.getElementById(`status-${check.id}`).value === "Blocked");
+      });
+      document.getElementById("handoffText").value = buildHandoff();
+    }
+
+    function checklistRows() {
+      const rows = [];
+      phases.forEach((phase,pIndex) => phase.items.forEach((item,iIndex) => {
+        const id = `check-${pIndex}-${iIndex}`;
+        rows.push({ phase: phase.title, critical: Boolean(item[0]), title: item[1], complete: document.getElementById(id).checked, owner: document.getElementById(`owner-${id}`).value, status: document.getElementById(`status-${id}`).value, notes: document.getElementById(`notes-${id}`).value.trim() });
+      }));
+      return rows;
+    }
+
+    function buildHandoff() {
+      const data = collect();
+      const rows = checklistRows();
+      const completed = rows.filter(x=>x.complete).length;
+      const criticalPending = rows.filter(x=>x.critical && !x.complete);
+      const blocked = rows.filter(x=>x.status === "Blocked");
+      const decision = data.values.decision || "NOT SELECTED";
+      return `Review the attached SportsBB deployment/UAT evidence and give me a prioritized assessment.\n\nEnvironment: ${data.values.environmentName || "Not recorded"}\nRelease tag: ${data.values.releaseTag || "Not recorded"}\nRelease SHA: ${data.values.releaseSha || "Not recorded"}\nArtifact: ${data.values.artifactId || "Not recorded"}\nDecision: ${decision}\nProgress: ${completed}/${rows.length}\nCritical gates pending: ${criticalPending.length}\nBlocked checks: ${blocked.length}\nOpen issues: ${state.issues.filter(x => !/closed|resolved/i.test(x.status)).length}\n\nFocus first on any Critical/High issue, incomplete critical gate, rollback risk, privacy risk, wrong-match/display risk, and production/UAT isolation failure. Do not assume a checked item passed unless evidence or an accountable owner is recorded.`;
+    }
+
+    function buildMarkdown() {
+      const data = collect();
+      const rows = checklistRows();
+      const decision = data.values.decision || "NOT SELECTED";
+      let md = `# SportsBB Deployment & UAT Evidence\n\nGenerated: ${new Date().toISOString()}\n\n## Deployment record\n\n- Environment: ${data.values.environmentName || "Not recorded"}\n- Change ID: ${data.values.changeId || "Not recorded"}\n- Release tag: ${data.values.releaseTag || "Not recorded"}\n- Release SHA: ${data.values.releaseSha || "Not recorded"}\n- Artifact ID: ${data.values.artifactId || "Not recorded"}\n- Test origin: ${data.values.testOrigin || "Not recorded"}\n- Window: ${data.values.windowStart || "Not recorded"} to ${data.values.windowEnd || "Not recorded"}\n- Release Lead: ${data.values.releaseLead || "Not recorded"}\n- Technical Lead: ${data.values.technicalLead || "Not recorded"}\n- Competition/LOC Lead: ${data.values.competitionLead || "Not recorded"}\n- Decision: **${decision}**\n\n## Scope\n\n${data.values.scope || "Not recorded"}\n`;
+      phases.forEach(phase => {
+        md += `\n## ${phase.title}\n\n`;
+        rows.filter(r=>r.phase===phase.title).forEach(r => { md += `- [${r.complete?"x":" "}] ${r.critical?"**CRITICAL** ":""}${r.title} — ${r.status}; owner: ${r.owner}${r.notes?`; evidence/notes: ${r.notes}`:""}\n`; });
+      });
+      md += `\n## Issues\n\n`;
+      if (!state.issues.length) md += `No issues recorded.\n`;
+      else state.issues.forEach(x => md += `- ${x.id || "Unnumbered"} | ${x.severity} | ${x.description || "No description"} | Owner: ${x.owner || "Unassigned"} | ${x.status || "Open"}\n`);
+      md += `\n## Decision rationale\n\n${data.values.decisionRationale || "Not recorded"}\n\n## Sign-offs\n\n- Release: ${data.values.releaseSignoff || "Not signed"}\n- Technical: ${data.values.technicalSignoff || "Not signed"}\n- Competition/LOC: ${data.values.competitionSignoff || "Not signed"}\n- Venue/Broadcast: ${data.values.venueSignoff || "Not signed"}\n\n## General notes\n\n${data.values.generalNotes || "None recorded"}\n\n## Codex handoff\n\n${buildHandoff()}\n`;
+      return md;
+    }
+
+    function download(name, content, type) {
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href = url; a.download = name; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 500);
+    }
+
+    renderChecklist(); renderIssues();
+    try { load(JSON.parse(localStorage.getItem(STORAGE_KEY))); } catch (_) { updateSummary(); }
+
+    document.addEventListener("input", event => {
+      const el = event.target;
+      if (el.matches("[data-issue]")) { state.issues[Number(el.dataset.index)][el.dataset.issue] = el.value; }
+      save();
+    });
+    document.addEventListener("change", save);
+    document.addEventListener("click", event => {
+      const remove = event.target.closest("[data-remove-issue]");
+      if (remove) { state.issues.splice(Number(remove.dataset.removeIssue),1); renderIssues(); save(); }
+    });
+    document.getElementById("addIssue").addEventListener("click", () => { state.issues.push({id:`ISS-${String(state.issues.length+1).padStart(2,"0")}`,severity:"Medium",description:"",owner:"",status:"Open"}); renderIssues(); save(); });
+    document.getElementById("downloadReport").addEventListener("click", () => download(`SportsBB_UAT_Report_${new Date().toISOString().slice(0,10)}.md`, buildMarkdown(), "text/markdown"));
+    document.getElementById("downloadJson").addEventListener("click", () => download(`SportsBB_UAT_Evidence_${new Date().toISOString().slice(0,10)}.json`, JSON.stringify(collect(),null,2), "application/json"));
+    document.getElementById("copyHandoff").addEventListener("click", async event => { await navigator.clipboard.writeText(document.getElementById("handoffText").value); const old=event.target.textContent; event.target.textContent="Copied"; setTimeout(()=>event.target.textContent=old,1200); });
+    document.getElementById("importJson").addEventListener("click", () => document.getElementById("jsonFile").click());
+    document.getElementById("jsonFile").addEventListener("change", event => { const file=event.target.files[0]; if(!file)return; const reader=new FileReader(); reader.onload=()=>{ try { const payload=JSON.parse(reader.result); load(payload); save(); } catch(_) { alert("This is not a valid SportsBB runbook JSON file."); } }; reader.readAsText(file); });
+    document.getElementById("resetRunbook").addEventListener("click", () => { if (!confirm("Reset every checkbox, note, issue and sign-off in this browser? Export first if evidence must be retained.")) return; localStorage.removeItem(STORAGE_KEY); location.reload(); });
+  </script>
+</body>
+</html>

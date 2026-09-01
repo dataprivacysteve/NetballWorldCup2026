@@ -1,0 +1,1 @@
+ALTER TYPE "platform_role" ADD VALUE IF NOT EXISTS 'media_comms' AFTER 'loc_officer';

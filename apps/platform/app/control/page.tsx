@@ -5,7 +5,11 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   api,
+  type AdminMatch,
   type EligibleCountry,
+  type GameDayAccount,
+  type GameDayAssignment,
+  type GameDayRole,
   type LaunchConfiguration,
   type LaunchConfigurationResponse,
   type Me,
@@ -304,6 +308,18 @@ function ControlWorkspace({
             {notice}
           </div>
         )}
+        <PublicSiteToggle
+          live={data.event.publicSiteLive}
+          onChanged={setData}
+          onError={setError}
+          onNotice={setNotice}
+        />
+        <GymDisplayControl
+          mode={data.event.gymDisplayMode}
+          onChanged={setData}
+          onError={setError}
+          onNotice={setNotice}
+        />
         <Readiness readiness={data.readiness} />
         <ConfigurationForm data={data} onSaved={setData} onError={setError} />
         <Countries
@@ -311,8 +327,324 @@ function ControlWorkspace({
           onChanged={load}
           onError={setError}
         />
+        <GameDayOperations />
       </main>
     </div>
+  );
+}
+
+type GymDisplayMode = "automatic" | "arena" | "lineup" | "live";
+
+function GymDisplayControl({
+  mode,
+  onChanged,
+  onError,
+  onNotice,
+}: {
+  mode: GymDisplayMode;
+  onChanged: (data: LaunchConfigurationResponse) => void;
+  onError: (error: unknown) => void;
+  onNotice: (notice: string | null) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const options: Array<{ mode: GymDisplayMode; title: string; detail: string }> = [
+    { mode: "automatic", title: "Automatic", detail: "Arena normally; live score while the clock is running." },
+    { mode: "arena", title: "Arena Display", detail: "Lock to standings, next match and partners." },
+    { mode: "lineup", title: "Play Team Lineup", detail: "Show all seven matchups once, then return to Arena." },
+    { mode: "live", title: "Live Score", detail: "Lock to the selected GameDay scoreboard." },
+  ];
+
+  async function select(nextMode: GymDisplayMode) {
+    if (nextMode === mode || busy) return;
+    setBusy(true);
+    onError(null);
+    onNotice(null);
+    try {
+      const next = await api.updateGymDisplayMode(nextMode);
+      onChanged(next);
+      onNotice(`Gymnasium screen changed to ${options.find((item) => item.mode === nextMode)?.title}.`);
+    } catch (reason) {
+      onError(reason);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className={`${panel} overflow-hidden`}>
+      <div className="border-l-4 border-navy p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="font-mono text-[0.6rem] font-bold uppercase tracking-[0.13em] text-ink-muted">Gymnasium screen</p>
+            <h2 className="mt-1 font-display text-xl font-bold text-ink">Projector output</h2>
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-ink-muted">Keep the projector on one address. Changes made here appear on it within a few seconds.</p>
+          </div>
+          <a href="/gym" target="_blank" rel="noreferrer" className="rounded-lg border border-line bg-white px-4 py-2 text-xs font-bold text-navy hover:border-gold">Open projector screen →</a>
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-4">
+          {options.map((option) => {
+            const selected = option.mode === mode;
+            return (
+              <button key={option.mode} type="button" disabled={busy} onClick={() => void select(option.mode)} className={`rounded-xl border p-4 text-left transition disabled:opacity-60 ${selected ? "border-navy bg-navy text-white shadow-sm" : "border-line bg-white text-ink hover:border-gold"}`}>
+                <span className="flex items-center justify-between gap-3 font-display text-lg font-bold"><span>{option.title}</span>{selected && <span className="rounded-full bg-gold px-2 py-1 font-mono text-[0.55rem] uppercase tracking-wider text-navy-deep">Active</span>}</span>
+                <span className={`mt-1 block text-xs leading-5 ${selected ? "text-white/70" : "text-ink-muted"}`}>{option.detail}</span>
+              </button>
+            );
+          })}
+        </div>
+        {mode !== "automatic" && <button type="button" disabled={busy} onClick={() => void select("automatic")} className="mt-4 text-xs font-bold text-navy underline decoration-gold decoration-2 underline-offset-4">Return to Automatic</button>}
+      </div>
+    </section>
+  );
+}
+
+function PublicSiteToggle({
+  live,
+  onChanged,
+  onError,
+  onNotice,
+}: {
+  live: boolean;
+  onChanged: (data: LaunchConfigurationResponse) => void;
+  onError: (error: unknown) => void;
+  onNotice: (notice: string | null) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+
+  async function toggle() {
+    setBusy(true);
+    onError(null);
+    onNotice(null);
+    try {
+      const next = await api.updatePublicSiteMode(!live);
+      onChanged(next);
+      onNotice(
+        !live
+          ? "The full public tournament website is now live."
+          : "The Coming Soon page is now active.",
+      );
+    } catch (reason) {
+      onError(reason);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className={`${panel} overflow-hidden`}>
+      <div
+        className={`flex flex-col gap-4 border-l-4 p-5 sm:flex-row sm:items-center sm:justify-between ${
+          live ? "border-ok bg-ok-soft/40" : "border-gold bg-gold-soft/30"
+        }`}
+      >
+        <div>
+          <p className="font-mono text-[0.6rem] font-bold uppercase tracking-[0.13em] text-ink-muted">
+            Public website
+          </p>
+          <h2 className="mt-1 font-display text-xl font-bold text-ink">
+            {live ? "Full tournament site is live" : "Coming Soon page is active"}
+          </h2>
+          <p className="mt-1 max-w-2xl text-sm leading-6 text-ink-muted">
+            {live
+              ? "Visitors can see fixtures, teams, standings, results and live coverage."
+              : "Visitors see the lightweight launch page while tournament content remains hidden."}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <a
+            href={PUBLIC_SITE}
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs font-bold text-navy underline decoration-gold decoration-2 underline-offset-4"
+          >
+            View public site
+          </a>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={live}
+            aria-label="Show full public tournament website"
+            disabled={busy}
+            onClick={toggle}
+            className={`relative h-9 w-16 rounded-full transition-colors disabled:opacity-50 ${
+              live ? "bg-ok" : "bg-ink-muted/35"
+            }`}
+          >
+            <span
+              className={`absolute left-1 top-1 h-7 w-7 rounded-full bg-white shadow transition-transform ${
+                live ? "translate-x-7" : "translate-x-0"
+              }`}
+            />
+          </button>
+          <span className="min-w-8 font-mono text-[0.62rem] font-bold uppercase tracking-[0.1em] text-ink-muted">
+            {busy ? "Saving" : live ? "On" : "Off"}
+          </span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+const gameDayRoles: Array<{ value: GameDayRole; label: string }> = [
+  { value: "scorer", label: "Scorer + match clock" },
+  { value: "timekeeper", label: "Dedicated timekeeper" },
+];
+
+function GameDayOperations() {
+  const [matches, setMatches] = useState<AdminMatch[]>([]);
+  const [accounts, setAccounts] = useState<GameDayAccount[]>([]);
+  const [assignments, setAssignments] = useState<GameDayAssignment[]>([]);
+  const [matchId, setMatchId] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState<GameDayRole>("scorer");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<unknown>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    const [nextMatches, nextAccounts] = await Promise.all([
+      api.controlGameDayMatches(),
+      api.controlGameDayAccounts(),
+    ]);
+    setMatches(nextMatches);
+    setAccounts(nextAccounts);
+    setMatchId((current) => current || nextMatches[0]?.id || "");
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    void Promise.all([
+      api.controlGameDayMatches(),
+      api.controlGameDayAccounts(),
+    ])
+      .then(([nextMatches, nextAccounts]) => {
+        if (!active) return;
+        setMatches(nextMatches);
+        setAccounts(nextAccounts);
+        setMatchId(nextMatches[0]?.id ?? "");
+      })
+      .catch((reason) => {
+        if (active) setError(reason);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!matchId) return;
+    let active = true;
+    void api
+      .controlGameDayAssignments(matchId)
+      .then((nextAssignments) => {
+        if (active) setAssignments(nextAssignments);
+      })
+      .catch((reason) => {
+        if (active) setError(reason);
+      });
+    return () => {
+      active = false;
+    };
+  }, [matchId]);
+
+  async function createAccount(event: React.FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      await api.createControlGameDayAccount({
+        displayName: displayName.trim(),
+        email: email.trim(),
+        password,
+        role,
+      });
+      setDisplayName("");
+      setEmail("");
+      setPassword("");
+      await load();
+      setNotice("Named match-day account created.");
+    } catch (reason) {
+      setError(reason);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function assign(nextRole: GameDayRole, appUserId: string) {
+    if (!matchId) return;
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      if (appUserId) {
+        await api.assignControlGameDayOfficial(matchId, appUserId, nextRole);
+      } else {
+        await api.unassignControlGameDayOfficial(matchId, nextRole);
+      }
+      setAssignments(await api.controlGameDayAssignments(matchId));
+      setNotice("Fixture staffing updated.");
+    } catch (reason) {
+      setError(reason);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const visibleAssignments = matchId ? assignments : [];
+
+  return (
+    <section className={`${panel} overflow-hidden`}>
+      <div className="border-b border-line bg-navy-deep px-6 py-5 text-white">
+        <p className="font-mono text-[0.62rem] font-bold uppercase tracking-[0.14em] text-gold-bright">
+          GameDay operations
+        </p>
+        <h2 className="mt-1 font-display text-2xl font-bold">Mobile scorer, clock &amp; output setup</h2>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-white/65">
+          A scorer account can operate both teams and the official server clock from a phone or tablet. The same state feeds the website, gymnasium display and vMix.
+        </p>
+      </div>
+      <div className="space-y-5 p-6">
+        <ErrorNotice error={error} />
+        {notice && <p role="status" className="rounded-xl border border-ok-line bg-ok-soft p-3 text-sm font-semibold text-ok">{notice}</p>}
+        <div className="grid gap-5 xl:grid-cols-2">
+          <form onSubmit={createAccount} className="space-y-3 rounded-xl border border-line bg-bg p-5">
+            <div>
+              <h3 className="font-display text-xl font-bold">Create named operator</h3>
+              <p className="mt-1 text-sm text-ink-muted">Use one account per person. Do not share scorer credentials.</p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label><span className={label}>Operator name</span><input className={input} required value={displayName} onChange={(event) => setDisplayName(event.target.value)} /></label>
+              <label><span className={label}>Email</span><input className={input} type="email" required value={email} onChange={(event) => setEmail(event.target.value)} /></label>
+            </div>
+            <label><span className={label}>Temporary password</span><input className={input} type="password" minLength={12} required value={password} onChange={(event) => setPassword(event.target.value)} placeholder="At least 12 characters" /></label>
+            <label><span className={label}>Account duty</span><select className={input} value={role} onChange={(event) => setRole(event.target.value as GameDayRole)}>{gameDayRoles.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
+            <button className={`${gold} w-full`} disabled={busy}>Create operator account</button>
+          </form>
+
+          <div className="space-y-4 rounded-xl border border-line bg-bg p-5">
+            <div>
+              <h3 className="font-display text-xl font-bold">Assign fixture crew</h3>
+              <p className="mt-1 text-sm text-ink-muted">Assign one scorer to run goals and the match clock. A dedicated timekeeper is optional.</p>
+            </div>
+            <label><span className={label}>Fixture</span><select className={input} value={matchId} onChange={(event) => setMatchId(event.target.value)}><option value="">Select fixture…</option>{matches.map((match) => <option key={match.id} value={match.id}>{match.teamACode} v {match.teamBCode} · {match.roundLabel ?? "Fixture"}</option>)}</select></label>
+            <div className="space-y-3">
+              {gameDayRoles.map((item) => {
+                const assigned = visibleAssignments.find((row) => row.role === item.value);
+                return <label key={item.value} className="grid gap-2 sm:grid-cols-[12rem_1fr] sm:items-center"><span className="text-sm font-semibold text-ink">{item.label}</span><select className={input} disabled={busy || !matchId} value={assigned?.appUserId ?? ""} onChange={(event) => void assign(item.value, event.target.value)}><option value="">Not assigned</option>{accounts.filter((account) => account.role === item.value).map((account) => <option key={account.id} value={account.id}>{account.displayName} · {account.email}</option>)}</select></label>;
+              })}
+            </div>
+          </div>
+        </div>
+        <div className="grid gap-3 text-sm md:grid-cols-3">
+          <a className="rounded-xl border border-line bg-white p-4 font-semibold text-navy hover:border-gold" href="/gameday">Phone/tablet scorer login →</a>
+          <a className="rounded-xl border border-line bg-white p-4 font-semibold text-navy hover:border-gold" href="/gym">Controlled gymnasium projector →</a>
+          <a className="rounded-xl border border-line bg-white p-4 font-semibold text-navy hover:border-gold" href="https://api.netballamericas.test/live.xml">vMix XML feed →</a>
+        </div>
+      </div>
+    </section>
   );
 }
 
