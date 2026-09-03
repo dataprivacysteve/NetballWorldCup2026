@@ -1,5 +1,10 @@
 import {
+  canChangeScore,
+  canStartPeriod,
   clockRemaining,
+  MATCH_CLOCK_ROLES,
+  MATCH_PREPARATION_ROLES,
+  MATCH_START_REQUIRED_ROLES,
   NETBALL_POSITIONS,
   teamSheetProblems,
 } from './gameday-rules';
@@ -47,5 +52,26 @@ describe('GameDay rules', () => {
     expect(
       clockRemaining(20, true, startedAt, new Date('2026-07-16T12:01:00Z')),
     ).toBe(0);
+  });
+
+  it('reserves match preparation and every clock command for the timekeeper', () => {
+    expect(MATCH_PREPARATION_ROLES).toEqual(['timekeeper']);
+    expect(MATCH_CLOCK_ROLES).toEqual(['timekeeper']);
+    expect(MATCH_CLOCK_ROLES).not.toContain('scorer');
+    expect(MATCH_START_REQUIRED_ROLES).toEqual(['scorer', 'timekeeper']);
+  });
+
+  it('starts only the next completed period', () => {
+    expect(canStartPeriod('ready', 0, 900)).toBe(false);
+    expect(canStartPeriod('live', 1, 0)).toBe(true);
+    expect(canStartPeriod('live', 1, 320)).toBe(false);
+    expect(canStartPeriod('live', 4, 0)).toBe(false);
+  });
+
+  it('locks every score change while the clock is stopped', () => {
+    expect(canChangeScore('live', true)).toBe(true);
+    expect(canChangeScore('live', false)).toBe(false);
+    expect(canChangeScore('suspended', false)).toBe(false);
+    expect(canChangeScore('awaiting_confirmation', false)).toBe(false);
   });
 });

@@ -377,9 +377,9 @@ function GymDisplayControl({
           <div>
             <p className="font-mono text-[0.6rem] font-bold uppercase tracking-[0.13em] text-ink-muted">Gymnasium screen</p>
             <h2 className="mt-1 font-display text-xl font-bold text-ink">Projector output</h2>
-            <p className="mt-1 max-w-2xl text-sm leading-6 text-ink-muted">Keep the projector on one address. Changes made here appear on it within a few seconds.</p>
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-ink-muted">Keep the match-data screen on /gym and the independent partner screen on /sponsors. Match changes appear within a few seconds while sponsor artwork continues rotating.</p>
           </div>
-          <a href="/gym" target="_blank" rel="noreferrer" className="rounded-lg border border-line bg-white px-4 py-2 text-xs font-bold text-navy hover:border-gold">Open projector screen →</a>
+          <div className="flex flex-wrap gap-2"><a href="/gym" target="_blank" rel="noreferrer" className="rounded-lg border border-line bg-white px-4 py-2 text-xs font-bold text-navy hover:border-gold">Open match-data screen →</a><a href="/sponsors" target="_blank" rel="noreferrer" className="rounded-lg border border-gold bg-gold/10 px-4 py-2 text-xs font-bold text-navy hover:bg-gold/20">Open sponsor screen →</a></div>
         </div>
         <div className="mt-4 grid gap-3 md:grid-cols-4">
           {options.map((option) => {
@@ -1152,3 +1152,4 @@ function Countries({
     </section>
   );
 }
+

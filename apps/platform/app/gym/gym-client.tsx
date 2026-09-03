@@ -3,12 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 
 const API = process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://api.netballamericas.test";
-const STOPPED_CLOCK_DELAY_MS = 10_000;
 type Mode = "automatic" | "arena" | "lineup" | "live";
 type ViewMode = "arena" | "lineup" | "live";
 
-function isActiveMatch(status?: string) {
-  return ["live", "suspended", "awaiting_confirmation"].includes((status ?? "").toLowerCase());
+function isOngoingMatch(status?: string) {
+  return ["live", "suspended"].includes((status ?? "").toLowerCase());
 }
 
 export default function GymDisplayRouter() {
@@ -18,8 +17,6 @@ export default function GymDisplayRouter() {
   const [stingerActive, setStingerActive] = useState(false);
   const [connected, setConnected] = useState(true);
   const displayedModeRef = useRef<ViewMode>("arena");
-  const automaticModeRef = useRef<ViewMode>("arena");
-  const clockStoppedAtRef = useRef<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -34,26 +31,9 @@ export default function GymDisplayRouter() {
           if (feedResponse.ok) {
             const feed = (await feedResponse.json()) as {
               Status?: string;
-              ClockRunning?: boolean;
             };
-            if (feed.ClockRunning) {
-              clockStoppedAtRef.current = null;
-              effective = "live";
-            } else if (isActiveMatch(feed.Status) && automaticModeRef.current === "live") {
-              clockStoppedAtRef.current ??= Date.now();
-              effective =
-                Date.now() - clockStoppedAtRef.current >= STOPPED_CLOCK_DELAY_MS
-                  ? "arena"
-                  : "live";
-            } else {
-              clockStoppedAtRef.current = null;
-              effective = "arena";
-            }
+            effective = isOngoingMatch(feed.Status) ? "live" : "arena";
           }
-          automaticModeRef.current = effective;
-        } else {
-          clockStoppedAtRef.current = null;
-          automaticModeRef.current = effective;
         }
         if (!cancelled) {
           setConfiguredMode(mode);
@@ -99,10 +79,18 @@ export default function GymDisplayRouter() {
         <div className="sportsbb-stinger" role="presentation" aria-hidden="true">
           <div className="sportsbb-stinger__beam sportsbb-stinger__beam--top" />
           <div className="sportsbb-stinger__beam sportsbb-stinger__beam--bottom" />
-          <div className="sportsbb-stinger__brand">
-            <p>Broadcast presentation</p>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/event-brand/sportsbb-logo.png" alt="" />
+          <div className="sportsbb-stinger__lockup">
+            <div className="sportsbb-stinger__split">
+              <div className="sportsbb-stinger__triangle sportsbb-stinger__triangle--bna">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/event-brand/barbados-loc-logo.png" alt="" />
+              </div>
+              <div className="sportsbb-stinger__triangle sportsbb-stinger__triangle--sportsbb">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/event-brand/sportsbb-logo-transp.png" alt="" />
+              </div>
+              <span className="sportsbb-stinger__diagonal" />
+            </div>
           </div>
         </div>
       )}
@@ -113,3 +101,5 @@ export default function GymDisplayRouter() {
     </main>
   );
 }
+
+

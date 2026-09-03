@@ -199,7 +199,9 @@ function selectDemoStarters(candidates: LineupCandidate[], side: 'A' | 'B') {
   return Object.keys(POSITION_NAMES).flatMap((position) => {
     const player = available.find((candidate) => {
       if (used.has(candidate.playerId)) return false;
-      const roles = (candidate.role ?? '').split('/').map((role) => role.trim().toUpperCase());
+      const roles = (candidate.role ?? '')
+        .split('/')
+        .map((role) => role.trim().toUpperCase());
       return roles.includes(position);
     });
     if (!player) return [];
@@ -222,6 +224,32 @@ function liveClock(row: MatchRow, now = new Date()) {
     .padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
 }
 
+function intervalClock(row: MatchRow, now = new Date()) {
+  const duration =
+    row.currentPeriod === 2
+      ? 8 * 60
+      : row.currentPeriod === 1 || row.currentPeriod === 3
+        ? 4 * 60
+        : null;
+  if (
+    duration === null ||
+    row.status !== 'live' ||
+    !row.clockRunning ||
+    !row.clockStartedAt
+  ) {
+    return null;
+  }
+  const elapsed = Math.floor(
+    (now.getTime() - row.clockStartedAt.getTime()) / 1000,
+  );
+  const intervalElapsed = elapsed - row.clockRemainingSeconds;
+  if (intervalElapsed < 0) return null;
+  const remaining = Math.max(0, duration - intervalElapsed);
+  return `${Math.floor(remaining / 60)
+    .toString()
+    .padStart(2, '0')}:${(remaining % 60).toString().padStart(2, '0')}`;
+}
+
 export function shapeBroadcastFeed(
   row: MatchRow,
   now = new Date(),
@@ -237,6 +265,7 @@ export function shapeBroadcastFeed(
           : row.status.toUpperCase(),
     Quarter: row.currentPeriod > 0 ? `Q${row.currentPeriod}` : 'PRE',
     Clock: row.status === 'final' ? 'FT' : liveClock(row, now),
+    IntervalClock: intervalClock(row, now),
     ClockRunning: row.clockRunning,
     TeamAAbbr: row.teamACode,
     TeamAName: row.teamAName,
@@ -614,7 +643,8 @@ export class PublicService {
 
     const rows = [...submitted.rows];
     for (const side of ['A', 'B'] as const) {
-      if (!submittedSides.has(side)) rows.push(...selectDemoStarters(fallback.rows, side));
+      if (!submittedSides.has(side))
+        rows.push(...selectDemoStarters(fallback.rows, side));
     }
     const shapePlayer = (player: LineupCandidate) => {
       const position = positionCode(player.startingPosition);
@@ -632,7 +662,10 @@ export class PublicService {
     };
     const playersFor = (side: 'A' | 'B') =>
       rows
-        .filter((player) => player.teamSide === side && positionCode(player.startingPosition))
+        .filter(
+          (player) =>
+            player.teamSide === side && positionCode(player.startingPosition),
+        )
         .map(shapePlayer)
         .sort(
           (a, b) =>
@@ -690,8 +723,9 @@ export class PublicService {
     const where = liveBroadcastFilter(matchId);
     const { rows } = await this.pool.query<MatchRow>(
       `${MATCH_SELECT} ${where}
-       ORDER BY COALESCE(mb.featured, false) DESC,
-         CASE WHEN m.status IN ('live', 'suspended', 'awaiting_confirmation') THEN 0 ELSE 1 END,
+       ORDER BY CASE WHEN m.status IN ('live', 'suspended', 'awaiting_confirmation') THEN 0 ELSE 1 END,
+         m.updated_at DESC,
+         COALESCE(mb.featured, false) DESC,
          m.scheduled_at DESC NULLS LAST LIMIT 1`,
       matchId ? [matchId] : [],
     );
@@ -1081,7 +1115,9 @@ export class PublicService {
 
   async standings(stageId?: string) {
     const stages = await this.pool.query<StageRow>(
-      `SELECT id, name FROM stage ${stageId ? 'WHERE id = $1' : ''}
+      `SELECT id, name FROM stage
+       WHERE lower(name) <> lower('Presentation Rehearsal')
+         ${stageId ? 'AND id = $1' : ''}
        ORDER BY sort_order, name`,
       stageId ? [stageId] : [],
     );

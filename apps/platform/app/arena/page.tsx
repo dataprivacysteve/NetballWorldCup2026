@@ -4,9 +4,10 @@ import ArenaHoldingDisplay from "./arena-client";
 export const metadata: Metadata = {
   title: "Arena Championship Hub · Netball Americas",
   description:
-    "In-venue standings, upcoming match and partner display for the Americas Regional Qualifier.",
+    "Long-distance-readable standings and match information for the gymnasium data screen.",
 };
 
 export default function ArenaPage() {
   return <ArenaHoldingDisplay />;
 }
+

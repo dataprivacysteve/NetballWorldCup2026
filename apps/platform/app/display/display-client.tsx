@@ -27,6 +27,7 @@ type BroadcastFeed = {
   Status: string;
   Quarter: string;
   Clock: string;
+  IntervalClock: string | null;
   ClockRunning: boolean;
   TeamAAbbr: string;
   TeamAName: string;
@@ -54,6 +55,18 @@ type DisplayAdvertisement = {
   displayEnabled: boolean;
   displaySeconds: number;
 };
+
+function quarterEndNotice(quarter: string) {
+  if (quarter === "Q1")
+    return { heading: "End of 1st quarter", detail: "4-minute interval" };
+  if (quarter === "Q2")
+    return { heading: "End of 2nd quarter", detail: "Half-time · 8-minute interval" };
+  if (quarter === "Q3")
+    return { heading: "End of 3rd quarter", detail: "4-minute interval" };
+  if (quarter === "Q4")
+    return { heading: "End of 4th quarter", detail: "Full time" };
+  return null;
+}
 
 function CountryFlag({
   abbreviation,
@@ -186,10 +199,6 @@ export default function LiveAudienceDisplay() {
   }, [advertisements, advertisementIndex]);
 
   const feed = state.feed;
-  const advertisement =
-    advertisements.length > 0
-      ? advertisements[advertisementIndex % advertisements.length]
-      : null;
 
   if (!feed) {
     return (
@@ -225,6 +234,10 @@ export default function LiveAudienceDisplay() {
       flag: feed.TeamBFlag,
     },
   ] as const;
+  const quarterEnd =
+    feed.Status !== "FINAL" && feed.Clock === "00:00"
+      ? quarterEndNotice(feed.Quarter)
+      : null;
 
   return (
     <main className="flex min-h-screen flex-col overflow-hidden bg-[#071022] px-[clamp(1.5rem,4vw,5rem)] py-[clamp(1.25rem,3vh,3rem)] text-white">
@@ -258,27 +271,35 @@ export default function LiveAudienceDisplay() {
         ))}
 
         <div className="col-start-2 row-start-1 flex min-w-0 flex-col items-center text-center">
-          <p className="text-[clamp(1.15rem,2vw,2.5rem)] font-extrabold uppercase tracking-[0.12em] text-[#f4c430]">
-            {feed.Status === "FINAL" ? "Final score" : feed.Quarter}
-          </p>
-          {feed.Status !== "FINAL" && (
-            <p className="mt-[clamp(.75rem,2vh,1.5rem)] text-[clamp(4.55rem,9.75vw,10.4rem)] font-extrabold leading-none tracking-[-0.055em] tabular-nums">
-              {feed.Clock}
-            </p>
-          )}
-          {advertisement?.displayImageUrl && (
-            <div className="mt-[clamp(1rem,3vh,2.5rem)] aspect-[3/1] w-[clamp(13rem,27vw,32rem)] translate-y-[clamp(4rem,11vh,7rem)] overflow-hidden rounded-[clamp(.5rem,1vw,1rem)] border border-white/15 bg-white/5 shadow-[0_1rem_3rem_rgba(0,0,0,.25)]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                key={advertisement.id}
-                src={advertisement.displayImageUrl}
-                alt={advertisement.name}
-                className="h-full w-full object-contain"
-              />
+          {quarterEnd ? (
+            <div className="flex flex-col items-center rounded-[clamp(1rem,2vw,2rem)] border-2 border-[#f4c430]/60 bg-[#0d1835] px-[clamp(1rem,2vw,2.5rem)] py-[clamp(1.25rem,3vh,3rem)] shadow-[0_1.5rem_5rem_rgba(0,0,0,.4)]">
+              <p className="text-[clamp(2rem,4.25vw,5rem)] font-black uppercase leading-[.92] tracking-[-0.04em] text-[#f4c430]">
+                {quarterEnd.heading}
+              </p>
+              <p className="mt-[clamp(1rem,2vh,1.75rem)] text-[clamp(1.15rem,2vw,2.5rem)] font-extrabold uppercase leading-tight tracking-[0.08em] text-white">
+                {quarterEnd.detail}
+              </p>
+              {feed.IntervalClock && (
+                <p className="mt-[clamp(1rem,2.5vh,2rem)] text-[clamp(3.5rem,7vw,8rem)] font-black leading-none tracking-[-0.055em] text-white tabular-nums">
+                  {feed.IntervalClock}
+                </p>
+              )}
             </div>
+          ) : (
+            <>
+              <p className="text-[clamp(1.15rem,2vw,2.5rem)] font-extrabold uppercase tracking-[0.12em] text-[#f4c430]">
+                {feed.Status === "FINAL" ? "Final score" : feed.Quarter}
+              </p>
+              {feed.Status !== "FINAL" && (
+                <p className="mt-[clamp(.75rem,2vh,1.5rem)] text-[clamp(4.55rem,9.75vw,10.4rem)] font-extrabold leading-none tracking-[-0.055em] tabular-nums">
+                  {feed.Clock}
+                </p>
+              )}
+            </>
           )}
         </div>
       </section>
     </main>
   );
 }
+

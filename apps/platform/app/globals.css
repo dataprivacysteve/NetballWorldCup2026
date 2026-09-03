@@ -134,6 +134,105 @@ button:disabled {
   to { background-position: -200% 0; }
 }
 
+@keyframes sportsbb-stinger-lockup {
+  0%, 14% {
+    opacity: 0;
+    transform: scale(0.72) rotate(-7deg);
+  }
+  32%, 70% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+  88%, 100% {
+    opacity: 0;
+    transform: scale(1.14) rotate(5deg);
+  }
+}
+
+@keyframes sportsbb-stinger-bna-half {
+  0%, 14% { transform: translate(-34%, -34%); }
+  34%, 72% { transform: translate(0, 0); }
+  90%, 100% { transform: translate(-42%, -42%); }
+}
+
+@keyframes sportsbb-stinger-sports-half {
+  0%, 14% { transform: translate(34%, 34%); }
+  34%, 72% { transform: translate(0, 0); }
+  90%, 100% { transform: translate(42%, 42%); }
+}
+
+.sportsbb-stinger__lockup {
+  position: relative;
+  width: min(42vw, 34rem);
+  aspect-ratio: 1;
+  animation: sportsbb-stinger-lockup 3s cubic-bezier(0.22, 0.75, 0.2, 1) both;
+  filter: drop-shadow(0 2.5rem 5rem rgba(0, 0, 0, 0.48));
+}
+
+.sportsbb-stinger__split {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border: clamp(0.35rem, 0.7vw, 0.7rem) solid rgba(255, 255, 255, 0.92);
+  border-radius: clamp(1rem, 2vw, 2rem);
+  background: #f8fafc;
+  box-shadow: inset 0 0 0 1px rgba(7, 16, 34, 0.16);
+}
+
+.sportsbb-stinger__triangle {
+  position: absolute;
+  inset: -1px;
+  overflow: hidden;
+  will-change: transform;
+}
+
+.sportsbb-stinger__triangle--bna {
+  z-index: 2;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #eef3fa 100%);
+  animation: sportsbb-stinger-bna-half 3s cubic-bezier(0.22, 0.75, 0.2, 1) both;
+}
+
+.sportsbb-stinger__triangle--sportsbb {
+  z-index: 1;
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  background: linear-gradient(135deg, #172861 0%, #071022 100%);
+  animation: sportsbb-stinger-sports-half 3s cubic-bezier(0.22, 0.75, 0.2, 1) both;
+}
+
+.sportsbb-stinger__triangle img {
+  position: absolute;
+  display: block;
+  object-fit: contain;
+}
+
+.sportsbb-stinger__triangle--bna img {
+  top: 8%;
+  left: 8%;
+  width: 47%;
+  height: 47%;
+}
+
+.sportsbb-stinger__triangle--sportsbb img {
+  right: 7%;
+  bottom: 8%;
+  width: 52%;
+  height: 42%;
+  border-radius: clamp(0.35rem, 0.7vw, 0.7rem);
+}
+
+.sportsbb-stinger__diagonal {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  top: -16%;
+  width: clamp(0.5rem, 1vw, 1rem);
+  height: 132%;
+  transform: translateX(-50%) rotate(45deg);
+  transform-origin: center;
+  background: #ecd13f;
+  box-shadow: 0 0 1.8rem rgba(236, 209, 63, 0.72);
+}
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -553,9 +652,110 @@ button:disabled {
   box-shadow: 0 2rem 6rem rgba(0, 0, 0, 0.42);
 }
 
+@keyframes sportsbb-stinger-lockup {
+  0%, 14% {
+    opacity: 0;
+    transform: scale(0.72) rotate(-7deg);
+  }
+  32%, 70% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+  88%, 100% {
+    opacity: 0;
+    transform: scale(1.14) rotate(5deg);
+  }
+}
+
+@keyframes sportsbb-stinger-bna-half {
+  0%, 14% { transform: translate(-34%, -34%); }
+  34%, 72% { transform: translate(0, 0); }
+  90%, 100% { transform: translate(-42%, -42%); }
+}
+
+@keyframes sportsbb-stinger-sports-half {
+  0%, 14% { transform: translate(34%, 34%); }
+  34%, 72% { transform: translate(0, 0); }
+  90%, 100% { transform: translate(42%, 42%); }
+}
+
+.sportsbb-stinger__lockup {
+  position: relative;
+  width: min(42vw, 34rem);
+  aspect-ratio: 1;
+  animation: sportsbb-stinger-lockup 3s cubic-bezier(0.22, 0.75, 0.2, 1) both;
+  filter: drop-shadow(0 2.5rem 5rem rgba(0, 0, 0, 0.48));
+}
+
+.sportsbb-stinger__split {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border: clamp(0.35rem, 0.7vw, 0.7rem) solid rgba(255, 255, 255, 0.92);
+  border-radius: clamp(1rem, 2vw, 2rem);
+  background: #f8fafc;
+  box-shadow: inset 0 0 0 1px rgba(7, 16, 34, 0.16);
+}
+
+.sportsbb-stinger__triangle {
+  position: absolute;
+  inset: -1px;
+  overflow: hidden;
+  will-change: transform;
+}
+
+.sportsbb-stinger__triangle--bna {
+  z-index: 2;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #eef3fa 100%);
+  animation: sportsbb-stinger-bna-half 3s cubic-bezier(0.22, 0.75, 0.2, 1) both;
+}
+
+.sportsbb-stinger__triangle--sportsbb {
+  z-index: 1;
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  background: linear-gradient(135deg, #172861 0%, #071022 100%);
+  animation: sportsbb-stinger-sports-half 3s cubic-bezier(0.22, 0.75, 0.2, 1) both;
+}
+
+.sportsbb-stinger__triangle img {
+  position: absolute;
+  display: block;
+  object-fit: contain;
+}
+
+.sportsbb-stinger__triangle--bna img {
+  top: 8%;
+  left: 8%;
+  width: 47%;
+  height: 47%;
+}
+
+.sportsbb-stinger__triangle--sportsbb img {
+  right: 7%;
+  bottom: 8%;
+  width: 52%;
+  height: 42%;
+  border-radius: clamp(0.35rem, 0.7vw, 0.7rem);
+}
+
+.sportsbb-stinger__diagonal {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  top: -16%;
+  width: clamp(0.5rem, 1vw, 1rem);
+  height: 132%;
+  transform: translateX(-50%) rotate(45deg);
+  transform-origin: center;
+  background: #ecd13f;
+  box-shadow: 0 0 1.8rem rgba(236, 209, 63, 0.72);
+}
 @media (prefers-reduced-motion: reduce) {
   .sportsbb-stinger,
-  .sportsbb-stinger__brand {
+  .sportsbb-stinger__brand,
+  .sportsbb-stinger__lockup,
+  .sportsbb-stinger__triangle {
     animation-duration: 0.01ms;
   }
 }
@@ -593,3 +793,4 @@ button:disabled {
     print-color-adjust: exact;
   }
 }
+

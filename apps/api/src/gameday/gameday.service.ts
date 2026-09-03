@@ -23,10 +23,16 @@ import {
   IncidentDto,
   PositionChangeDto,
   StatisticDto,
-  type GameDayRole,
 } from './gameday.dto';
 import { CorrectStatsEventDto, RecordStatsEventDto } from './stats.dto';
-import { clockRemaining } from './gameday-rules';
+import {
+  canChangeScore,
+  canStartPeriod,
+  clockRemaining,
+  MATCH_CLOCK_ROLES,
+  MATCH_PREPARATION_ROLES,
+  MATCH_START_REQUIRED_ROLES,
+} from './gameday-rules';
 
 type Db = NodePgDatabase<typeof schema>;
 
@@ -183,9 +189,9 @@ export class GameDayService {
         'scorer',
       ]);
       const match = await this.lockMatch(db, matchId, dto.expectedVersion);
-      if (match.status !== 'live') {
+      if (!canChangeScore(match.status, match.clockRunning)) {
         throw new BadRequestException(
-          'Goals can be recorded only while the match is live',
+          'The score can be changed only while the match clock is running',
         );
       }
       if (dto.playerId) {
@@ -346,11 +352,9 @@ export class GameDayService {
         'scorer',
       ]);
       const match = await this.lockMatch(db, matchId, dto.expectedVersion);
-      if (
-        !['live', 'suspended', 'awaiting_confirmation'].includes(match.status)
-      ) {
+      if (!canChangeScore(match.status, match.clockRunning)) {
         throw new BadRequestException(
-          'This result is no longer open for scoring corrections',
+          'The score can be corrected only while the match clock is running',
         );
       }
       const [goal] = await db
@@ -418,10 +422,13 @@ export class GameDayService {
     dto: ClockCommandDto,
   ) {
     return this.transaction(async (db) => {
-      await this.requireAssignment(db, matchId, userId, platformRole, [
-        'scorer',
-        'timekeeper',
-      ]);
+      await this.requireAssignment(
+        db,
+        matchId,
+        userId,
+        platformRole,
+        MATCH_CLOCK_ROLES,
+      );
       const match = await this.lockMatch(db, matchId, dto.expectedVersion);
       const now = new Date();
       const remaining = clockRemaining(
@@ -435,18 +442,16 @@ export class GameDayService {
         updatedAt: now,
       };
       if (dto.action === 'start_period') {
-        if (!['ready', 'live'].includes(match.status) || match.clockRunning) {
+        if (!canStartPeriod(match.status, match.currentPeriod, remaining)) {
           throw new BadRequestException(
             'The next period cannot be started now',
           );
         }
-        if (match.currentPeriod >= 4)
-          throw new BadRequestException('All four periods are complete');
         patch.status = 'live';
         patch.currentPeriod = match.currentPeriod + 1;
         patch.clockRemainingSeconds = match.periodDurationSeconds;
-        patch.clockRunning = false;
-        patch.clockStartedAt = null;
+        patch.clockRunning = true;
+        patch.clockStartedAt = now;
       } else if (dto.action === 'start_clock' || dto.action === 'resume') {
         if (match.status === 'suspended' && dto.action === 'resume')
           patch.status = 'live';
@@ -780,75 +785,110 @@ export class GameDayService {
       return { match: updated, event };
     });
   }
-  readyMatch(
+  startMatch(
     matchId: string,
     userId: string,
     platformRole: PlatformRole | null,
     expectedVersion: number,
   ) {
     return this.transaction(async (db) => {
-      await this.requireAssignment(db, matchId, userId, platformRole, [
-        'scorer',
-        'match_supervisor',
-      ]);
+      await this.requireAssignment(
+        db,
+        matchId,
+        userId,
+        platformRole,
+        MATCH_PREPARATION_ROLES,
+      );
       const match = await this.lockMatch(db, matchId, expectedVersion);
-      if (match.status !== 'scheduled') {
+      if (!['scheduled', 'ready'].includes(match.status)) {
         throw new BadRequestException(
-          'Only a scheduled match can be marked ready',
+          'Only a scheduled or ready match can be started',
         );
       }
-      const sheets = await db
-        .select()
-        .from(schema.matchTeamSheet)
-        .where(eq(schema.matchTeamSheet.matchId, matchId));
-      const expectedTeams = new Set([
-        match.teamADelegationId,
-        match.teamBDelegationId,
-      ]);
-      if (
-        sheets.length !== 2 ||
-        sheets.some(
-          (sheet) =>
-            !expectedTeams.has(sheet.delegationId) ||
-            sheet.status !== 'submitted',
-        )
-      ) {
+      if (!match.courtId) {
         throw new BadRequestException(
-          'Both Team A and Team B must submit valid team sheets before the match is ready',
+          'A court must be assigned before the match can start',
         );
       }
+
+      await db.execute(
+        sql`SELECT pg_advisory_xact_lock(hashtext(${match.courtId}))`,
+      );
+      const courtConflict = await db.execute(sql`
+        SELECT id FROM "match"
+        WHERE court_id = ${match.courtId}
+          AND id <> ${matchId}
+          AND status IN ('live', 'suspended')
+        LIMIT 1
+      `);
+      if (courtConflict.rows[0]) {
+        throw new ConflictException(
+          'Another match is already active on this court',
+        );
+      }
+
       const assigned = await db
-        .select({ role: schema.matchOfficialAssignment.role })
+        .select({
+          appUserId: schema.matchOfficialAssignment.appUserId,
+          role: schema.matchOfficialAssignment.role,
+        })
         .from(schema.matchOfficialAssignment)
         .where(eq(schema.matchOfficialAssignment.matchId, matchId));
-      // A named scorer is the minimum viable crew and may also operate the
-      // server-anchored clock. Additional officials remain optional so the
-      // fixture can scale from one operator to a full table crew.
-      const required: GameDayRole[] = ['scorer'];
-      const roles = new Set(assigned.map((assignment) => assignment.role));
-      const missing = required.filter((role) => !roles.has(role));
-      if (missing.length) {
+      const assignedRoles = new Set(
+        assigned.map((assignment) => assignment.role),
+      );
+      const missingRoles = MATCH_START_REQUIRED_ROLES.filter(
+        (role) => !assignedRoles.has(role),
+      );
+      if (missingRoles.length) {
         throw new BadRequestException(
-          `Assign GameDay roles: ${missing.join(', ')}`,
+          `Assign match roles before starting: ${missingRoles.join(', ')}`,
         );
       }
-      await db
-        .update(schema.matchTeamSheet)
-        .set({ status: 'locked', lockedAt: new Date() })
-        .where(eq(schema.matchTeamSheet.matchId, matchId));
+
+      for (const assignedUserId of assigned
+        .map((assignment) => assignment.appUserId)
+        .sort()) {
+        await db.execute(
+          sql`SELECT pg_advisory_xact_lock(hashtext(${assignedUserId}))`,
+        );
+      }
+      const crewConflict = await db.execute(sql`
+        SELECT active.id
+        FROM match_official_assignment requested
+        JOIN match_official_assignment active_assignment
+          ON active_assignment.app_user_id = requested.app_user_id
+        JOIN "match" active ON active.id = active_assignment.match_id
+        WHERE requested.match_id = ${matchId}
+          AND active.id <> ${matchId}
+          AND active.status IN ('live', 'suspended')
+        LIMIT 1
+      `);
+      if (crewConflict.rows[0]) {
+        throw new ConflictException(
+          'A scorer or timekeeper assigned to this match is already working another active match',
+        );
+      }
+      const now = new Date();
       const sequence = await this.nextSequence(db, matchId);
       await db.insert(schema.matchEvent).values({
         matchId,
         sequence,
-        eventType: 'match.ready',
+        eventType: 'match.started',
+        period: 1,
+        clockSeconds: match.periodDurationSeconds,
         recordedBy: userId,
       });
       const [updated] = await db
         .update(schema.match)
         .set({
-          status: 'ready',
+          status: 'live',
+          currentPeriod: 1,
+          clockRemainingSeconds: match.periodDurationSeconds,
+          clockRunning: true,
+          clockStartedAt: now,
           version: match.version + 1,
-          updatedAt: new Date(),
+          updatedAt: now,
         })
         .where(eq(schema.match.id, matchId))
         .returning();
@@ -925,7 +965,7 @@ export class GameDayService {
     matchId: string,
     userId: string,
     platformRole: PlatformRole | null,
-    allowed?: PlatformRole[],
+    allowed?: readonly PlatformRole[],
   ) {
     const [assignment] = await db
       .select()

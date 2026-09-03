@@ -3,9 +3,10 @@ import GymDisplayRouter from "./gym-client";
 
 export const metadata: Metadata = {
   title: "Gymnasium Screen · Netball Americas",
-  description: "Remotely controlled arena and live-score projector output.",
+  description: "Remotely controlled match-data output for the gymnasium screen above X.",
 };
 
 export default function GymPage() {
   return <GymDisplayRouter />;
 }
+

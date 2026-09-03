@@ -41,13 +41,13 @@ export class GameDayController {
     return this.gameDay.matchState(id, req.user.userId, req.user.platformRole);
   }
 
-  @Post('matches/:id/ready')
-  ready(
+  @Post('matches/:id/start')
+  start(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: VersionedCommandDto,
     @Req() req: OfficialRequest,
   ) {
-    return this.gameDay.readyMatch(
+    return this.gameDay.startMatch(
       id,
       req.user.userId,
       req.user.platformRole,
@@ -96,5 +96,4 @@ export class GameDayController {
       dto,
     );
   }
-
 }

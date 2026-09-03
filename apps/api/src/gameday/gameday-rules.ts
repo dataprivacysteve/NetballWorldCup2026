@@ -8,6 +8,30 @@ export const NETBALL_POSITIONS = [
   'Goal Keeper',
 ] as const;
 
+// Score entry and clock operation are deliberately separate duties. These
+// constants are used by the command authorization layer and covered by the
+// GameDay rules tests so the scorer cannot regain clock access accidentally.
+export const MATCH_CLOCK_ROLES = ['timekeeper'] as const;
+export const MATCH_PREPARATION_ROLES = ['timekeeper'] as const;
+export const MATCH_START_REQUIRED_ROLES = ['scorer', 'timekeeper'] as const;
+
+export function canStartPeriod(
+  status: string,
+  currentPeriod: number,
+  remainingSeconds: number,
+): boolean {
+  const nextPeriod =
+    status === 'live' &&
+    currentPeriod > 0 &&
+    currentPeriod < 4 &&
+    remainingSeconds === 0;
+  return nextPeriod;
+}
+
+export function canChangeScore(status: string, clockRunning: boolean): boolean {
+  return status === 'live' && clockRunning;
+}
+
 export function teamSheetProblems(
   players: { playerId: string; startingPosition?: string | null }[],
 ): string[] {

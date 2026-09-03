@@ -1,7 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { api, ApiError, type GameDayMatch, type GameDayRuntime, type GameDayState } from "../lib/api";
+import {
+  api,
+  ApiError,
+  type GameDayMatch,
+  type GameDayRuntime,
+  type GameDayState,
+} from "../lib/api";
 
 function clockLabel(seconds: number) {
   const value = Math.max(0, seconds);
@@ -26,9 +32,13 @@ export default function GameDayPage() {
   }, [selected]);
 
   useEffect(() => {
-    void api.gameDayRuntime().then(setRuntime).catch(() => undefined);
+    void api
+      .gameDayRuntime()
+      .then(setRuntime)
+      .catch(() => undefined);
     let active = true;
-    void api.gameDayMatches()
+    void api
+      .gameDayMatches()
       .then((rows) => {
         if (!active) return;
         setMatches(rows);
@@ -42,7 +52,9 @@ export default function GameDayPage() {
         }
         setError((reason as Error).message);
       });
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, []);
   useEffect(() => {
     const initial = window.setTimeout(() => void refresh(), 0);
@@ -104,10 +116,18 @@ export default function GameDayPage() {
             <p className="font-mono text-[0.6rem] uppercase tracking-[0.16em] text-[#f5c84c]">
               Americas Qualifier · GameDay
             </p>
-            <h1 className="font-display text-xl font-bold">Mobile scorer &amp; match clock</h1>
+            <h1 className="font-display text-xl font-bold">
+              {role === "timekeeper"
+                ? "Official timekeeper"
+                : role === "scorer"
+                  ? "Official scorer"
+                  : "GameDay console"}
+            </h1>
           </div>
           <div className="ml-auto flex items-center gap-3">
-            <span className={`rounded-full px-3 py-1 font-mono text-[0.62rem] font-bold uppercase ${runtime?.mode === "edge" ? "bg-emerald-400/15 text-emerald-200" : "bg-white/5 text-white/70"}`}>
+            <span
+              className={`rounded-full px-3 py-1 font-mono text-[0.62rem] font-bold uppercase ${runtime?.mode === "edge" ? "bg-emerald-400/15 text-emerald-200" : "bg-white/5 text-white/70"}`}
+            >
               {runtime?.mode === "edge" ? "Venue local" : "Online"}
             </span>
             <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1 font-mono text-[0.62rem] uppercase text-white/70">
@@ -142,9 +162,12 @@ export default function GameDayPage() {
                 className={`w-full rounded-xl p-3 text-left ${selected?.id === match.id ? "bg-[#1f2a61] ring-1 ring-[#f5c84c]/50" : "bg-white/[0.04] hover:bg-white/[0.08]"}`}
               >
                 <p className="text-sm font-bold">
-                  {match.teamACode} <span className="text-white/35">vs</span> {match.teamBCode}
+                  {match.teamACode} <span className="text-white/35">vs</span>{" "}
+                  {match.teamBCode}
                 </p>
-                <p className="mt-1 text-xs text-white/45">{match.roundLabel ?? "Fixture"}</p>
+                <p className="mt-1 text-xs text-white/45">
+                  {match.roundLabel ?? "Fixture"}
+                </p>
               </button>
             ))}
             {!matches.length && (
@@ -173,13 +196,17 @@ export default function GameDayPage() {
                   />
                   <div className="text-center">
                     <p className="font-mono text-[0.62rem] uppercase tracking-[0.14em] text-white/45">
-                      Period {state.match.currentPeriod || "–"} · {state.match.status.replaceAll("_", " ")}
+                      Period {state.match.currentPeriod || "–"} ·{" "}
+                      {state.match.status.replaceAll("_", " ")}
                     </p>
-                    <div className={`mt-2 font-mono text-6xl font-bold ${state.match.clockRunning ? "text-[#f5c84c]" : "text-white"}`}>
+                    <div
+                      className={`mt-2 font-mono text-6xl font-bold ${state.match.clockRunning ? "text-[#f5c84c]" : "text-white"}`}
+                    >
                       {clockLabel(state.match.clockRemainingSeconds)}
                     </div>
                     <p className="mt-2 text-xs text-white/40">
-                      {selected.venue ?? "Venue TBC"} · {selected.court ?? "Court TBC"}
+                      {selected.venue ?? "Venue TBC"} ·{" "}
+                      {selected.court ?? "Court TBC"}
                     </p>
                   </div>
                   <TeamScore
@@ -194,51 +221,66 @@ export default function GameDayPage() {
 
               {role === "scorer" && (
                 <div className="space-y-4">
-                  {state.match.status === "scheduled" && (
-                    <ActionPanel title="Prepare this match" description="Lock both submitted team sheets and release the fixture to the scorer. Only the named scorer is required for a one-person table crew.">
-                      <button
-                        className="min-h-14 w-full rounded-xl bg-[#f5c84c] px-5 py-3 font-bold text-[#0b1029] disabled:opacity-40 sm:w-auto"
-                        disabled={busy}
-                        onClick={() => command((version) => api.readyMatch(selected.id, version))}
-                      >
-                        Mark match ready
-                      </button>
-                    </ActionPanel>
-                  )}
-                  <ClockControls
-                    disabled={busy}
-                    status={state.match.status}
-                    running={state.match.clockRunning}
-                    period={state.match.currentPeriod}
-                    run={(action, reason) => command((version) => api.clockCommand(selected.id, version, action, reason))}
-                  />
+                  <ReadOnlyClockNotice />
                   <div className="grid gap-4 sm:grid-cols-2">
-                  {(["A", "B"] as const).map((side) => (
-                    <div key={side} className="rounded-2xl bg-[#f5c84c] p-4 text-[#0b1029]">
-                      <p className="font-mono text-[0.62rem] font-bold uppercase tracking-[0.12em]">Team {side} points</p>
-                      <div className="mt-3 grid grid-cols-[1fr_2fr] gap-3">
-                        <button
-                          disabled={busy || !["live", "suspended"].includes(state.match.status) || !removableGoal[side]}
-                          onClick={() => {
-                            const goal = removableGoal[side];
-                            if (goal) void command((version) => api.correctGoal(selected.id, version, goal.id, "Point removed by scorer"));
-                          }}
-                          className="min-h-20 rounded-xl border-2 border-[#0b1029]/30 bg-white/60 p-4 text-center disabled:opacity-35"
-                        >
-                          <span className="block font-display text-3xl font-bold">−1</span>
-                          <span className="text-xs font-bold">Remove point</span>
-                        </button>
-                        <button
-                          disabled={busy || state.match.status !== "live"}
-                          onClick={() => command((version) => api.recordGoal(selected.id, version, side))}
-                          className="min-h-20 rounded-xl bg-[#0b1029] p-4 text-center text-white disabled:opacity-40"
-                        >
-                          <span className="block font-display text-3xl font-bold">+1</span>
-                          <span className="text-xs font-bold">Add goal</span>
-                        </button>
+                    {(["A", "B"] as const).map((side) => (
+                      <div
+                        key={side}
+                        className="rounded-2xl bg-[#f5c84c] p-4 text-[#0b1029]"
+                      >
+                        <p className="font-mono text-[0.62rem] font-bold uppercase tracking-[0.12em]">
+                          Team {side} points
+                        </p>
+                        <div className="mt-3 grid grid-cols-[1fr_2fr] gap-3">
+                          <button
+                            disabled={
+                              busy ||
+                              state.match.status !== "live" ||
+                              !state.match.clockRunning ||
+                              !removableGoal[side]
+                            }
+                            onClick={() => {
+                              const goal = removableGoal[side];
+                              if (goal)
+                                void command((version) =>
+                                  api.correctGoal(
+                                    selected.id,
+                                    version,
+                                    goal.id,
+                                    "Point removed by scorer",
+                                  ),
+                                );
+                            }}
+                            className="min-h-20 rounded-xl border-2 border-[#0b1029]/30 bg-white/60 p-4 text-center disabled:opacity-35"
+                          >
+                            <span className="block font-display text-3xl font-bold">
+                              −1
+                            </span>
+                            <span className="text-xs font-bold">
+                              Remove point
+                            </span>
+                          </button>
+                          <button
+                            disabled={
+                              busy ||
+                              state.match.status !== "live" ||
+                              !state.match.clockRunning
+                            }
+                            onClick={() =>
+                              command((version) =>
+                                api.recordGoal(selected.id, version, side),
+                              )
+                            }
+                            className="min-h-20 rounded-xl bg-[#0b1029] p-4 text-center text-white disabled:opacity-40"
+                          >
+                            <span className="block font-display text-3xl font-bold">
+                              +1
+                            </span>
+                            <span className="text-xs font-bold">Add goal</span>
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                   </div>
                 </div>
               )}
@@ -249,10 +291,16 @@ export default function GameDayPage() {
                   status={state.match.status}
                   running={state.match.clockRunning}
                   period={state.match.currentPeriod}
-                  run={(action, reason) => command((version) => api.clockCommand(selected.id, version, action, reason))}
+                  remaining={state.match.clockRemainingSeconds}
+                  run={(action) =>
+                    command((version) =>
+                      action === "start_game"
+                        ? api.startMatch(selected.id, version)
+                        : api.clockCommand(selected.id, version, action),
+                    )
+                  }
                 />
               )}
-
             </>
           ) : (
             <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-10 text-center text-white/45">
@@ -265,38 +313,148 @@ export default function GameDayPage() {
   );
 }
 
-function TeamScore({ label, code, name, score, right = false }: { label: string; code: string; name: string; score: number; right?: boolean }) {
+function TeamScore({
+  label,
+  code,
+  name,
+  score,
+  right = false,
+}: {
+  label: string;
+  code: string;
+  name: string;
+  score: number;
+  right?: boolean;
+}) {
   return (
     <div className={right ? "text-right" : "text-left"}>
-      <p className="font-mono text-[0.62rem] uppercase tracking-[0.14em] text-white/40">{label}</p>
+      <p className="font-mono text-[0.62rem] uppercase tracking-[0.14em] text-white/40">
+        {label}
+      </p>
       <p className="mt-1 font-display text-3xl font-bold">{name}</p>
       <p className="mt-1 text-sm text-white/50">{code}</p>
-      <p className="mt-4 font-display text-7xl font-bold text-[#f5c84c]">{score}</p>
+      <p className="mt-4 font-display text-7xl font-bold text-[#f5c84c]">
+        {score}
+      </p>
     </div>
   );
 }
 
-function ActionPanel({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
+function ActionPanel({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6">
       <h2 className="font-display text-xl font-bold">{title}</h2>
-      <p className="mt-2 max-w-2xl text-sm leading-6 text-white/50">{description}</p>
+      <p className="mt-2 max-w-2xl text-sm leading-6 text-white/50">
+        {description}
+      </p>
       <div className="mt-5">{children}</div>
     </div>
   );
 }
 
-function ClockControls({ disabled, status, running, period, run }: { disabled: boolean; status: string; running: boolean; period: number; run: (action: string, reason?: string) => Promise<void> }) {
+function ReadOnlyClockNotice() {
   return (
-    <ActionPanel title="Official match clock" description="The server anchors every start and stop. Refreshing or changing devices does not reset elapsed time.">
-      <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
-        <button className="min-h-14 rounded-xl bg-[#f5c84c] px-5 py-3 font-bold text-[#0b1029] disabled:opacity-40" disabled={disabled || !["ready", "live"].includes(status) || running || period >= 4} onClick={() => run("start_period")}>Start next period</button>
-        <button className="min-h-14 rounded-xl bg-emerald-400 px-5 py-3 font-bold text-[#071b15] disabled:opacity-40" disabled={disabled || status !== "live" || running} onClick={() => run("start_clock")}>Start clock</button>
-        <button className="min-h-14 rounded-xl bg-white px-5 py-3 font-bold text-[#0b1029] disabled:opacity-40" disabled={disabled || !running} onClick={() => run("stop_clock")}>Stop clock</button>
-        <button className="min-h-14 rounded-xl border border-white/20 px-5 py-3 font-bold disabled:opacity-40" disabled={disabled || status !== "live"} onClick={() => run("end_period")}>End period</button>
-        <button className="min-h-12 rounded-xl border border-red-400/40 px-5 py-3 font-bold text-red-200 disabled:opacity-40" disabled={disabled || status !== "live"} onClick={() => { const reason = window.prompt("Suspension reason?"); if (reason) void run("suspend", reason); }}>Suspend match</button>
-        <button className="min-h-12 rounded-xl border border-white/20 px-5 py-3 font-bold disabled:opacity-40" disabled={disabled || status !== "suspended"} onClick={() => run("resume")}>Resume match</button>
-      </div>
+    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+      <p className="font-mono text-[0.62rem] font-bold uppercase tracking-[0.12em] text-[#f5c84c]">
+        Match time · display only
+      </p>
+      <p className="mt-2 text-sm leading-6 text-white/55">
+        The live match time is shown above for scoring reference. Only the
+        assigned timekeeper can start, stop, or otherwise operate the clock.
+      </p>
+    </div>
+  );
+}
+
+function ClockControls({
+  disabled,
+  status,
+  running,
+  period,
+  remaining,
+  run,
+}: {
+  disabled: boolean;
+  status: string;
+  running: boolean;
+  period: number;
+  remaining: number;
+  run: (action: string, reason?: string) => Promise<void>;
+}) {
+  const periodComplete = status === "live" && period > 0 && remaining === 0;
+  const action =
+    status === "scheduled" || (status === "ready" && period === 0)
+      ? {
+          label: "Start game",
+          command: "start_game",
+          style: "bg-emerald-400 text-[#071b15]",
+        }
+      : periodComplete && period < 4
+        ? {
+            label: "Start next period",
+            command: "start_period",
+            style: "bg-[#f5c84c] text-[#0b1029]",
+          }
+        : periodComplete && period === 4
+          ? {
+              label: "Finish game",
+              command: "end_period",
+              style: "bg-[#f5c84c] text-[#0b1029]",
+            }
+          : status === "suspended"
+            ? {
+                label: "Resume clock",
+                command: "resume",
+                style: "bg-emerald-400 text-[#071b15]",
+              }
+            : running
+              ? {
+                  label: "Stop clock",
+                  command: "stop_clock",
+                  style: "bg-white text-[#0b1029]",
+                }
+              : status === "live"
+                ? {
+                    label: "Resume clock",
+                    command: "start_clock",
+                    style: "bg-emerald-400 text-[#071b15]",
+                  }
+                : null;
+
+  return (
+    <ActionPanel
+      title="Match clock"
+      description="Use the single button below. Starting the game or next period begins the countdown immediately."
+    >
+      {action ? (
+        <button
+          className={`min-h-16 w-full rounded-xl px-6 py-4 text-lg font-bold disabled:opacity-40 sm:w-auto ${action.style}`}
+          disabled={disabled}
+          onClick={() => {
+            if (
+              action.command === "start_game" &&
+              !window.confirm(
+                "Start this game now? Period 1 and the match clock will begin immediately.",
+              )
+            ) {
+              return;
+            }
+            void run(action.command);
+          }}
+        >
+          {action.label}
+        </button>
+      ) : (
+        <p className="text-sm text-white/55">No clock action is required.</p>
+      )}
     </ActionPanel>
   );
 }

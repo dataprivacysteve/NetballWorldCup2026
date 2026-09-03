@@ -844,8 +844,8 @@ export const api = {
   gameDayMatches: () => req<GameDayMatch[]>("/gameday/matches"),
   gameDayRuntime: () => req<GameDayRuntime>("/gameday/runtime"),
   gameDayState: (id: string) => req<GameDayState>(`/gameday/matches/${id}`),
-  readyMatch: (id: string, expectedVersion: number) =>
-    req(`/gameday/matches/${id}/ready`, {
+  startMatch: (id: string, expectedVersion: number) =>
+    req(`/gameday/matches/${id}/start`, {
       method: "POST",
       body: { expectedVersion },
     }),

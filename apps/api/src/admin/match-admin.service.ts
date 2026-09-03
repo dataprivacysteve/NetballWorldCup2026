@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { Pool } from 'pg';
 import { drizzle, NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { and, asc, eq, ne, or, sql } from 'drizzle-orm';
+import { and, asc, eq, or, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { PRIVILEGED_POOL } from '../db/db.tokens';
 import * as schema from '../db/schema';
@@ -469,12 +469,6 @@ export class MatchAdminService {
       dto.stageId ?? null,
       dto.courtId ?? null,
     );
-    await this.assertFixtureAvailable(
-      scheduledAt,
-      dto.courtId ?? null,
-      dto.teamADelegationId,
-      dto.teamBDelegationId,
-    );
     const [row] = await this.db
       .insert(schema.match)
       .values({
@@ -519,15 +513,6 @@ export class MatchAdminService {
       stageId ?? null,
       courtId ?? null,
     );
-    if ((dto.status ?? current.status) !== 'cancelled') {
-      await this.assertFixtureAvailable(
-        scheduledAt,
-        courtId ?? null,
-        current.teamADelegationId,
-        current.teamBDelegationId,
-        id,
-      );
-    }
     const patch: Partial<typeof schema.match.$inferInsert> = {
       updatedAt: new Date(),
     };
@@ -644,36 +629,4 @@ export class MatchAdminService {
     }
   }
 
-  private async assertFixtureAvailable(
-    scheduledAt: Date | null,
-    courtId: string | null,
-    teamAId: string,
-    teamBId: string,
-    excludingMatchId?: string,
-  ) {
-    if (!scheduledAt) return;
-    const conflict = await this.db
-      .select({ id: schema.match.id, courtId: schema.match.courtId })
-      .from(schema.match)
-      .where(
-        and(
-          ne(schema.match.status, 'cancelled'),
-          excludingMatchId ? ne(schema.match.id, excludingMatchId) : undefined,
-          sql`abs(extract(epoch from (${schema.match.scheduledAt} - ${scheduledAt}))) < 5400`,
-          or(
-            courtId ? eq(schema.match.courtId, courtId) : undefined,
-            eq(schema.match.teamADelegationId, teamAId),
-            eq(schema.match.teamBDelegationId, teamAId),
-            eq(schema.match.teamADelegationId, teamBId),
-            eq(schema.match.teamBDelegationId, teamBId),
-          ),
-        ),
-      )
-      .limit(1);
-    if (conflict.length) {
-      throw new ConflictException(
-        'The court or one of the teams already has a match within this 90-minute slot',
-      );
-    }
-  }
 }
