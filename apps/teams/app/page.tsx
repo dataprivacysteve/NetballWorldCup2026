@@ -708,7 +708,7 @@ function RegisterForm({ onAuthed }: { onAuthed: () => void }) {
         </h1>
       </div>
       <p className="text-sm leading-6 text-ink-muted sm:col-span-2">
-        Submitted to the Organising Committee for approval. You can build your
+        Submitted to the LOC for operational validation. You can build your
         team once approved.
       </p>
       <div className="sm:col-span-2">
@@ -1200,7 +1200,7 @@ function Overview({
       }
     : !approved
       ? {
-          title: "Await LOC approval",
+          title: "Await LOC validation",
           detail:
             "The team workspace unlocks after the Organising Committee approves the delegation.",
           tab: "registration" as Tab,
@@ -1310,7 +1310,7 @@ function Overview({
             <CheckItem
               done
               title="Register your delegation"
-              sub="Submitted to the OC for approval"
+              sub="Submitted for LOC operational validation"
             />
             <CheckItem
               done={players.length > 0}
@@ -1782,7 +1782,7 @@ function MatchDayTeamSheets({
                   No accredited players are available for selection
                 </p>
                 <p className="mt-1 text-sm leading-6 text-ink-soft">
-                  Delegation registration approval unlocks roster building, but match sheets accept only players individually approved by the LOC. Complete each player record and obtain LOC approval before preparing this match sheet.
+                  LOC registration validation unlocks roster building, but match sheets accept only players individually cleared for event operations. Complete each player record and obtain LOC operational clearance before preparing this match sheet. World Netball remains the official eligibility authority.
                 </p>
                 <p className="mt-1 font-mono text-[0.62rem] uppercase tracking-[0.06em] text-bad">
                   {detail.roster.length} registered player{detail.roster.length === 1 ? "" : "s"} · 0 match-eligible
@@ -1942,7 +1942,7 @@ function Roster({
         <EmptyState
           icon="shield"
           title="Team locked pending approval"
-          description="The LOC must approve your delegation registration before players and officials can be added."
+          description="The LOC must validate your delegation registration for event operations before players and officials can be added. World Netball remains the official eligibility authority."
         />
       </>
     );

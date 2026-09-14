@@ -59,6 +59,17 @@ export class LocOfficerGuard implements CanActivate {
 }
 
 @Injectable()
+export class FederationViewerGuard implements CanActivate {
+  canActivate(ctx: ExecutionContext): boolean {
+    const req = ctx.switchToHttp().getRequest<SessionRequest>();
+    if (req.user?.platformRole !== 'federation_viewer') {
+      throw new ForbiddenException('Federation review account required');
+    }
+    return true;
+  }
+}
+
+@Injectable()
 export class MediaCommsGuard implements CanActivate {
   canActivate(ctx: ExecutionContext): boolean {
     const req = ctx.switchToHttp().getRequest<SessionRequest>();

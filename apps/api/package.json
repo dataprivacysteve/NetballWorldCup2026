@@ -30,6 +30,7 @@
     "rehearse:edge-recovery": "tsx src/rehearsal/edge-recovery-rehearsal.ts",
     "db:bootstrap-control": "tsx src/db/bootstrap-control.ts",
     "db:bootstrap-loc": "tsx src/db/bootstrap-loc.ts",
+    "db:bootstrap-federation": "tsx src/db/bootstrap-federation.ts",
     "edge:sync": "tsx src/edge/edge-agent.ts",
     "db:bootstrap-media-comms": "tsx src/db/bootstrap-media-comms.ts",
     "db:bootstrap-stats": "tsx src/db/bootstrap-stats.ts"

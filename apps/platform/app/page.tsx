@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import Advertising from "./advertising";
 import WebNews from "./web-news";
+import FederationConsole from "./federation-console";
 import {
   api,
   ApiError,
@@ -363,6 +364,8 @@ export default function Page() {
     );
   if (!me?.user) return <SignIn onAuthed={refresh} />;
   if (me.user.platformRole === "sportsbb_admin") return <ControlRedirect />;
+  if (me.user.platformRole === "federation_viewer")
+    return <FederationConsole me={me} onSignOut={() => setMe(null)} />;
   if (["scorer", "timekeeper"].includes(me.user.platformRole ?? ""))
     return <GameDayRedirect />;
   if (!["loc_officer", "media_comms"].includes(me.user.platformRole ?? ""))
@@ -625,7 +628,7 @@ function Console({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
     {
       id: "registrations",
       label: "Registrations",
-      description: "Delegation approvals",
+      description: "Operational validation",
       icon: "registration",
     },
     {
@@ -895,7 +898,7 @@ function Overview({
               label="Pending registrations"
               value={data.pending.length}
               detail={
-                data.pending.length ? "Requires LOC approval" : "Queue is clear"
+                data.pending.length ? "Requires LOC validation" : "Queue is clear"
               }
               tone={data.pending.length ? "warning" : "success"}
               onClick={() => onNavigate("registrations")}
@@ -3666,7 +3669,7 @@ function PersonRow({
         {!accredited && (
           <div className="flex shrink-0 flex-wrap items-center gap-2">
             {person.verificationStatus === "verified" ? (
-              <StatusPill tone="success">LOC approved</StatusPill>
+              <StatusPill tone="success">LOC validated</StatusPill>
             ) : (
               <>
                 {person.verificationStatus === "returned" ? (
@@ -3685,7 +3688,7 @@ function PersonRow({
                       : "Complete this person’s required checks first"
                   }
                 >
-                  Approve person
+                  Validate person
                 </button>
                 <button
                   type="button"
@@ -3848,14 +3851,14 @@ function PersonRow({
                   disabled={identityBusy}
                   onClick={() => decideIdentity("verified")}
                 >
-                  Verify and delete document
+                  Verify and retain for federation review
                 </button>
                 <button
                   className={`${btnGhost} text-bad`}
                   disabled={identityBusy || !identityNote.trim()}
                   onClick={() => decideIdentity("rejected")}
                 >
-                  Reject and delete document
+                  Reject and retain for federation review
                 </button>
               </div>
             </div>

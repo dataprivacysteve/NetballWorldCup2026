@@ -13,8 +13,9 @@ import { player } from './roster';
 import { appUser } from './user';
 
 // Restricted manual identity-verification record. Document bytes live in the
-// dedicated identity bucket and are deleted after the LOC officer records the
-// outcome. The outcome remains as the minimum audit record.
+// dedicated identity bucket and remain available for the competition owner's
+// eligibility review. Every view is audited. Deletion is governed by the
+// federation approval/appeal retention schedule rather than the LOC decision.
 export const identityDocument = pgTable(
   'identity_document',
   {

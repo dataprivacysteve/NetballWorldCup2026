@@ -1,5 +1,10 @@
 import { ExecutionContext, ForbiddenException } from '@nestjs/common';
-import { LocOfficerGuard, MediaCommsGuard, StatsGuard } from './auth.guard';
+import {
+  FederationViewerGuard,
+  LocOfficerGuard,
+  MediaCommsGuard,
+  StatsGuard,
+} from './auth.guard';
 import type { PlatformRole, SessionUser } from './auth.service';
 
 function contextFor(platformRole: PlatformRole): ExecutionContext {
@@ -40,6 +45,29 @@ describe('LocOfficerGuard boundary', () => {
     expect(() =>
       new LocOfficerGuard().canActivate(contextFor('media_comms')),
     ).toThrow(ForbiddenException);
+  });
+
+  it('does not grant a federation viewer LOC mutation access', () => {
+    expect(() =>
+      new LocOfficerGuard().canActivate(contextFor('federation_viewer')),
+    ).toThrow(ForbiddenException);
+  });
+});
+
+describe('FederationViewerGuard boundary', () => {
+  const guard = new FederationViewerGuard();
+
+  it('allows the dedicated federation viewer', () => {
+    expect(guard.canActivate(contextFor('federation_viewer'))).toBe(true);
+  });
+
+  it('does not grant LOC or media accounts federation access', () => {
+    expect(() => guard.canActivate(contextFor('loc_officer'))).toThrow(
+      ForbiddenException,
+    );
+    expect(() => guard.canActivate(contextFor('media_comms'))).toThrow(
+      ForbiddenException,
+    );
   });
 });
 

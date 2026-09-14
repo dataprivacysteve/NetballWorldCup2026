@@ -124,6 +124,37 @@ export class AdminService {
       .orderBy(asc(schema.delegation.name));
   }
 
+  // Competition-owner projection: deliberately excludes delegation contact
+  // details and exposes only submitted team/roster state needed for the
+  // World Netball eligibility review.
+  listFederationRegistrations() {
+    return this.db
+      .select({
+        id: schema.delegation.id,
+        name: schema.delegation.name,
+        countryCode: schema.delegation.countryCode,
+        associationName: schema.delegation.associationName,
+        registrationStatus: schema.delegation.registrationStatus,
+        registrationSubmittedAt: schema.delegation.registrationSubmittedAt,
+        rosterStatus: schema.delegation.status,
+        rosterSubmittedAt: schema.delegation.submittedAt,
+        accreditedAt: schema.delegation.accreditedAt,
+        playerCount: sql<number>`(
+          select count(*)::int from "player" roster_person
+          where roster_person."delegation_id" = "delegation"."id"
+            and roster_person."category" = 'player'
+        )`,
+        officialCount: sql<number>`(
+          select count(*)::int from "player" roster_person
+          where roster_person."delegation_id" = "delegation"."id"
+            and roster_person."category" <> 'player'
+        )`,
+      })
+      .from(schema.delegation)
+      .where(isNotNull(schema.delegation.registrationSubmittedAt))
+      .orderBy(asc(schema.delegation.name));
+  }
+
   approveRegistration(id: string, actorUserId: string) {
     return this.setRegistrationStatus(id, 'approved', actorUserId);
   }
@@ -363,6 +394,24 @@ export class AdminService {
         brandPrimaryLogoUrl: event?.brandPrimaryLogoUrl ?? null,
       },
       people,
+    };
+  }
+
+  async federationReviewDetail(delegationId: string, actorUserId: string) {
+    const detail = await this.reviewDetail(delegationId);
+    await this.audit(
+      actorUserId,
+      'federation.delegation.viewed',
+      'delegation',
+      delegationId,
+    );
+    return {
+      ...detail,
+      // Consent-party names are not needed for eligibility authorisation.
+      people: detail.people.map((person) => ({
+        ...person,
+        consentRecord: null,
+      })),
     };
   }
 
@@ -674,12 +723,6 @@ export class AdminService {
         'The team replaced this identity document. Reopen and review the current file before deciding.',
       );
     }
-    await this.s3.send(
-      new DeleteObjectCommand({
-        Bucket: this.identityBucket,
-        Key: document.objectKey,
-      }),
-    );
     const decidedAt = new Date();
     const [updated] = await this.db
       .update(schema.identityDocument)
@@ -688,9 +731,9 @@ export class AdminService {
         reviewNote: note?.trim() || null,
         verifiedAt: decidedAt,
         verifiedBy: actorUserId,
-        objectKey: null,
-        contentType: null,
-        documentDeletedAt: decidedAt,
+        // Keep the restricted evidence for the federation's official review.
+        // A governed purge after the approval/appeal window owns deletion.
+        documentDeletedAt: null,
       })
       .where(eq(schema.identityDocument.id, document.id))
       .returning();

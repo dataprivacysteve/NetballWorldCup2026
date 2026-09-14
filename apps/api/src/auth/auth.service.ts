@@ -26,6 +26,7 @@ export interface SessionUser {
 export type PlatformRole =
   | 'sportsbb_admin'
   | 'loc_officer'
+  | 'federation_viewer'
   | 'media_comms'
   | 'match_supervisor'
   | 'scorer'

@@ -106,7 +106,7 @@ Run two self-cleaning rehearsals using synthetic data.
 1. Register a synthetic team.
 2. Sign in and complete the roster, photo, identity and consent requirements.
 3. Submit to LOC.
-4. Review identity evidence and confirm its deletion after decision.
+4. Review identity evidence and confirm it remains restricted and available to the named World Netball reviewer through official approval.
 5. Approve/accredit the roster.
 6. Confirm the accreditation record and approved access zones are available for badge production.
 7. Revoke and reissue the credential record to prove the accreditation lifecycle works.
@@ -182,7 +182,7 @@ This area must not delay the two immediate demonstration journeys. Deliver it as
 - Approve and publish the privacy notice; replace the public site's placeholder privacy link.
 - Approve a retention/deletion schedule for registration, consent, photos, credentials, scan history, audit records and match data.
 - Name the persons authorized to view identity evidence, export registrations and access historical personal records.
-- Verify identity files are deleted immediately after verification/rejection while outcome and audit evidence remain.
+- Verify identity files remain restricted after LOC verification/rejection, federation document views are audited, and the approved post-approval/appeal purge control is assigned.
 - Use synthetic people and documents for every rehearsal and remove them afterward.
 - Rotate all local/UAT passwords before volunteer access.
 - Verify production database roles, object-storage permissions and session boundaries.

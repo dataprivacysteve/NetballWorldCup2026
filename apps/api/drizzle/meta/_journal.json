@@ -288,6 +288,13 @@
       "when": 1788296640000,
       "tag": "0040_gym_lineup_mode",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1789344000000,
+      "tag": "0041_federation_viewer",
+      "breakpoints": true
     }
   ]
 }

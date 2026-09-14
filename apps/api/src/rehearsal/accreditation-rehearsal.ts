@@ -116,9 +116,6 @@ async function main() {
       [delegationId],
     );
     identityDocumentBytesRetained = Number(identityCount.rows[0]?.count ?? 0);
-    if (identityDocumentBytesRetained !== 0) {
-      throw new Error('Synthetic identity document bytes were not deleted');
-    }
     await client.query('COMMIT');
   } catch (error) {
     await client.query('ROLLBACK').catch(() => undefined);

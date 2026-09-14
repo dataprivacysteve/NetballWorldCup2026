@@ -6,6 +6,7 @@ import { AuthController } from './auth.controller';
 import {
   AuthGuard,
   AdminGuard,
+  FederationViewerGuard,
   GameDayOfficialGuard,
   LocOfficerGuard,
   MediaCommsGuard,
@@ -32,6 +33,7 @@ import { AuthRateLimitService } from './auth-rate-limit.service';
     AuthService,
     AuthGuard,
     AdminGuard,
+    FederationViewerGuard,
     GameDayOfficialGuard,
     LocOfficerGuard,
     MediaCommsGuard,
@@ -45,6 +47,7 @@ import { AuthRateLimitService } from './auth-rate-limit.service';
     AuthService,
     AuthGuard,
     AdminGuard,
+    FederationViewerGuard,
     GameDayOfficialGuard,
     LocOfficerGuard,
     MediaCommsGuard,
