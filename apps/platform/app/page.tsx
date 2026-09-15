@@ -3684,14 +3684,14 @@ function PersonRow({
                   disabled={identityBusy}
                   onClick={() => decideIdentity("verified")}
                 >
-                  Verify and delete document
+                  Verify and retain for federation review
                 </button>
                 <button
                   className={`${btnGhost} text-bad`}
                   disabled={identityBusy || !identityNote.trim()}
                   onClick={() => decideIdentity("rejected")}
                 >
-                  Reject and delete document
+                  Reject and retain for federation review
                 </button>
               </div>
             </div>
