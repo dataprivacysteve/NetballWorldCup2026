@@ -259,7 +259,8 @@
         <div class="meta">
           <span class="chip">Required base: b6d131c</span
           ><span class="chip">DB baseline: 0029</span
-          ><span class="chip">Approved ref: federation-hotfix-2026-09-15</span
+          ><span class="chip"
+            >Approved ref: federation-hotfix-2026-09-15-r2</span
           ><span class="chip">Maintenance window required</span>
         </div>
       </div>
@@ -285,15 +286,16 @@
         </div>
         <div class="callout danger">
           <strong>Do not deploy <code>origin/main</code>.</strong>The approved
-          hotfix is the signed-off tag
-          <code>federation-hotfix-2026-09-15</code>, built from production
+          hotfix is the approved tag
+          <code>federation-hotfix-2026-09-15-r2</code>, built from production
           commit <code>b6d131cc83b0e8481512391d462d67bebf6f8ad5</code>.
         </div>
         <div class="callout warning">
           <strong>Do not paste commands from WhatsApp-rendered HTML.</strong>Use
           this file directly. Entities such as <code>&amp;#x20;</code> and
           escaped underscores corrupt commands. Every STOP block below includes
-          <code>exit 1</code>.
+          a visible <code>STOP</code> message and returns control to the prompt.
+          Do not continue to the next numbered block after a STOP message.
         </div>
         <p>
           The checks previously run were read-only apart from
@@ -338,7 +340,15 @@
       <section class="card" id="preflight">
         <div class="step">Step 2 · Read-only preflight</div>
         <h2>Prove the exact starting point</h2>
-        <pre><code>set -euo pipefail
+        <div class="callout warning">
+          <strong>PuTTY-safe mode</strong>Run one numbered code block at a time.
+          The first three commands explicitly disable strict shell exit settings
+          that may still be active from the earlier guide.
+        </div>
+        <pre><code>set +e
+set +u
+set +o pipefail
+echo "PASS: automatic shell exit is disabled"
 
 export SITE_USER=web6
 export SITE_GROUP=client0
@@ -346,13 +356,13 @@ export SOURCE_ROOT=/var/www/clients/client0/web6/web/gameday/source
 export CACHE_ROOT=/var/www/clients/client0/web6/web/gameday/.cache
 export BACKUP_ROOT=/var/backups/gameday
 export REQUIRED_BASE=b6d131cc83b0e8481512391d462d67bebf6f8ad5
-export APPROVED_REF=refs/tags/federation-hotfix-2026-09-15
+export APPROVED_REF=refs/tags/federation-hotfix-2026-09-15-r2
 export RELEASE_TIME="$(date +%Y%m%d-%H%M%S)"
 export EVIDENCE_ROOT="$BACKUP_ROOT/federation-hotfix-$RELEASE_TIME"
 
 cd "$SOURCE_ROOT"
 git diff --quiet &amp;&amp; git diff --cached --quiet \
-  || { echo "STOP: tracked production changes exist"; exit 1; }
+  || echo "STOP: tracked production changes exist — return to the prompt"
 git fetch --prune --tags origin
 
 export OLD_COMMIT="$(git rev-parse HEAD)"
@@ -362,11 +372,11 @@ echo "TARGET_COMMIT=$TARGET_COMMIT"
 
 test "$OLD_COMMIT" = "$REQUIRED_BASE" \
   &amp;&amp; echo "PASS: exact production base" \
-  || { echo "STOP: production is not on b6d131c"; exit 1; }
+  || echo "STOP: production is not on b6d131c — do not continue"
 
 test -z "$(git diff --name-only "$REQUIRED_BASE" "$TARGET_COMMIT" -- apps/api/drizzle)" \
   &amp;&amp; echo "PASS: hotfix contains no Drizzle migrations" \
-  || { echo "STOP: a Drizzle migration entered the hotfix"; exit 1; }
+  || echo "STOP: a Drizzle migration entered the hotfix — do not continue"
 
 supervisorctl status gameday-api gameday-teams gameday-platform
 ss -lntp | grep -E ':3000|:3002|:3003'
@@ -391,20 +401,27 @@ export MIGRATION_DATABASE_URL="$(node --env-file="$SOURCE_ROOT/.env" -e \
 
 test -n "$MIGRATION_DATABASE_URL" \
   &amp;&amp; echo "PASS: database connection loaded without printing it" \
-  || { echo "STOP: MIGRATION_DATABASE_URL is missing"; exit 1; }
+  || echo "STOP: MIGRATION_DATABASE_URL is missing — do not continue"
 
 export LATEST_MIGRATION="$(psql "$MIGRATION_DATABASE_URL" -X -Atc \
   'SELECT COALESCE(MAX(created_at),0) FROM drizzle.__drizzle_migrations')"
 echo "LATEST_MIGRATION=$LATEST_MIGRATION"
 test "$LATEST_MIGRATION" = "1785542400000" \
   &amp;&amp; echo "PASS: database journal is at 0029" \
-  || { echo "STOP: unexpected migration state"; exit 1; }</code></pre>
+  || echo "STOP: unexpected migration state — do not continue"</code></pre>
       </section>
 
       <section class="card" id="backup">
         <div class="step">Step 4 · Recovery point</div>
         <h2>Back up before stopping services</h2>
-        <pre><code>install -d -o root -g root -m 0700 "$EVIDENCE_ROOT"
+        <div class="callout warning">
+          <strong>Before continuing in PuTTY</strong>Run the safety reset at the
+          start of this block even if it was already run earlier.
+        </div>
+        <pre><code>set +e
+set +u
+set +o pipefail
+install -d -o root -g root -m 0700 "$EVIDENCE_ROOT"
 printf '%s\n' "$OLD_COMMIT" &gt; "$EVIDENCE_ROOT/old-commit.txt"
 printf '%s\n' "$TARGET_COMMIT" &gt; "$EVIDENCE_ROOT/target-commit.txt"
 
@@ -413,7 +430,7 @@ pg_dump "$MIGRATION_DATABASE_URL" --format=custom --file="$DB_BACKUP"
 test -s "$DB_BACKUP" \
   &amp;&amp; pg_restore --list "$DB_BACKUP" &gt; "$EVIDENCE_ROOT/database-restore-list.txt" \
   &amp;&amp; echo "PASS: database backup is readable" \
-  || { echo "STOP: database backup failed"; exit 1; }</code></pre>
+  || echo "STOP: database backup failed — do not continue"</code></pre>
         <p>
           The storage owner must now snapshot the restricted identity bucket
           using the approved production process. Record only the snapshot ID:
@@ -421,7 +438,7 @@ test -s "$DB_BACKUP" \
         <pre><code>printf '%s\n' 'REPLACE_WITH_CONFIRMED_SNAPSHOT_ID' \
   &gt; "$EVIDENCE_ROOT/identity-bucket-snapshot.txt"
 grep -qv 'REPLACE_WITH' "$EVIDENCE_ROOT/identity-bucket-snapshot.txt" \
-  || { echo "STOP: identity snapshot is not confirmed"; exit 1; }</code></pre>
+  || echo "STOP: identity snapshot is not confirmed — do not continue"</code></pre>
         <div class="callout danger">
           <strong
             >Never copy identity documents to a laptop or general
@@ -434,7 +451,7 @@ grep -qv 'REPLACE_WITH' "$EVIDENCE_ROOT/identity-bucket-snapshot.txt" \
       <section class="card">
         <div class="step">Step 5 · Before fingerprint</div>
         <h2>Capture privacy-safe integrity evidence</h2>
-        <pre><code>psql "$MIGRATION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -A -F '|' -c \
+        <pre><code>psql "$MIGRATION_DATABASE_URL" -X -A -F '|' -c \
 "SELECT 'delegation',COUNT(*),md5(COALESCE(string_agg(id::text||':'||registration_status::text||':'||status::text,'|' ORDER BY id),'')) FROM delegation
  UNION ALL SELECT 'player',COUNT(*),md5(COALESCE(string_agg(id::text||':'||delegation_id::text||':'||category::text,'|' ORDER BY id),'')) FROM player
  UNION ALL SELECT 'identity_document',COUNT(*),md5(COALESCE(string_agg(id::text||':'||player_id::text||':'||status::text||':'||COALESCE(object_key,'NO_FILE'),'|' ORDER BY id),'')) FROM identity_document
@@ -450,13 +467,25 @@ cat "$EVIDENCE_ROOT/core-records-before.txt"</code></pre>
 sleep 5
 supervisorctl status gameday-api gameday-teams gameday-platform
 if ss -lntp | grep -E ':3000|:3002|:3003'; then
-  echo "STOP: an application listener remains"; exit 1
-fi
+  echo "STOP: an application listener remains — return to the prompt"
+else echo "PASS: application listeners are stopped"
+fi</code></pre>
+        <div class="callout warning">
+          <strong>Checkpoint</strong>If the previous block printed STOP, do not
+          run the checkout block below. PuTTY will remain open so the lead
+          developer can inspect the listener.
+        </div>
+        <pre><code>
 
 cd "$SOURCE_ROOT"
 git switch --detach "$TARGET_COMMIT"
 test "$(git rev-parse HEAD)" = "$TARGET_COMMIT" \
-  || { echo "STOP: wrong release checked out"; exit 1; }
+  || echo "STOP: wrong release checked out — do not run the build block"</code></pre>
+        <div class="callout warning">
+          <strong>Checkpoint</strong>Confirm the exact release check printed no
+          STOP message before running the build commands.
+        </div>
+        <pre><code>
 
 chown -R "$SITE_USER:$SITE_GROUP" "$SOURCE_ROOT"
 install -d -o "$SITE_USER" -g "$SITE_GROUP" -m 0750 \
@@ -482,13 +511,13 @@ sudo -u "$SITE_USER" -H env \
   MIGRATION_DATABASE_URL="$MIGRATION_DATABASE_URL" \
   pnpm --filter api db:apply-federation-hotfix
 
-psql "$MIGRATION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atc \
+psql "$MIGRATION_DATABASE_URL" -X -Atc \
   "SELECT enumlabel FROM pg_enum e JOIN pg_type t ON t.oid=e.enumtypid WHERE t.typname='platform_role' AND e.enumlabel='federation_viewer'"
 
 test "$(psql "$MIGRATION_DATABASE_URL" -X -Atc \
   'SELECT COALESCE(MAX(created_at),0) FROM drizzle.__drizzle_migrations')" = "1785542400000" \
   &amp;&amp; echo "PASS: migration journal unchanged at 0029" \
-  || { echo "STOP: migration journal changed unexpectedly"; exit 1; }</code></pre>
+  || echo "STOP: migration journal changed unexpectedly — do not continue"</code></pre>
         <div class="callout success">
           <strong>Expected</strong>The command prints
           <code>federation_viewer</code>, and the journal remains exactly
@@ -510,7 +539,7 @@ MIGRATION_DATABASE_URL="$MIGRATION_DATABASE_URL" \
   pnpm --filter api db:bootstrap-federation
 
 unset FEDERATION_VIEWER_PASSWORD
-psql "$MIGRATION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -A -F '|' -c \
+psql "$MIGRATION_DATABASE_URL" -X -A -F '|' -c \
   "SELECT email,display_name,platform_role,auth_version FROM app_user WHERE platform_role='federation_viewer'"</code></pre>
         <div class="callout warning">
           <strong>Expected write</strong>This step creates or updates exactly
@@ -576,7 +605,7 @@ ss -lntp | grep -E ':3000|:3002|:3003'</code></pre>
       <section class="card" id="proof">
         <div class="step">Step 10 · Non-negotiable proof</div>
         <h2>Show that existing records stayed identical</h2>
-        <pre><code>psql "$MIGRATION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -A -F '|' -c \
+        <pre><code>psql "$MIGRATION_DATABASE_URL" -X -A -F '|' -c \
 "SELECT 'delegation',COUNT(*),md5(COALESCE(string_agg(id::text||':'||registration_status::text||':'||status::text,'|' ORDER BY id),'')) FROM delegation
  UNION ALL SELECT 'player',COUNT(*),md5(COALESCE(string_agg(id::text||':'||delegation_id::text||':'||category::text,'|' ORDER BY id),'')) FROM player
  UNION ALL SELECT 'identity_document',COUNT(*),md5(COALESCE(string_agg(id::text||':'||player_id::text||':'||status::text||':'||COALESCE(object_key,'NO_FILE'),'|' ORDER BY id),'')) FROM identity_document
@@ -585,7 +614,7 @@ ss -lntp | grep -E ':3000|:3002|:3003'</code></pre>
 
 diff -u "$EVIDENCE_ROOT/core-records-before.txt" "$EVIDENCE_ROOT/core-records-after.txt" \
   &amp;&amp; echo "PASS: protected existing records are identical" \
-  || { echo "STOP: protected records changed; escalate immediately"; exit 1; }
+  || echo "STOP: protected records changed — keep PuTTY open and escalate"
 
 unset MIGRATION_DATABASE_URL FEDERATION_VIEWER_EMAIL FEDERATION_VIEWER_NAME
 date --iso-8601=seconds &gt; "$EVIDENCE_ROOT/window-completed.txt"</code></pre>
@@ -600,15 +629,27 @@ date --iso-8601=seconds &gt; "$EVIDENCE_ROOT/window-completed.txt"</code></pre>
       <section class="card" id="rollback">
         <div class="step">Rollback</div>
         <h2>If acceptance fails</h2>
-        <pre><code>set -euo pipefail
+        <pre><code>set +e
+set +u
+set +o pipefail
 cd "$SOURCE_ROOT"
 supervisorctl stop gameday-api gameday-teams gameday-platform
-git switch --detach "$OLD_COMMIT"
+git switch --detach "$OLD_COMMIT"</code></pre>
+        <div class="callout warning">
+          <strong>Rollback checkpoint</strong>Confirm the old commit checked out
+          successfully before rebuilding.
+        </div>
+        <pre><code>
 chown -R "$SITE_USER:$SITE_GROUP" "$SOURCE_ROOT"
 sudo -u "$SITE_USER" -H pnpm install --frozen-lockfile
 sudo -u "$SITE_USER" -H pnpm --filter api build
 sudo -u "$SITE_USER" -H pnpm --filter platform build
-sudo -u "$SITE_USER" -H pnpm --filter teams build
+sudo -u "$SITE_USER" -H pnpm --filter teams build</code></pre>
+        <div class="callout warning">
+          <strong>Rollback checkpoint</strong>Restart services only after all
+          three old-release builds succeed.
+        </div>
+        <pre><code>
 supervisorctl start gameday-api gameday-teams gameday-platform
 supervisorctl status gameday-api gameday-teams gameday-platform</code></pre>
         <p>
