@@ -8,11 +8,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import {
-  DeleteObjectCommand,
-  GetObjectCommand,
-  S3Client,
-} from '@aws-sdk/client-s3';
+import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Pool } from 'pg';
 import { drizzle, NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { and, asc, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm';
@@ -643,12 +639,6 @@ export class AdminService {
         'The team replaced this identity document. Reopen and review the current file before deciding.',
       );
     }
-    await this.s3.send(
-      new DeleteObjectCommand({
-        Bucket: this.identityBucket,
-        Key: document.objectKey,
-      }),
-    );
     const decidedAt = new Date();
     const [updated] = await this.db
       .update(schema.identityDocument)
@@ -657,9 +647,9 @@ export class AdminService {
         reviewNote: note?.trim() || null,
         verifiedAt: decidedAt,
         verifiedBy: actorUserId,
-        objectKey: null,
-        contentType: null,
-        documentDeletedAt: decidedAt,
+        // Evidence remains restricted until the approved post-appeal purge.
+        // objectKey and contentType are deliberately retained.
+        documentDeletedAt: null,
       })
       .where(eq(schema.identityDocument.id, document.id))
       .returning();

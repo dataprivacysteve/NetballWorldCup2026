@@ -24,6 +24,8 @@
     "db:seed": "tsx src/db/seed.ts",
     "db:bootstrap-control": "tsx src/db/bootstrap-control.ts",
     "db:bootstrap-loc": "tsx src/db/bootstrap-loc.ts",
+    "db:apply-federation-hotfix": "tsx src/db/apply-federation-hotfix.ts",
+    "db:bootstrap-federation": "tsx src/db/bootstrap-federation.ts",
     "edge:sync": "tsx src/edge/edge-agent.ts"
   },
   "dependencies": {

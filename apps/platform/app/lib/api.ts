@@ -102,6 +102,7 @@ export type Me = {
     platformRole:
       | "sportsbb_admin"
       | "loc_officer"
+      | "federation_viewer"
       | "match_supervisor"
       | "scorer"
       | "timekeeper"
@@ -128,6 +129,25 @@ export type RegistrationRecord = PendingDelegation & {
   registrationReviewNote: string | null;
   approvedAt: string | null;
   rosterStatus: "draft" | "submitted" | "approved" | "rejected";
+  rosterSubmittedAt: string | null;
+  accreditedAt: string | null;
+  playerCount: number;
+  officialCount: number;
+};
+
+export type FederationRegistration = {
+  id: string;
+  name: string;
+  countryCode: string;
+  associationName: string | null;
+  registrationStatus: "draft" | "submitted" | "approved" | "rejected";
+  registrationSubmittedAt: string | null;
+  rosterStatus:
+    | "draft"
+    | "submitted"
+    | "under_review"
+    | "approved"
+    | "rejected";
   rosterSubmittedAt: string | null;
   accreditedAt: string | null;
   playerCount: number;
@@ -540,6 +560,10 @@ export const api = {
 
   listPending: () => req<PendingDelegation[]>("/admin/delegations"),
   listRegistrations: () => req<RegistrationRecord[]>("/admin/registrations"),
+  federationRegistrations: () =>
+    req<FederationRegistration[]>("/federation/delegations"),
+  federationReviewDetail: (id: string) =>
+    req<ReviewDetail>(`/federation/delegations/${id}`),
   approve: (id: string) =>
     req<{ id: string; name: string; registrationStatus: string }>(
       `/admin/delegations/${id}/approve`,

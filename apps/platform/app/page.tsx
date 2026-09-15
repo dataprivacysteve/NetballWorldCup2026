@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import FederationConsole from "./federation-console";
 import {
   api,
   ApiError,
@@ -365,6 +366,8 @@ export default function Page() {
     );
   if (!me?.user) return <SignIn onAuthed={refresh} />;
   if (me.user.platformRole === "sportsbb_admin") return <ControlRedirect />;
+  if (me.user.platformRole === "federation_viewer")
+    return <FederationConsole me={me} onSignOut={() => setMe(null)} />;
   if (
     [
       "match_supervisor",

@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Federation-only production hotfix runbook</title>
+    <style>
+      :root {
+        --navy: #101a46;
+        --blue: #213a7a;
+        --gold: #d7ab3e;
+        --ink: #172033;
+        --muted: #5d687d;
+        --line: #dce2ea;
+        --paper: #fff;
+        --bg: #f4f6f9;
+        --ok: #17653a;
+        --okbg: #eaf7ef;
+        --warn: #7a5100;
+        --warnbg: #fff6dc;
+        --bad: #9c2530;
+        --badbg: #fff0f1;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font:
+          16px/1.55 system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+      }
+      header {
+        background: linear-gradient(135deg, var(--navy), var(--blue));
+        color: #fff;
+        border-bottom: 5px solid var(--gold);
+      }
+      .hero {
+        max-width: 1050px;
+        margin: auto;
+        padding: 42px 24px;
+      }
+      .eyebrow {
+        font-size: 0.74rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #f3cc6a;
+      }
+      h1 {
+        margin: 0.35rem 0;
+        font-size: clamp(2rem, 5vw, 3.4rem);
+        line-height: 1.05;
+      }
+      header p {
+        max-width: 780px;
+        color: #e1e6f4;
+      }
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 18px;
+      }
+      .chip {
+        border: 1px solid #ffffff35;
+        border-radius: 999px;
+        padding: 6px 10px;
+        font:
+          700 0.72rem ui-monospace,
+          monospace;
+        background: #ffffff12;
+      }
+      main {
+        max-width: 1050px;
+        margin: 24px auto 70px;
+        padding: 0 20px;
+      }
+      .toc,
+      .card {
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        box-shadow: 0 6px 22px #1720330b;
+      }
+      .toc {
+        padding: 20px;
+        margin-bottom: 18px;
+      }
+      .toc a {
+        display: inline-block;
+        margin: 5px 16px 5px 0;
+        color: var(--blue);
+        font-weight: 700;
+        text-decoration: none;
+      }
+      .card {
+        padding: clamp(20px, 4vw, 34px);
+        margin: 18px 0;
+      }
+      .step {
+        font:
+          800 0.72rem ui-monospace,
+          monospace;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--blue);
+      }
+      h2 {
+        margin: 0.25rem 0 1rem;
+        font-size: clamp(1.45rem, 3vw, 2rem);
+      }
+      h3 {
+        margin: 1.5rem 0 0.5rem;
+      }
+      p {
+        margin: 0.65rem 0;
+        color: var(--muted);
+      }
+      code {
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      }
+      pre {
+        margin: 12px 0;
+        overflow: auto;
+        border-radius: 10px;
+        background: #11182d;
+        color: #f5f7ff;
+        padding: 16px;
+        font-size: 0.83rem;
+        line-height: 1.55;
+        white-space: pre;
+      }
+      pre code {
+        font-family: inherit;
+      }
+      .callout {
+        border-left: 5px solid;
+        padding: 13px 15px;
+        margin: 15px 0;
+        border-radius: 7px;
+      }
+      .callout strong {
+        display: block;
+        margin-bottom: 3px;
+      }
+      .danger {
+        border-color: var(--bad);
+        background: var(--badbg);
+        color: var(--bad);
+      }
+      .warning {
+        border-color: var(--gold);
+        background: var(--warnbg);
+        color: var(--warn);
+      }
+      .success {
+        border-color: var(--ok);
+        background: var(--okbg);
+        color: var(--ok);
+      }
+      .check {
+        display: grid;
+        grid-template-columns: 28px 1fr;
+        gap: 10px;
+        margin: 10px 0;
+      }
+      .box {
+        width: 22px;
+        height: 22px;
+        border: 2px solid var(--blue);
+        border-radius: 4px;
+      }
+      .table-wrap {
+        overflow: auto;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        min-width: 620px;
+      }
+      th,
+      td {
+        text-align: left;
+        border-bottom: 1px solid var(--line);
+        padding: 11px;
+        vertical-align: top;
+      }
+      th {
+        background: #f6f8fb;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+      }
+      .small {
+        font-size: 0.86rem;
+      }
+      .footer {
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.8rem;
+        margin-top: 30px;
+      }
+      @media print {
+        body {
+          background: #fff;
+        }
+        .toc {
+          display: none;
+        }
+        .card {
+          box-shadow: none;
+          break-inside: avoid;
+        }
+        pre {
+          white-space: pre-wrap;
+        }
+        .hero {
+          padding: 20px;
+        }
+        main {
+          margin-top: 10px;
+        }
+      }
+      @media (max-width: 620px) {
+        main {
+          padding: 0 10px;
+        }
+        .card {
+          border-radius: 10px;
+          padding: 18px 14px;
+        }
+        pre {
+          font-size: 0.73rem;
+        }
+        .hero {
+          padding: 30px 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="hero">
+        <div class="eyebrow">Production change · junior-developer edition</div>
+        <h1>Federation-only hotfix</h1>
+        <p>
+          Deploy the read-only World Netball eligibility view from the actual
+          production baseline. This procedure protects existing teams and
+          players and does not run the pending general migration chain.
+        </p>
+        <div class="meta">
+          <span class="chip">Required base: b6d131c</span
+          ><span class="chip">DB baseline: 0029</span
+          ><span class="chip">Approved ref: federation-hotfix-2026-09-15</span
+          ><span class="chip">Maintenance window required</span>
+        </div>
+      </div>
+    </header>
+    <main>
+      <nav class="toc" aria-label="Runbook sections">
+        <strong>Jump to:</strong> <a href="#stop">Stop conditions</a
+        ><a href="#preflight">Preflight</a><a href="#backup">Backup</a
+        ><a href="#deploy">Deploy</a><a href="#account">Account</a
+        ><a href="#proof">Integrity proof</a><a href="#rollback">Rollback</a>
+      </nav>
+
+      <section class="card" id="stop">
+        <div class="step">Read first</div>
+        <h2>Hard stop conditions</h2>
+        <div class="callout danger">
+          <strong
+            >Never run <code>pnpm --filter api db:migrate</code> for this
+            hotfix.</strong
+          >Production's journal is at migration 0029 while the checkout already
+          contains unapplied 0030. The normal migrator would apply an unrelated
+          schema change.
+        </div>
+        <div class="callout danger">
+          <strong>Do not deploy <code>origin/main</code>.</strong>The approved
+          hotfix is the signed-off tag
+          <code>federation-hotfix-2026-09-15</code>, built from production
+          commit <code>b6d131cc83b0e8481512391d462d67bebf6f8ad5</code>.
+        </div>
+        <div class="callout warning">
+          <strong>Do not paste commands from WhatsApp-rendered HTML.</strong>Use
+          this file directly. Entities such as <code>&amp;#x20;</code> and
+          escaped underscores corrupt commands. Every STOP block below includes
+          <code>exit 1</code>.
+        </div>
+        <p>
+          The checks previously run were read-only apart from
+          <code>git fetch</code> updating remote references. They did not check
+          out code, run a migration, or modify team/player records.
+        </p>
+      </section>
+
+      <section class="card">
+        <div class="step">Step 1 · People</div>
+        <h2>Open a controlled window</h2>
+        <div class="check">
+          <span class="box"></span>
+          <div>Deployer at the terminal; lead developer reachable live.</div>
+        </div>
+        <div class="check">
+          <span class="box"></span>
+          <div>Database owner confirms the dump can be restored.</div>
+        </div>
+        <div class="check">
+          <span class="box"></span>
+          <div>
+            Storage owner confirms a restricted identity-bucket snapshot.
+          </div>
+        </div>
+        <div class="check">
+          <span class="box"></span>
+          <div>
+            LOC tester and named World Netball reviewer are ready for
+            acceptance.
+          </div>
+        </div>
+        <div class="check">
+          <span class="box"></span>
+          <div>
+            LOC and World Netball have recorded the identity-evidence purge
+            owner and post-appeal target date.
+          </div>
+        </div>
+      </section>
+
+      <section class="card" id="preflight">
+        <div class="step">Step 2 · Read-only preflight</div>
+        <h2>Prove the exact starting point</h2>
+        <pre><code>set -euo pipefail
+
+export SITE_USER=web6
+export SITE_GROUP=client0
+export SOURCE_ROOT=/var/www/clients/client0/web6/web/gameday/source
+export CACHE_ROOT=/var/www/clients/client0/web6/web/gameday/.cache
+export BACKUP_ROOT=/var/backups/gameday
+export REQUIRED_BASE=b6d131cc83b0e8481512391d462d67bebf6f8ad5
+export APPROVED_REF=refs/tags/federation-hotfix-2026-09-15
+export RELEASE_TIME="$(date +%Y%m%d-%H%M%S)"
+export EVIDENCE_ROOT="$BACKUP_ROOT/federation-hotfix-$RELEASE_TIME"
+
+cd "$SOURCE_ROOT"
+git diff --quiet &amp;&amp; git diff --cached --quiet \
+  || { echo "STOP: tracked production changes exist"; exit 1; }
+git fetch --prune --tags origin
+
+export OLD_COMMIT="$(git rev-parse HEAD)"
+export TARGET_COMMIT="$(git rev-list -n 1 "$APPROVED_REF")"
+echo "OLD_COMMIT=$OLD_COMMIT"
+echo "TARGET_COMMIT=$TARGET_COMMIT"
+
+test "$OLD_COMMIT" = "$REQUIRED_BASE" \
+  &amp;&amp; echo "PASS: exact production base" \
+  || { echo "STOP: production is not on b6d131c"; exit 1; }
+
+test -z "$(git diff --name-only "$REQUIRED_BASE" "$TARGET_COMMIT" -- apps/api/drizzle)" \
+  &amp;&amp; echo "PASS: hotfix contains no Drizzle migrations" \
+  || { echo "STOP: a Drizzle migration entered the hotfix"; exit 1; }
+
+supervisorctl status gameday-api gameday-teams gameday-platform
+ss -lntp | grep -E ':3000|:3002|:3003'
+df -h "$SOURCE_ROOT" "$BACKUP_ROOT"</code></pre>
+        <div class="callout success">
+          <strong>Expected</strong>Exact base passes; no files under
+          <code>apps/api/drizzle</code> differ; all three services are RUNNING;
+          ports 3000, 3002 and 3003 are present.
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="step">Step 3 · Safe environment load</div>
+        <h2>Read dotenv with Node, not Bash</h2>
+        <p>
+          Do not run <code>. .env</code> or <code>source .env</code>. The dotenv
+          file contains values that are not valid shell syntax.
+        </p>
+        <pre><code>cd "$SOURCE_ROOT"
+export MIGRATION_DATABASE_URL="$(node --env-file="$SOURCE_ROOT/.env" -e \
+  "process.stdout.write(process.env.MIGRATION_DATABASE_URL || '')")"
+
+test -n "$MIGRATION_DATABASE_URL" \
+  &amp;&amp; echo "PASS: database connection loaded without printing it" \
+  || { echo "STOP: MIGRATION_DATABASE_URL is missing"; exit 1; }
+
+export LATEST_MIGRATION="$(psql "$MIGRATION_DATABASE_URL" -X -Atc \
+  'SELECT COALESCE(MAX(created_at),0) FROM drizzle.__drizzle_migrations')"
+echo "LATEST_MIGRATION=$LATEST_MIGRATION"
+test "$LATEST_MIGRATION" = "1785542400000" \
+  &amp;&amp; echo "PASS: database journal is at 0029" \
+  || { echo "STOP: unexpected migration state"; exit 1; }</code></pre>
+      </section>
+
+      <section class="card" id="backup">
+        <div class="step">Step 4 · Recovery point</div>
+        <h2>Back up before stopping services</h2>
+        <pre><code>install -d -o root -g root -m 0700 "$EVIDENCE_ROOT"
+printf '%s\n' "$OLD_COMMIT" &gt; "$EVIDENCE_ROOT/old-commit.txt"
+printf '%s\n' "$TARGET_COMMIT" &gt; "$EVIDENCE_ROOT/target-commit.txt"
+
+export DB_BACKUP="$EVIDENCE_ROOT/gameday-before-hotfix.dump"
+pg_dump "$MIGRATION_DATABASE_URL" --format=custom --file="$DB_BACKUP"
+test -s "$DB_BACKUP" \
+  &amp;&amp; pg_restore --list "$DB_BACKUP" &gt; "$EVIDENCE_ROOT/database-restore-list.txt" \
+  &amp;&amp; echo "PASS: database backup is readable" \
+  || { echo "STOP: database backup failed"; exit 1; }</code></pre>
+        <p>
+          The storage owner must now snapshot the restricted identity bucket
+          using the approved production process. Record only the snapshot ID:
+        </p>
+        <pre><code>printf '%s\n' 'REPLACE_WITH_CONFIRMED_SNAPSHOT_ID' \
+  &gt; "$EVIDENCE_ROOT/identity-bucket-snapshot.txt"
+grep -qv 'REPLACE_WITH' "$EVIDENCE_ROOT/identity-bucket-snapshot.txt" \
+  || { echo "STOP: identity snapshot is not confirmed"; exit 1; }</code></pre>
+        <div class="callout danger">
+          <strong
+            >Never copy identity documents to a laptop or general
+            folder.</strong
+          >If the approved snapshot method is unknown, stop and contact the
+          storage owner.
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="step">Step 5 · Before fingerprint</div>
+        <h2>Capture privacy-safe integrity evidence</h2>
+        <pre><code>psql "$MIGRATION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -A -F '|' -c \
+"SELECT 'delegation',COUNT(*),md5(COALESCE(string_agg(id::text||':'||registration_status::text||':'||status::text,'|' ORDER BY id),'')) FROM delegation
+ UNION ALL SELECT 'player',COUNT(*),md5(COALESCE(string_agg(id::text||':'||delegation_id::text||':'||category::text,'|' ORDER BY id),'')) FROM player
+ UNION ALL SELECT 'identity_document',COUNT(*),md5(COALESCE(string_agg(id::text||':'||player_id::text||':'||status::text||':'||COALESCE(object_key,'NO_FILE'),'|' ORDER BY id),'')) FROM identity_document
+ UNION ALL SELECT 'credential',COUNT(*),md5(COALESCE(string_agg(id::text||':'||player_id::text||':'||status::text,'|' ORDER BY id),'')) FROM credential
+ ORDER BY 1" &gt; "$EVIDENCE_ROOT/core-records-before.txt"
+cat "$EVIDENCE_ROOT/core-records-before.txt"</code></pre>
+      </section>
+
+      <section class="card" id="deploy">
+        <div class="step">Step 6 · Freeze and build</div>
+        <h2>Stop apps, check out only the tag, then build</h2>
+        <pre><code>supervisorctl stop gameday-api gameday-teams gameday-platform
+sleep 5
+supervisorctl status gameday-api gameday-teams gameday-platform
+if ss -lntp | grep -E ':3000|:3002|:3003'; then
+  echo "STOP: an application listener remains"; exit 1
+fi
+
+cd "$SOURCE_ROOT"
+git switch --detach "$TARGET_COMMIT"
+test "$(git rev-parse HEAD)" = "$TARGET_COMMIT" \
+  || { echo "STOP: wrong release checked out"; exit 1; }
+
+chown -R "$SITE_USER:$SITE_GROUP" "$SOURCE_ROOT"
+install -d -o "$SITE_USER" -g "$SITE_GROUP" -m 0750 \
+  "$CACHE_ROOT" "$CACHE_ROOT/corepack" "$CACHE_ROOT/pnpm"
+sudo -u "$SITE_USER" -H env CI=true XDG_CACHE_HOME="$CACHE_ROOT" \
+  COREPACK_HOME="$CACHE_ROOT/corepack" PNPM_HOME="$CACHE_ROOT/pnpm" \
+  pnpm install --frozen-lockfile
+sudo -u "$SITE_USER" -H pnpm --filter api test -- --runInBand
+sudo -u "$SITE_USER" -H pnpm --filter api build
+sudo -u "$SITE_USER" -H pnpm --filter platform build
+sudo -u "$SITE_USER" -H pnpm --filter teams build</code></pre>
+        <div class="callout danger">
+          <strong>Stop on any failure.</strong>Do not apply the role change or
+          restart services until all tests and builds pass.
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="step">Step 7 · One schema operation</div>
+        <h2>Add the Federation role only</h2>
+        <pre><code>cd "$SOURCE_ROOT"
+sudo -u "$SITE_USER" -H env \
+  MIGRATION_DATABASE_URL="$MIGRATION_DATABASE_URL" \
+  pnpm --filter api db:apply-federation-hotfix
+
+psql "$MIGRATION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atc \
+  "SELECT enumlabel FROM pg_enum e JOIN pg_type t ON t.oid=e.enumtypid WHERE t.typname='platform_role' AND e.enumlabel='federation_viewer'"
+
+test "$(psql "$MIGRATION_DATABASE_URL" -X -Atc \
+  'SELECT COALESCE(MAX(created_at),0) FROM drizzle.__drizzle_migrations')" = "1785542400000" \
+  &amp;&amp; echo "PASS: migration journal unchanged at 0029" \
+  || { echo "STOP: migration journal changed unexpectedly"; exit 1; }</code></pre>
+        <div class="callout success">
+          <strong>Expected</strong>The command prints
+          <code>federation_viewer</code>, and the journal remains exactly
+          <code>1785542400000</code>.
+        </div>
+      </section>
+
+      <section class="card" id="account">
+        <div class="step">Step 8 · Named account</div>
+        <h2>Create one reviewer without editing .env</h2>
+        <pre><code>read -r -p 'Named reviewer email: ' FEDERATION_VIEWER_EMAIL
+read -r -p 'Named reviewer display name: ' FEDERATION_VIEWER_NAME
+read -r -s -p 'One-time password (14+ characters): ' FEDERATION_VIEWER_PASSWORD
+echo
+export FEDERATION_VIEWER_EMAIL FEDERATION_VIEWER_NAME FEDERATION_VIEWER_PASSWORD
+
+cd "$SOURCE_ROOT"
+MIGRATION_DATABASE_URL="$MIGRATION_DATABASE_URL" \
+  pnpm --filter api db:bootstrap-federation
+
+unset FEDERATION_VIEWER_PASSWORD
+psql "$MIGRATION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -A -F '|' -c \
+  "SELECT email,display_name,platform_role,auth_version FROM app_user WHERE platform_role='federation_viewer'"</code></pre>
+        <div class="callout warning">
+          <strong>Expected write</strong>This step creates or updates exactly
+          one Federation <code>app_user</code>. It refuses a second Federation
+          reviewer or an email already used by another authority. Send the
+          one-time password only through the approved secure channel.
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="step">Step 9 · Start and accept</div>
+        <h2>Start API first, then the interfaces</h2>
+        <pre><code>supervisorctl start gameday-api
+sleep 6
+supervisorctl status gameday-api
+curl -fsS http://127.0.0.1:3000/registration-window
+
+supervisorctl start gameday-teams gameday-platform
+sleep 10
+supervisorctl status gameday-api gameday-teams gameday-platform
+ss -lntp | grep -E ':3000|:3002|:3003'</code></pre>
+        <div class="check">
+          <span class="box"></span>
+          <div>LOC account can open every previously registered team.</div>
+        </div>
+        <div class="check">
+          <span class="box"></span>
+          <div>
+            Future LOC verify/reject action retains the identity file for
+            Federation review.
+          </div>
+        </div>
+        <div class="check">
+          <span class="box"></span>
+          <div>
+            Named Federation login sees submitted teams, profiles, IDs, photos
+            and retained identity evidence.
+          </div>
+        </div>
+        <div class="check">
+          <span class="box"></span>
+          <div>
+            Federation screen has no approve, reject, edit, delete, credential,
+            registration-window or match-operation controls.
+          </div>
+        </div>
+        <div class="check">
+          <span class="box"></span>
+          <div>
+            Draft/unsubmitted delegation and player UUIDs return not found
+            through Federation endpoints.
+          </div>
+        </div>
+        <div class="check">
+          <span class="box"></span>
+          <div>
+            Identity/document access appears in the audit history under the
+            named reviewer.
+          </div>
+        </div>
+      </section>
+
+      <section class="card" id="proof">
+        <div class="step">Step 10 · Non-negotiable proof</div>
+        <h2>Show that existing records stayed identical</h2>
+        <pre><code>psql "$MIGRATION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -A -F '|' -c \
+"SELECT 'delegation',COUNT(*),md5(COALESCE(string_agg(id::text||':'||registration_status::text||':'||status::text,'|' ORDER BY id),'')) FROM delegation
+ UNION ALL SELECT 'player',COUNT(*),md5(COALESCE(string_agg(id::text||':'||delegation_id::text||':'||category::text,'|' ORDER BY id),'')) FROM player
+ UNION ALL SELECT 'identity_document',COUNT(*),md5(COALESCE(string_agg(id::text||':'||player_id::text||':'||status::text||':'||COALESCE(object_key,'NO_FILE'),'|' ORDER BY id),'')) FROM identity_document
+ UNION ALL SELECT 'credential',COUNT(*),md5(COALESCE(string_agg(id::text||':'||player_id::text||':'||status::text,'|' ORDER BY id),'')) FROM credential
+ ORDER BY 1" &gt; "$EVIDENCE_ROOT/core-records-after.txt"
+
+diff -u "$EVIDENCE_ROOT/core-records-before.txt" "$EVIDENCE_ROOT/core-records-after.txt" \
+  &amp;&amp; echo "PASS: protected existing records are identical" \
+  || { echo "STOP: protected records changed; escalate immediately"; exit 1; }
+
+unset MIGRATION_DATABASE_URL FEDERATION_VIEWER_EMAIL FEDERATION_VIEWER_NAME
+date --iso-8601=seconds &gt; "$EVIDENCE_ROOT/window-completed.txt"</code></pre>
+        <div class="callout success">
+          <strong>Expected production writes</strong>One Federation account
+          create/update, then attributable audit rows when the reviewer opens
+          records. Deployment does not update or delete existing teams, players,
+          identities, consents, credentials or memberships.
+        </div>
+      </section>
+
+      <section class="card" id="rollback">
+        <div class="step">Rollback</div>
+        <h2>If acceptance fails</h2>
+        <pre><code>set -euo pipefail
+cd "$SOURCE_ROOT"
+supervisorctl stop gameday-api gameday-teams gameday-platform
+git switch --detach "$OLD_COMMIT"
+chown -R "$SITE_USER:$SITE_GROUP" "$SOURCE_ROOT"
+sudo -u "$SITE_USER" -H pnpm install --frozen-lockfile
+sudo -u "$SITE_USER" -H pnpm --filter api build
+sudo -u "$SITE_USER" -H pnpm --filter platform build
+sudo -u "$SITE_USER" -H pnpm --filter teams build
+supervisorctl start gameday-api gameday-teams gameday-platform
+supervisorctl status gameday-api gameday-teams gameday-platform</code></pre>
+        <p>
+          Leave the additive enum value in place; it is harmless to the old
+          application. Do not restore the database merely to remove an enum
+          label. If the Federation credentials may be compromised, the database
+          owner should revoke that account by clearing its password hash and
+          incrementing <code>auth_version</code>; do not delete the account or
+          its audit history.
+        </p>
+      </section>
+
+      <section class="card">
+        <div class="step">Change record</div>
+        <h2>What this hotfix includes</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Area</th>
+                <th>Included</th>
+                <th>Excluded</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Federation</td>
+                <td>
+                  One named login; submitted teams; profiles/data IDs; photos;
+                  identity evidence; audit
+                </td>
+                <td>
+                  Approvals, edits, deletes, credentials, match operations
+                </td>
+              </tr>
+              <tr>
+                <td>LOC</td>
+                <td>
+                  Existing workflow; identity files retained after validation
+                </td>
+                <td>No authority redesign in this hotfix</td>
+              </tr>
+              <tr>
+                <td>Database</td>
+                <td>One enum label; one account; normal audit rows</td>
+                <td>
+                  No general migrations; no protected-record updates/deletes; no
+                  journal write
+                </td>
+              </tr>
+              <tr>
+                <td>Follow-up</td>
+                <td colspan="2">
+                  Comprehensive authority model, approved automated purge
+                  schedule, monitoring/reporting, and migration-history
+                  reconciliation
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <p class="footer">
+        Federation-only production hotfix · issued 15 September 2026 · keep
+        deployment evidence restricted
+      </p>
+    </main>
+  </body>
+</html>

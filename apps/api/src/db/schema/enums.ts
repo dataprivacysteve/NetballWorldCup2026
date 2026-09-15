@@ -19,6 +19,7 @@ export const membershipRole = pgEnum('membership_role', ['manager', 'coach']);
 export const platformRole = pgEnum('platform_role', [
   'sportsbb_admin',
   'loc_officer',
+  'federation_viewer',
   'match_supervisor',
   'scorer',
   'timekeeper',

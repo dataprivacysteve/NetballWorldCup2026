@@ -13,8 +13,9 @@ import { player } from './roster';
 import { appUser } from './user';
 
 // Restricted manual identity-verification record. Document bytes live in the
-// dedicated identity bucket and are deleted after the LOC officer records the
-// outcome. The outcome remains as the minimum audit record.
+// dedicated identity bucket for World Netball eligibility review. Every view
+// is audited; deletion follows the approved federation decision/appeal
+// retention schedule rather than the LOC validation event.
 export const identityDocument = pgTable(
   'identity_document',
   {
