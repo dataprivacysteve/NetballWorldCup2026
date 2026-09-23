@@ -1,0 +1,643 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Federation Eligibility Review — Production Update Runbook a044fe5</title>
+  <!-- Self-contained: embedded for WhatsApp, email and Android content:// viewers. -->
+  <style>
+    :root {
+      --navy: #101a4f;
+      --navy-2: #17256c;
+      --gold: #f3c548;
+      --orange: #dc7049;
+      --ink: #151831;
+      --muted: #626985;
+      --paper: #fffdf8;
+      --soft: #f5f2ea;
+      --line: #dcdde6;
+      --ok: #087a54;
+      --warn: #a86100;
+      --bad: #b3261e;
+      --shadow: 0 18px 48px rgba(16, 26, 79, .12);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; color: var(--ink); background: var(--soft); font: 16px/1.62 Inter, "Segoe UI", Arial, sans-serif; }
+    a { color: var(--navy-2); }
+    img { max-width: 100%; }
+    .cover { min-height: 92vh; display: grid; align-items: end; color: white; background: radial-gradient(circle at 85% 20%, rgba(243,197,72,.23), transparent 22%), linear-gradient(135deg, #090f32, var(--navy-2)); padding: clamp(2rem, 7vw, 7rem); }
+    .cover-inner { max-width: 980px; }
+    .kicker, .eyebrow { color: var(--gold); font: 800 .72rem/1.2 ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .16em; text-transform: uppercase; }
+    .cover h1 { max-width: 900px; margin: .7rem 0 1rem; font-family: Georgia, serif; font-size: clamp(3rem, 7vw, 6.5rem); line-height: .98; letter-spacing: -.045em; }
+    .cover .subtitle { max-width: 780px; color: #dce1ff; font-size: clamp(1rem, 2vw, 1.35rem); }
+    .meta { display: flex; flex-wrap: wrap; gap: .7rem; margin-top: 2rem; }
+    .meta span { border: 1px solid rgba(255,255,255,.2); border-radius: 999px; background: rgba(255,255,255,.07); padding: .45rem .8rem; font-size: .78rem; }
+    .layout { display: grid; grid-template-columns: 290px minmax(0, 1fr); max-width: 1500px; margin: 0 auto; }
+    .toc { position: sticky; top: 0; align-self: start; height: 100vh; overflow: auto; padding: 2rem 1.5rem; background: #f0eee7; border-right: 1px solid var(--line); }
+    .toc strong { display: block; margin-bottom: .8rem; font-family: Georgia, serif; font-size: 1.2rem; }
+    .toc a { display: block; margin: .2rem 0; padding: .38rem .5rem; border-radius: .45rem; color: #3d435e; text-decoration: none; font-size: .83rem; line-height: 1.35; }
+    .toc a:hover { color: var(--navy); background: white; }
+    .content { min-width: 0; background: var(--paper); }
+    .chapter { max-width: 1020px; margin: 0 auto; padding: 5rem clamp(1.4rem, 5vw, 5rem); border-bottom: 1px solid var(--line); }
+    .chapter h2 { margin: .35rem 0 1.2rem; font-family: Georgia, serif; font-size: clamp(2rem, 4vw, 3.6rem); line-height: 1.08; letter-spacing: -.025em; }
+    .chapter h3 { margin: 2.3rem 0 .7rem; color: var(--navy); font-family: Georgia, serif; font-size: 1.55rem; }
+    .chapter h4 { margin: 1.6rem 0 .45rem; font-size: 1.05rem; }
+    .lead { color: #444b69; font-size: 1.12rem; }
+    .callout { margin: 1.4rem 0; padding: 1rem 1.15rem; border-left: 5px solid var(--navy); border-radius: .55rem; background: #eff2ff; }
+    .callout.warning { border-color: var(--warn); background: #fff5df; }
+    .callout.danger { border-color: var(--bad); background: #fff0ee; }
+    .callout.success { border-color: var(--ok); background: #eaf8f2; }
+    .callout strong { display: block; margin-bottom: .2rem; }
+    .steps { counter-reset: step; list-style: none; padding: 0; }
+    .steps > li { position: relative; min-height: 3rem; margin: 1rem 0; padding: .9rem 1rem .9rem 4rem; border: 1px solid var(--line); border-radius: .75rem; background: white; box-shadow: 0 7px 20px rgba(16,26,79,.04); }
+    .steps > li::before { counter-increment: step; content: counter(step); position: absolute; left: 1rem; top: .8rem; width: 2rem; height: 2rem; display: grid; place-items: center; border-radius: 50%; color: white; background: var(--navy); font-weight: 800; }
+    .steps li p { margin: .3rem 0; }
+    .checklist { list-style: none; padding: 0; }
+    .checklist li { position: relative; padding: .35rem 0 .35rem 1.8rem; }
+    .checklist li::before { content: "□"; position: absolute; left: 0; color: var(--navy); font-size: 1.3rem; line-height: 1.2; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+    .card { padding: 1.15rem; border: 1px solid var(--line); border-radius: .75rem; background: white; }
+    .card h4 { margin-top: 0; color: var(--navy); }
+    .table-wrap { overflow-x: auto; margin: 1rem 0; }
+    table { width: 100%; border-collapse: collapse; background: white; font-size: .9rem; }
+    th, td { padding: .72rem; border: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: white; background: var(--navy); }
+    tr:nth-child(even) td { background: #f8f7f2; }
+    code { padding: .12rem .3rem; border-radius: .3rem; background: #eeeef4; font: .86em ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .shot { margin: 2rem 0; border: 1px solid #cfd1dc; border-radius: .85rem; overflow: hidden; background: white; box-shadow: var(--shadow); }
+    .shot img { display: block; width: 100%; }
+    .shot figcaption { padding: .8rem 1rem; color: var(--muted); background: white; font-size: .82rem; }
+    .procedure { margin: 1.4rem 0; padding: 1.2rem; border: 1px solid var(--line); border-radius: .8rem; background: white; }
+    .procedure > h4 { margin-top: 0; }
+    .owner { display: inline-block; margin-right: .3rem; padding: .18rem .5rem; border-radius: 999px; color: white; background: var(--navy); font-size: .7rem; font-weight: 800; text-transform: uppercase; }
+    .owner.gold { color: var(--navy); background: var(--gold); }
+    .decision { display: grid; grid-template-columns: 1fr 2rem 1fr; align-items: center; gap: .7rem; margin: 1rem 0; }
+    .decision > div { padding: 1rem; border: 1px solid var(--line); border-radius: .65rem; background: white; }
+    .decision .arrow { border: 0; padding: 0; text-align: center; background: transparent; }
+    .footer { padding: 2rem; color: #d7dcff; background: var(--navy); text-align: center; font-size: .8rem; }
+    .page-break { break-before: page; }
+    @media (max-width: 900px) { .layout { display: block; } .toc { position: relative; height: auto; border-right: 0; border-bottom: 1px solid var(--line); } .grid { grid-template-columns: 1fr; } }
+    @media print {
+      body { background: white; font-size: 10.5pt; }
+      .cover { min-height: 100vh; break-after: page; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      .layout { display: block; max-width: none; }
+      .toc { position: static; height: auto; break-after: page; border: 0; }
+      .content { background: white; }
+      .chapter { max-width: none; padding: .55in .65in; break-before: page; }
+      .chapter:first-child { break-before: auto; }
+      .shot, .callout, .procedure, table, .card { break-inside: avoid; }
+      a { color: inherit; text-decoration: none; }
+      .footer { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    }
+  </style>
+  <style>
+    :root { --violet: #6b4ba8; --cyan: #0d7c86; }
+    .cover { min-height: 78vh; }
+    .release-mark { display: inline-grid; place-items: center; width: 5.2rem; height: 5.2rem; margin-bottom: 1rem; border: 2px solid rgba(243,197,72,.7); border-radius: 1.4rem; color: var(--gold); background: rgba(255,255,255,.08); font: 900 1.25rem/1 ui-monospace,Consolas,monospace; }
+    .flow { display: grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap: .55rem; margin: 1.5rem 0; }
+    .flow div { position: relative; padding: .8rem .55rem; border: 1px solid var(--line); border-radius: .65rem; background: white; text-align: center; font-size: .76rem; font-weight: 800; }
+    .flow div:not(:last-child)::after { content: "→"; position: absolute; right: -.56rem; top: 50%; z-index: 2; width: .56rem; color: var(--gold); transform: translateY(-50%); }
+    .risk-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 1rem; margin: 1rem 0; }
+    .risk { padding: 1rem; border: 1px solid var(--line); border-radius: .75rem; background: white; }
+    .risk b { display: block; color: var(--navy); }
+    .risk span { color: var(--muted); font-size: .84rem; }
+    .badge { display: inline-block; padding: .25rem .58rem; border-radius: 999px; font-size: .68rem; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+    .badge.green { color: #fff; background: var(--ok); }
+    .badge.amber { color: #fff; background: var(--warn); }
+    .badge.red { color: #fff; background: var(--bad); }
+    .badge.blue { color: #fff; background: var(--navy-2); }
+    .checkpoint { display: grid; grid-template-columns: 3rem 1fr; gap: .9rem; align-items: start; margin: 1.25rem 0; }
+    .checkpoint .number { display: grid; place-items: center; width: 2.7rem; height: 2.7rem; border-radius: .75rem; color: var(--gold); background: var(--navy); font-weight: 900; }
+    .checkpoint h3 { margin: .15rem 0 .4rem; }
+    .expected { border-left-color: var(--cyan); background: #eaf8f8; }
+    .command-note { margin: -.55rem 0 1.2rem; color: var(--muted); font-size: .82rem; }
+    .signoff td { height: 3.2rem; }
+    pre { max-width: 100%; margin: 1rem 0 1.4rem; padding: 1rem 1.1rem; overflow-x: auto; border: 1px solid #252f62; border-radius: .7rem; color: #eef1ff; background: #0d153f; box-shadow: inset 0 1px rgba(255,255,255,.05); }
+    pre code { padding: 0; color: inherit; background: transparent; font-size: .78rem; line-height: 1.55; white-space: pre; }
+    .chapter p code, .chapter td code { overflow-wrap: anywhere; }
+    kbd { padding: .1rem .4rem; border: 1px solid #c8cad3; border-bottom-width: 2px; border-radius: .35rem; background: white; font: .78rem ui-monospace,Consolas,monospace; }
+    @media (max-width: 900px) { .flow, .risk-grid { grid-template-columns: 1fr; } .flow div::after { display: none; } }
+    @media print { .flow { grid-template-columns: repeat(3,1fr); } .release-mark, .badge { print-color-adjust: exact; -webkit-print-color-adjust: exact; } }
+  </style>
+</head>
+<body>
+  <header class="cover">
+    <div class="cover-inner">
+      <div class="release-mark">a044</div>
+      <div class="kicker">SportsBB · Controlled live change · Junior developer edition</div>
+      <h1>Federation Eligibility Review Production Update</h1>
+      <p class="subtitle">A cautious, command-by-command procedure for adding World Netball’s read-only review login while preserving every existing team, player and identity record.</p>
+      <div class="meta">
+        <span>Target SHA: a044fe5311c5</span>
+        <span>Required base: 20edf3079cb6</span>
+        <span>Database: additive migration 0041</span>
+        <span>API + Teams + Platform</span>
+        <span>Existing registrations protected</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Runbook contents">
+      <strong>Deployment sequence</strong>
+      <a href="#purpose">1. Read this first</a>
+      <a href="#roles">2. People and authority</a>
+      <a href="#facts">3. Release facts</a>
+      <a href="#preflight">4. Server preflight</a>
+      <a href="#baseline">5. Prove the starting point</a>
+      <a href="#maintenance">6. Freeze writes</a>
+      <a href="#backup">7. Back up database and IDs</a>
+      <a href="#capture">8. Capture record fingerprints</a>
+      <a href="#checkout">9. Check out exact release</a>
+      <a href="#install">10. Install and build</a>
+      <a href="#migration">11. Apply migration 0041</a>
+      <a href="#start">12. Start services</a>
+      <a href="#integrity">13. Prove records unchanged</a>
+      <a href="#account">14. Create Federation login</a>
+      <a href="#smoke">15. Functional smoke test</a>
+      <a href="#monitor">16. Logs and monitoring</a>
+      <a href="#rollback">17. Safe rollback</a>
+      <a href="#evidence">18. Evidence and sign-off</a>
+      <a href="#never">Never run these commands</a>
+    </nav>
+
+    <main class="content">
+      <section class="chapter" id="purpose">
+        <div class="eyebrow">Step 1 · Safety contract</div>
+        <h2>Read this before opening the terminal</h2>
+        <p class="lead">This runbook intentionally stops unless the live server is already at the expected application and database baseline. Do not improvise around a failed check.</p>
+        <div class="callout danger">
+          <strong>Absolute stop rule</strong>
+          If a command prints <b>STOP</b>, if its output differs from the stated expected result, or if you are unsure what a value means: stop typing, keep the services in their current state, copy the non-sensitive output, and contact the lead developer. Do not “try something” on production.
+        </div>
+        <div class="flow" aria-label="Deployment flow">
+          <div>Prove baseline</div><div>Freeze writes</div><div>Back up</div><div>Build + migrate</div><div>Verify data</div><div>Release + monitor</div>
+        </div>
+        <div class="risk-grid">
+          <div class="risk"><b>Registered teams</b><span>No migration in this release updates or deletes delegation or player rows.</span></div>
+          <div class="risk"><b>Identity evidence</b><span>The new code stops LOC verification from deleting the document object.</span></div>
+          <div class="risk"><b>Expected writes</b><span>Migration history, one Federation account, and attributed access-audit events only.</span></div>
+        </div>
+        <h3>What success means</h3>
+        <ul class="checklist">
+          <li>Production runs exact commit <code>a044fe5311c5498b18a74bac574ed12aa0a121f5</code>.</li>
+          <li>The database records migration timestamp <code>1789344000000</code> for migration <code>0041</code>.</li>
+          <li>Pre/post fingerprints for delegation, player, identity-document and credential records are identical.</li>
+          <li>The LOC can continue operational validation without identity-file deletion.</li>
+          <li>The named World Netball reviewer can view the restricted Federation console but cannot change anything.</li>
+        </ul>
+      </section>
+
+      <section class="chapter" id="roles">
+        <div class="eyebrow">Step 2 · Named accountability</div>
+        <h2>Assign the people before the window begins</h2>
+        <table>
+          <thead><tr><th>Role</th><th>Responsibility</th><th>Must be present?</th></tr></thead>
+          <tbody>
+            <tr><td><span class="owner">Deployer</span></td><td>Runs only the commands in this guide and captures outputs.</td><td>Yes</td></tr>
+            <tr><td><span class="owner">Lead developer</span></td><td>Approves any deviation, failed baseline, rollback or unexpected migration.</td><td>Available live</td></tr>
+            <tr><td><span class="owner">Database owner</span></td><td>Confirms the dump is usable and authorises any restore.</td><td>Available live</td></tr>
+            <tr><td><span class="owner">Storage owner</span></td><td>Snapshots the restricted identity bucket without exposing document contents.</td><td>Before migration</td></tr>
+            <tr><td><span class="owner gold">LOC tester</span></td><td>Performs read-only operational acceptance using an existing account.</td><td>After restart</td></tr>
+            <tr><td><span class="owner gold">WN reviewer</span></td><td>Owns the named Federation login and verifies the read-only experience.</td><td>For final acceptance</td></tr>
+          </tbody>
+        </table>
+        <div class="callout warning"><strong>No shared Federation login</strong>Provision a named person. Send the one-time password through the approved secure channel, never email, chat, screenshots, Git, deployment evidence or shell history.</div>
+      </section>
+
+      <section class="chapter" id="facts">
+        <div class="eyebrow">Step 3 · Immutable release facts</div>
+        <h2>Know exactly what is being deployed</h2>
+        <table>
+          <tbody>
+            <tr><th>Repository</th><td><code>dataprivacysteve/NetballWorldCup2026</code></td></tr>
+            <tr><th>Target commit</th><td><code>a044fe5311c5498b18a74bac574ed12aa0a121f5</code></td></tr>
+            <tr><th>Required production base</th><td><code>20edf3079cb622595c6f4e94e819d48cb2f2c0d9</code></td></tr>
+            <tr><th>Expected pre-update migration</th><td><code>0040</code> / journal timestamp <code>1788296640000</code></td></tr>
+            <tr><th>Expected new migration</th><td><code>0041_federation_viewer.sql</code> / timestamp <code>1789344000000</code></td></tr>
+            <tr><th>Migration content</th><td><code>ALTER TYPE platform_role ADD VALUE IF NOT EXISTS 'federation_viewer'</code></td></tr>
+          </tbody>
+        </table>
+        <div class="callout warning"><strong>Why the exact base matters</strong>GitHub main also contains two preceding feature commits. If production is not already at <code>20edf30</code> with migration <code>0040</code>, this is no longer a Federation-only update. Stop and ask the lead developer for a separately reviewed release plan.</div>
+      </section>
+
+      <section class="chapter" id="preflight">
+        <div class="eyebrow">Step 4 · Read-only server checks</div>
+        <h2>Verify the production environment</h2>
+        <p>Connect through the approved administrative route and run this procedure as <code>root</code> on the production server. Do not run these commands on a workstation or staging host. The existing operations manual identifies the following values; verify them rather than assuming they are still correct.</p>
+        <pre><code>set -euo pipefail
+
+export SITE_USER=web6
+export SITE_GROUP=client0
+export SOURCE_ROOT=/var/www/clients/client0/web6/web/gameday/source
+export CACHE_ROOT=/var/www/clients/client0/web6/web/gameday/.cache
+export BACKUP_ROOT=/var/backups/gameday
+export TARGET_COMMIT=a044fe5311c5498b18a74bac574ed12aa0a121f5
+export REQUIRED_BASE=20edf3079cb622595c6f4e94e819d48cb2f2c0d9
+export RELEASE_TIME="$(date +%Y%m%d-%H%M%S)"
+export EVIDENCE_ROOT="$BACKUP_ROOT/federation-a044fe5-$RELEASE_TIME"
+
+cd "$SOURCE_ROOT"
+pwd
+id "$SITE_USER"
+git remote -v
+git status --short
+git branch --show-current
+git diff --quiet &amp;&amp; git diff --cached --quiet \
+  || { echo "STOP: tracked production changes exist"; exit 1; }
+supervisorctl status gameday-api gameday-teams gameday-platform
+ss -lntp | grep -E ':3000|:3002|:3003'
+df -h "$SOURCE_ROOT" "$BACKUP_ROOT"</code></pre>
+        <div class="callout expected"><strong>Expected</strong><code>pwd</code> exactly matches <code>$SOURCE_ROOT</code>; the site user exists; the remote is the approved repository; tracked Git status is empty; all three services are RUNNING; and ports 3000, 3002 and 3003 each have one expected listener.</div>
+        <div class="callout danger"><strong>Stop if the worktree has tracked changes</strong>Do not reset, stash, delete or overwrite production modifications. The lead developer must reconcile them.</div>
+      </section>
+
+      <section class="chapter" id="baseline">
+        <div class="eyebrow">Step 5 · Mandatory release gate</div>
+        <h2>Prove code and migration starting points</h2>
+        <h3>5A — Fetch without changing the running release</h3>
+        <pre><code>cd "$SOURCE_ROOT"
+git fetch --prune origin
+
+export OLD_COMMIT="$(git rev-parse HEAD)"
+export REMOTE_COMMIT="$(git rev-parse origin/main)"
+
+echo "OLD_COMMIT=$OLD_COMMIT"
+echo "REMOTE_COMMIT=$REMOTE_COMMIT"
+
+test "$OLD_COMMIT" = "$REQUIRED_BASE" \
+  &amp;&amp; echo "PASS: production is on the required base" \
+  || { echo "STOP: production is not on 20edf30"; exit 1; }
+
+test "$REMOTE_COMMIT" = "$TARGET_COMMIT" \
+  &amp;&amp; echo "PASS: origin/main is the approved target" \
+  || { echo "STOP: origin/main moved; do not deploy an unreviewed commit"; exit 1; }</code></pre>
+        <h3>5B — Load the production environment without printing it</h3>
+        <pre><code>set -a
+. "$SOURCE_ROOT/.env"
+set +a
+
+test -n "${MIGRATION_DATABASE_URL:-}" \
+  &amp;&amp; echo "PASS: migration connection is loaded" \
+  || { echo "STOP: MIGRATION_DATABASE_URL is missing"; exit 1; }
+
+test -n "${S3_BUCKET_IDENTITY:-}" \
+  &amp;&amp; echo "PASS: identity bucket name is loaded" \
+  || { echo "STOP: S3_BUCKET_IDENTITY is missing"; exit 1; }</code></pre>
+        <p class="command-note">Do not run <code>env</code>, <code>printenv</code>, or echo connection strings. Those commands may expose passwords.</p>
+        <h3>5C — Verify migration 0040 is already the latest applied migration</h3>
+        <pre><code>export LATEST_MIGRATION="$(psql "$MIGRATION_DATABASE_URL" -X -Atc \
+  "SELECT COALESCE(MAX(created_at),0) FROM drizzle.__drizzle_migrations")"
+
+echo "LATEST_MIGRATION=$LATEST_MIGRATION"
+
+test "$LATEST_MIGRATION" = "1788296640000" \
+  &amp;&amp; echo "PASS: database is current through migration 0040" \
+  || { echo "STOP: unexpected migration state"; exit 1; }
+
+git diff --name-only "$OLD_COMMIT" "$TARGET_COMMIT" -- apps/api/drizzle</code></pre>
+        <div class="callout expected"><strong>Expected migration diff</strong>Only <code>apps/api/drizzle/0041_federation_viewer.sql</code> and <code>apps/api/drizzle/meta/_journal.json</code> should appear. Any other migration file is a stop condition.</div>
+      </section>
+
+      <section class="chapter" id="maintenance">
+        <div class="eyebrow">Step 6 · Prevent concurrent writes</div>
+        <h2>Open the maintenance window and stop applications</h2>
+        <p>Tell the LOC and team managers that registration is temporarily unavailable. Wait for confirmation that nobody is editing a roster or reviewing a document.</p>
+        <pre><code>supervisorctl stop gameday-api gameday-teams gameday-platform
+
+sleep 5
+supervisorctl status gameday-api gameday-teams gameday-platform
+
+if ss -lntp | grep -E ':3000|:3002|:3003'; then
+  echo "STOP: an application listener remains"
+  exit 1
+else
+  echo "PASS: application writes are frozen"
+fi</code></pre>
+        <div class="callout danger"><strong>Never kill an unidentified process</strong>If a listener remains, run <code>ss -lntp</code>, record its PID and ask the lead developer to identify it.</div>
+      </section>
+
+      <section class="chapter" id="backup">
+        <div class="eyebrow">Step 7 · Recovery point</div>
+        <h2>Back up PostgreSQL and restricted identity evidence</h2>
+        <div class="checkpoint"><div class="number">A</div><div><h3>Create the evidence directory</h3><pre><code>install -d -o root -g root -m 0700 "$EVIDENCE_ROOT"
+printf '%s\n' "$OLD_COMMIT" &gt; "$EVIDENCE_ROOT/old-commit.txt"
+printf '%s\n' "$TARGET_COMMIT" &gt; "$EVIDENCE_ROOT/target-commit.txt"
+date --iso-8601=seconds &gt; "$EVIDENCE_ROOT/window-started.txt"</code></pre></div></div>
+        <div class="checkpoint"><div class="number">B</div><div><h3>Create and validate the database dump</h3><pre><code>export DB_BACKUP="$EVIDENCE_ROOT/gameday-before-a044fe5.dump"
+
+pg_dump "$MIGRATION_DATABASE_URL" \
+  --format=custom \
+  --file="$DB_BACKUP"
+
+test -s "$DB_BACKUP" \
+  &amp;&amp; pg_restore --list "$DB_BACKUP" &gt; "$EVIDENCE_ROOT/database-restore-list.txt" \
+  &amp;&amp; echo "PASS: database backup is non-empty and readable" \
+  || { echo "STOP: database backup validation failed"; exit 1; }</code></pre></div></div>
+        <div class="checkpoint"><div class="number">C</div><div><h3>Snapshot the identity bucket</h3><p>The storage owner must use the production-approved MinIO/S3 snapshot or backup process for <code>$S3_BUCKET_IDENTITY</code>. Record the snapshot identifier—not document names—in:</p><pre><code>printf '%s\n' 'REPLACE_WITH_CONFIRMED_SNAPSHOT_ID' \
+  &gt; "$EVIDENCE_ROOT/identity-bucket-snapshot.txt"
+
+grep -qv 'REPLACE_WITH' "$EVIDENCE_ROOT/identity-bucket-snapshot.txt" \
+  &amp;&amp; echo "PASS: identity snapshot ID recorded" \
+  || { echo "STOP: identity bucket snapshot is not confirmed"; exit 1; }</code></pre><div class="callout danger"><strong>Do not invent an object-storage command</strong>If the approved snapshot method or storage alias is unknown, stop and ask the storage owner. Do not copy identity documents to a laptop or general-purpose folder.</div></div></div>
+      </section>
+
+      <section class="chapter" id="capture">
+        <div class="eyebrow">Step 8 · Data integrity evidence</div>
+        <h2>Capture privacy-safe row counts and fingerprints</h2>
+        <p>These queries hash identifiers and statuses, not names, emails, dates of birth or document contents.</p>
+        <pre><code>psql "$MIGRATION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -A -F '|' \
+  -c "SELECT 'delegation', COUNT(*), md5(COALESCE(string_agg(id::text || ':' || registration_status::text || ':' || status::text, '|' ORDER BY id),'')) FROM delegation
+      UNION ALL
+      SELECT 'player', COUNT(*), md5(COALESCE(string_agg(id::text || ':' || delegation_id::text || ':' || category::text, '|' ORDER BY id),'')) FROM player
+      UNION ALL
+      SELECT 'identity_document', COUNT(*), md5(COALESCE(string_agg(id::text || ':' || player_id::text || ':' || status::text || ':' || COALESCE(object_key,'NO_FILE'), '|' ORDER BY id),'')) FROM identity_document
+      UNION ALL
+      SELECT 'credential', COUNT(*), md5(COALESCE(string_agg(id::text || ':' || player_id::text || ':' || status::text, '|' ORDER BY id),'')) FROM credential
+      ORDER BY 1" \
+  &gt; "$EVIDENCE_ROOT/core-records-before.txt"
+
+cat "$EVIDENCE_ROOT/core-records-before.txt"
+
+psql "$MIGRATION_DATABASE_URL" -X -Atc \
+  "SELECT COUNT(*) FROM identity_document WHERE object_key IS NOT NULL" \
+  &gt; "$EVIDENCE_ROOT/identity-files-before.txt"</code></pre>
+        <div class="callout expected"><strong>Expected</strong>The file contains four labelled rows and the identity-file count contains one integer. If a query fails, do not migrate.</div>
+      </section>
+
+      <section class="chapter" id="checkout">
+        <div class="eyebrow">Step 9 · Exact source release</div>
+        <h2>Fast-forward to the approved commit only</h2>
+        <p>Do not use a plain <code>git pull</code>; the remote may advance after this guide was issued.</p>
+        <pre><code>cd "$SOURCE_ROOT"
+git switch main
+git merge --ff-only "$TARGET_COMMIT"
+
+test "$(git rev-parse HEAD)" = "$TARGET_COMMIT" \
+  &amp;&amp; echo "PASS: exact release checked out" \
+  || { echo "STOP: HEAD is not the approved release"; exit 1; }
+
+git status --short
+git log -3 --oneline</code></pre>
+        <div class="callout expected"><strong>Expected</strong>HEAD is <code>a044fe5311c5498b18a74bac574ed12aa0a121f5</code> and tracked Git status is empty.</div>
+      </section>
+
+      <section class="chapter" id="install">
+        <div class="eyebrow">Step 10 · Reproducible build</div>
+        <h2>Install locked dependencies and build all affected apps</h2>
+        <pre><code>chown -R "$SITE_USER:$SITE_GROUP" "$SOURCE_ROOT"
+install -d -o "$SITE_USER" -g "$SITE_GROUP" -m 0750 \
+  "$CACHE_ROOT" "$CACHE_ROOT/corepack" "$CACHE_ROOT/pnpm"
+
+cd "$SOURCE_ROOT"
+sudo -u "$SITE_USER" -H env \
+  CI=true \
+  XDG_CACHE_HOME="$CACHE_ROOT" \
+  COREPACK_HOME="$CACHE_ROOT/corepack" \
+  PNPM_HOME="$CACHE_ROOT/pnpm" \
+  pnpm install --frozen-lockfile
+
+sudo -u "$SITE_USER" -H env XDG_CACHE_HOME="$CACHE_ROOT" COREPACK_HOME="$CACHE_ROOT/corepack" PNPM_HOME="$CACHE_ROOT/pnpm" pnpm --filter api build
+sudo -u "$SITE_USER" -H env XDG_CACHE_HOME="$CACHE_ROOT" COREPACK_HOME="$CACHE_ROOT/corepack" PNPM_HOME="$CACHE_ROOT/pnpm" pnpm --filter teams build
+sudo -u "$SITE_USER" -H env XDG_CACHE_HOME="$CACHE_ROOT" COREPACK_HOME="$CACHE_ROOT/corepack" PNPM_HOME="$CACHE_ROOT/pnpm" pnpm --filter platform build</code></pre>
+        <div class="callout danger"><strong>Stop on the first error</strong>Do not run the migration and do not restart services if install or any build fails. The database and stopped old release remain recoverable.</div>
+      </section>
+
+      <section class="chapter" id="migration">
+        <div class="eyebrow">Step 11 · Additive schema change</div>
+        <h2>Apply migration 0041 and verify it</h2>
+        <h3>11A — Re-read the exact SQL</h3>
+        <pre><code>cd "$SOURCE_ROOT"
+cat apps/api/drizzle/0041_federation_viewer.sql</code></pre>
+        <div class="callout expected"><strong>Expected exact SQL</strong><code>ALTER TYPE "platform_role" ADD VALUE IF NOT EXISTS 'federation_viewer' AFTER 'loc_officer';</code> — nothing else.</div>
+        <h3>11B — Run the reviewed migrator</h3>
+        <pre><code>sudo -u "$SITE_USER" -H env \
+  XDG_CACHE_HOME="$CACHE_ROOT" \
+  COREPACK_HOME="$CACHE_ROOT/corepack" \
+  PNPM_HOME="$CACHE_ROOT/pnpm" \
+  MIGRATION_DATABASE_URL="$MIGRATION_DATABASE_URL" \
+  pnpm --filter api db:migrate</code></pre>
+        <h3>11C — Confirm the new role and migration journal</h3>
+        <pre><code>psql "$MIGRATION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atc \
+  "SELECT enumlabel FROM pg_enum e JOIN pg_type t ON t.oid=e.enumtypid WHERE t.typname='platform_role' AND enumlabel='federation_viewer'"
+
+psql "$MIGRATION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atc \
+  "SELECT MAX(created_at) FROM drizzle.__drizzle_migrations"</code></pre>
+        <div class="callout expected"><strong>Expected</strong>First command prints <code>federation_viewer</code>; second prints <code>1789344000000</code>.</div>
+        <div class="callout success"><strong>Data impact</strong>This migration changes the enum schema only. It does not issue an <code>UPDATE</code>, <code>DELETE</code> or <code>TRUNCATE</code> against registered teams or members.</div>
+      </section>
+
+      <section class="chapter" id="start">
+        <div class="eyebrow">Step 12 · Controlled restart</div>
+        <h2>Start API first, then user interfaces</h2>
+        <pre><code>supervisorctl start gameday-api
+sleep 6
+supervisorctl status gameday-api
+curl -fsS http://127.0.0.1:3000/registration-window
+
+supervisorctl start gameday-teams gameday-platform
+sleep 10
+supervisorctl status gameday-api gameday-teams gameday-platform
+ss -lntp | grep -E ':3000|:3002|:3003'
+
+curl -fsS -o /dev/null -w 'API %{http_code}\n' https://api.netballamericas.org/registration-window
+curl -fsS -o /dev/null -w 'Teams %{http_code}\n' https://teams.netballamericas.org/
+curl -fsS -o /dev/null -w 'Platform %{http_code}\n' https://platform.netballamericas.org/</code></pre>
+        <div class="callout expected"><strong>Expected</strong>All services RUNNING, one listener per port, public URLs reachable, and no restart loop.</div>
+      </section>
+
+      <section class="chapter" id="integrity">
+        <div class="eyebrow">Step 13 · Non-negotiable data proof</div>
+        <h2>Prove existing records did not change</h2>
+        <pre><code>psql "$MIGRATION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -A -F '|' \
+  -c "SELECT 'delegation', COUNT(*), md5(COALESCE(string_agg(id::text || ':' || registration_status::text || ':' || status::text, '|' ORDER BY id),'')) FROM delegation
+      UNION ALL
+      SELECT 'player', COUNT(*), md5(COALESCE(string_agg(id::text || ':' || delegation_id::text || ':' || category::text, '|' ORDER BY id),'')) FROM player
+      UNION ALL
+      SELECT 'identity_document', COUNT(*), md5(COALESCE(string_agg(id::text || ':' || player_id::text || ':' || status::text || ':' || COALESCE(object_key,'NO_FILE'), '|' ORDER BY id),'')) FROM identity_document
+      UNION ALL
+      SELECT 'credential', COUNT(*), md5(COALESCE(string_agg(id::text || ':' || player_id::text || ':' || status::text, '|' ORDER BY id),'')) FROM credential
+      ORDER BY 1" \
+  &gt; "$EVIDENCE_ROOT/core-records-after.txt"
+
+diff -u \
+  "$EVIDENCE_ROOT/core-records-before.txt" \
+  "$EVIDENCE_ROOT/core-records-after.txt" \
+  &amp;&amp; echo "PASS: protected core records are unchanged" \
+  || { echo "STOP: protected records changed unexpectedly"; exit 1; }
+
+psql "$MIGRATION_DATABASE_URL" -X -Atc \
+  "SELECT COUNT(*) FROM identity_document WHERE object_key IS NOT NULL" \
+  &gt; "$EVIDENCE_ROOT/identity-files-after.txt"
+
+diff -u \
+  "$EVIDENCE_ROOT/identity-files-before.txt" \
+  "$EVIDENCE_ROOT/identity-files-after.txt" \
+  &amp;&amp; echo "PASS: retained identity-file count is unchanged" \
+  || { echo "STOP: retained identity-file count changed"; exit 1; }</code></pre>
+        <div class="callout danger"><strong>Do not conceal a difference</strong>A difference before account provisioning or functional testing is unexpected. Save the output and escalate immediately. Do not restore the dump without database-owner approval because a restore can erase legitimate writes made after the backup.</div>
+      </section>
+
+      <section class="chapter" id="account">
+        <div class="eyebrow">Step 14 · Controlled identity provisioning</div>
+        <h2>Create the named Federation reviewer only after integrity passes</h2>
+        <p>The reviewer’s approved email, display name and one-time password must arrive through the secure credential process. Enter them interactively so the password is not written to <code>.env</code> or shell history:</p>
+        <pre><code>read -r -p "Approved Federation email: " FEDERATION_VIEWER_EMAIL
+read -r -p "Approved reviewer name: " FEDERATION_VIEWER_NAME
+read -r -s -p "One-time password (hidden): " FEDERATION_VIEWER_PASSWORD
+printf '\n'
+
+export FEDERATION_VIEWER_EMAIL FEDERATION_VIEWER_NAME FEDERATION_VIEWER_PASSWORD
+
+test -n "$FEDERATION_VIEWER_EMAIL" \
+  &amp;&amp; test -n "$FEDERATION_VIEWER_NAME" \
+  &amp;&amp; test "${#FEDERATION_VIEWER_PASSWORD}" -ge 14 \
+  || { echo "STOP: approved account values are missing or password is too short"; exit 1; }</code></pre>
+        <div class="callout warning"><strong>The password must remain secret</strong>Use a unique one-time value of at least 14 characters. Do not display it in tickets, screenshots, evidence files or shell output, and do not run the bootstrap with the literal password typed into the command.</div>
+        <pre><code>cd "$SOURCE_ROOT"
+sudo -u "$SITE_USER" -H env \
+  XDG_CACHE_HOME="$CACHE_ROOT" \
+  COREPACK_HOME="$CACHE_ROOT/corepack" \
+  PNPM_HOME="$CACHE_ROOT/pnpm" \
+  MIGRATION_DATABASE_URL="$MIGRATION_DATABASE_URL" \
+  FEDERATION_VIEWER_EMAIL="$FEDERATION_VIEWER_EMAIL" \
+  FEDERATION_VIEWER_NAME="$FEDERATION_VIEWER_NAME" \
+  FEDERATION_VIEWER_PASSWORD="$FEDERATION_VIEWER_PASSWORD" \
+  pnpm --filter api db:bootstrap-federation
+
+unset FEDERATION_VIEWER_PASSWORD FEDERATION_VIEWER_EMAIL FEDERATION_VIEWER_NAME</code></pre>
+        <p>Expected: <code>Federation viewer created.</code> If the script reports that the email belongs to another authority, stop. Do not overwrite that account.</p>
+        <p>Confirm the three temporary shell variables are unset after the bootstrap. The secret must never be added to Git or deployment evidence. Deliver it to the named reviewer through the approved secure channel and require a change at first use if the organisation’s authentication process supports it.</p>
+        <div class="callout expected"><strong>Expected database write</strong>This step adds one <code>app_user</code> row. Re-running it for the same Federation email updates only that account and revokes its old sessions.</div>
+      </section>
+
+      <section class="chapter" id="smoke">
+        <div class="eyebrow">Step 15 · Human acceptance</div>
+        <h2>Test access without altering real registrations</h2>
+        <h3>LOC check</h3>
+        <ul class="checklist">
+          <li>Open <code>https://platform.netballamericas.org</code> in a private browser window.</li>
+          <li>Sign in with the existing named LOC test account.</li>
+          <li>Confirm existing registered teams and player counts appear unchanged.</li>
+          <li>Open an existing team record read-only. Do not approve, reject, return, edit, revoke or reissue anything during the smoke test.</li>
+          <li>Confirm LOC wording describes operational validation.</li>
+        </ul>
+        <h3>Federation check</h3>
+        <ul class="checklist">
+          <li>Use a separate private window and sign in with the named Federation account.</li>
+          <li>Confirm the browser opens <strong>World Netball · Federation eligibility review</strong>.</li>
+          <li>Confirm submitted teams, roster states, player/person data IDs and profile fields are visible.</li>
+          <li>Confirm no approve, reject, edit, credential, match or configuration controls appear.</li>
+          <li>With explicit authorisation, open one already-approved test identity document and confirm it renders. Do not download, screenshot, print or email it.</li>
+          <li>Sign out and close the private window.</li>
+        </ul>
+        <h3>Permission boundary check</h3>
+        <p>While signed in as the Federation reviewer, manually visiting an LOC endpoint must be denied. A qualified developer may verify with browser developer tools that mutation requests to <code>/admin/*</code> return <code>403</code>. Do not send a valid mutation payload.</p>
+        <div class="callout warning"><strong>Audit effect is expected</strong>Opening a team record or identity document inserts an attributed audit event. That is an intentional accountability record; it does not change the team or player.</div>
+        <h3>Audit-trail check</h3>
+        <pre><code>psql "$MIGRATION_DATABASE_URL" -X -v ON_ERROR_STOP=1 \
+  -c "SELECT e.action, COUNT(*) AS event_count
+      FROM loc_audit_event e
+      JOIN app_user u ON u.id = e.actor_user_id
+      WHERE u.platform_role = 'federation_viewer'
+        AND e.action IN ('federation.delegation.viewed', 'identity.viewed')
+      GROUP BY e.action
+      ORDER BY e.action"</code></pre>
+        <div class="callout expected"><strong>Expected</strong><code>federation.delegation.viewed</code> appears after opening a team. If an identity document was authorised and opened, <code>identity.viewed</code> also appears. Counts may be greater than one and are aggregated across Federation reviewers; no personal data should be printed.</div>
+      </section>
+
+      <section class="chapter" id="monitor">
+        <div class="eyebrow">Step 16 · Observe before closing</div>
+        <h2>Review logs and monitor for 15 minutes</h2>
+        <pre><code>tail -n 150 /var/log/gameday/api-error.log
+tail -n 100 /var/log/gameday/teams-error.log
+tail -n 100 /var/log/gameday/platform-error.log
+
+supervisorctl status gameday-api gameday-teams gameday-platform
+ss -lntp | grep -E ':3000|:3002|:3003'
+
+date --iso-8601=seconds &gt; "$EVIDENCE_ROOT/monitoring-completed.txt"</code></pre>
+        <p>Look for authentication loops, HTTP 500 responses, database enum errors, S3 access errors, restart loops or unexpected forbidden responses. Redact PII and secrets before sharing log excerpts.</p>
+        <div class="callout success"><strong>Close the maintenance window only after acceptance</strong>Tell the LOC and teams that registration is available again only after service, integrity, access and log checks all pass.</div>
+      </section>
+
+      <section class="chapter" id="rollback">
+        <div class="eyebrow">Step 17 · Recovery</div>
+        <h2>Rollback without destroying new registrations</h2>
+        <h3>If install or build fails before migration</h3>
+        <p>The database is unchanged. Return to the recorded old commit, rebuild the old release and start it:</p>
+        <pre><code>cd "$SOURCE_ROOT"
+git switch --detach "$OLD_COMMIT"
+chown -R "$SITE_USER:$SITE_GROUP" "$SOURCE_ROOT"
+
+sudo -u "$SITE_USER" -H env CI=true XDG_CACHE_HOME="$CACHE_ROOT" COREPACK_HOME="$CACHE_ROOT/corepack" PNPM_HOME="$CACHE_ROOT/pnpm" pnpm install --frozen-lockfile
+sudo -u "$SITE_USER" -H env XDG_CACHE_HOME="$CACHE_ROOT" COREPACK_HOME="$CACHE_ROOT/corepack" PNPM_HOME="$CACHE_ROOT/pnpm" pnpm --filter api build
+sudo -u "$SITE_USER" -H env XDG_CACHE_HOME="$CACHE_ROOT" COREPACK_HOME="$CACHE_ROOT/corepack" PNPM_HOME="$CACHE_ROOT/pnpm" pnpm --filter teams build
+sudo -u "$SITE_USER" -H env XDG_CACHE_HOME="$CACHE_ROOT" COREPACK_HOME="$CACHE_ROOT/corepack" PNPM_HOME="$CACHE_ROOT/pnpm" pnpm --filter platform build
+
+supervisorctl start gameday-api gameday-teams gameday-platform
+sleep 10
+supervisorctl status gameday-api gameday-teams gameday-platform</code></pre>
+        <h3>If failure occurs after migration 0041</h3>
+        <p>Migration 0041 is additive. Leave the unused enum value in PostgreSQL and roll back the application code as above. Do not attempt to remove the enum value. Do not restore the database dump merely to remove migration 0041.</p>
+        <div class="callout danger"><strong>If the Federation account was already created</strong>Keep the applications stopped and have the lead developer disable that account before starting the old release. Do not improvise a database update. Record the action and tell the Federation reviewer that access is suspended.</div>
+        <h3>If any protected-record fingerprint changed</h3>
+        <div class="callout danger"><strong>Senior incident procedure</strong>Keep applications stopped, preserve logs and evidence, and contact the lead developer plus database owner. A database restore requires explicit approval and a review of all writes since the backup; an unplanned restore could delete new registrations.</div>
+      </section>
+
+      <section class="chapter" id="evidence">
+        <div class="eyebrow">Step 18 · Handoff</div>
+        <h2>Capture evidence without capturing PII</h2>
+        <pre><code>cd "$SOURCE_ROOT"
+git rev-parse HEAD &gt; "$EVIDENCE_ROOT/deployed-commit.txt"
+git status --short &gt; "$EVIDENCE_ROOT/git-status.txt"
+supervisorctl status gameday-api gameday-teams gameday-platform \
+  &gt; "$EVIDENCE_ROOT/supervisor-status.txt"
+
+psql "$MIGRATION_DATABASE_URL" -X -Atc \
+  "SELECT MAX(created_at) FROM drizzle.__drizzle_migrations" \
+  &gt; "$EVIDENCE_ROOT/latest-migration.txt"
+
+printf '%s\n' 'PASS: API, Teams, Platform, LOC and Federation smoke tests' \
+  &gt; "$EVIDENCE_ROOT/acceptance-result.txt"
+
+ls -la "$EVIDENCE_ROOT"</code></pre>
+        <p>Share only: commit SHA, migration timestamp, PASS/FAIL results, service status, privacy-safe count/fingerprint comparison, operator, approvers and deployment time. Do not share the database dump, identity snapshot, credentials, connection strings, document identifiers tied to names, or raw restricted logs.</p>
+        <table class="signoff">
+          <thead><tr><th>Approval</th><th>Name</th><th>Date/time</th><th>Result</th></tr></thead>
+          <tbody>
+            <tr><td>Deployer</td><td></td><td></td><td>□ Pass □ Stopped □ Rolled back</td></tr>
+            <tr><td>Lead developer</td><td></td><td></td><td>□ Accepted □ Further action</td></tr>
+            <tr><td>Database owner</td><td></td><td></td><td>□ Backup verified □ Integrity accepted</td></tr>
+            <tr><td>Storage owner</td><td></td><td></td><td>□ Identity snapshot verified</td></tr>
+            <tr><td>LOC tester</td><td></td><td></td><td>□ Operational view accepted</td></tr>
+            <tr><td>World Netball reviewer</td><td></td><td></td><td>□ Read-only access accepted</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="chapter" id="never">
+        <div class="eyebrow">Permanent prohibitions</div>
+        <h2>Never run these on production</h2>
+        <table>
+          <thead><tr><th>Command or action</th><th>Why it is prohibited</th></tr></thead>
+          <tbody>
+            <tr><td><code>pnpm --filter api db:seed</code></td><td>Demo seeding may replace or contaminate live data.</td></tr>
+            <tr><td><code>pnpm --filter api db:prepare-rehearsal</code></td><td>Creates and modifies synthetic rehearsal records.</td></tr>
+            <tr><td><code>pnpm --filter api db:prepare-demo-teams</code></td><td>Creates demo teams and is not a production deployment step.</td></tr>
+            <tr><td><code>pnpm infra:reset</code></td><td>Runs the volume-removing reset workflow.</td></tr>
+            <tr><td><code>docker compose down -v</code></td><td>Removes persistent service volumes.</td></tr>
+            <tr><td><code>git reset --hard</code> or <code>git checkout -- .</code></td><td>Can erase unreviewed server-side work.</td></tr>
+            <tr><td>Manual <code>DELETE</code>, <code>TRUNCATE</code> or identity-bucket cleanup</td><td>Can permanently remove registrations or restricted evidence.</td></tr>
+            <tr><td>Unapproved database restore</td><td>Can erase legitimate registrations submitted after the backup.</td></tr>
+            <tr><td>Removing the PostgreSQL enum during rollback</td><td>Unnecessary and riskier than leaving the additive value dormant.</td></tr>
+          </tbody>
+        </table>
+        <div class="callout warning"><strong>Remaining governance action</strong>The Data Governance Owner, LOC and World Netball must approve the end of the eligibility/appeal window and assign the later identity-evidence purge. Until then, retain the restricted documents, audit access and do not perform ad-hoc cleanup.</div>
+      </section>
+    </main>
+  </div>
+  <footer class="footer">SportsBB GameDay · Federation Eligibility Production Update · Target a044fe5 · Prepared 14 September 2026</footer>
+</body>
+</html>

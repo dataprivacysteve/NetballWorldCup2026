@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Federation hotfix r1/r2 to r3 — production update guide</title>
+    <style>
+      :root {
+        --navy: #111b45;
+        --blue: #27427d;
+        --gold: #d8ad43;
+        --ink: #172033;
+        --muted: #5d687b;
+        --line: #dce2ea;
+        --paper: #fff;
+        --bg: #f3f6f9;
+        --ok: #17643a;
+        --ok-bg: #eaf7ef;
+        --warn: #805600;
+        --warn-bg: #fff7dc;
+        --bad: #982633;
+        --bad-bg: #fff0f2;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font:
+          16px/1.55 system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
+      }
+      header {
+        color: white;
+        background: linear-gradient(135deg, var(--navy), var(--blue));
+        border-bottom: 5px solid var(--gold);
+      }
+      .hero,
+      main {
+        max-width: 1040px;
+        margin: auto;
+      }
+      .hero {
+        padding: 42px 22px;
+      }
+      .eyebrow,
+      .step {
+        color: #f0ca69;
+        font:
+          800 0.72rem ui-monospace,
+          SFMono-Regular,
+          Consolas,
+          monospace;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      .step {
+        color: var(--blue);
+      }
+      h1 {
+        max-width: 780px;
+        margin: 0.35rem 0;
+        font-size: clamp(2rem, 5vw, 3.3rem);
+        line-height: 1.05;
+      }
+      header p {
+        max-width: 780px;
+        color: #e2e7f4;
+      }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 18px;
+      }
+      .chip {
+        padding: 6px 10px;
+        border: 1px solid #ffffff35;
+        border-radius: 999px;
+        background: #ffffff12;
+        font:
+          700 0.72rem ui-monospace,
+          SFMono-Regular,
+          Consolas,
+          monospace;
+      }
+      main {
+        padding: 22px 18px 70px;
+      }
+      .card,
+      .toc {
+        margin: 18px 0;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: var(--paper);
+        box-shadow: 0 6px 22px #1720330c;
+      }
+      .card {
+        padding: clamp(20px, 4vw, 34px);
+      }
+      .toc {
+        padding: 18px 20px;
+      }
+      .toc a {
+        display: inline-block;
+        margin: 5px 15px 5px 0;
+        color: var(--blue);
+        font-weight: 700;
+        text-decoration: none;
+      }
+      h2 {
+        margin: 0.25rem 0 1rem;
+        font-size: clamp(1.45rem, 3vw, 2rem);
+      }
+      h3 {
+        margin: 1.45rem 0 0.55rem;
+      }
+      p {
+        color: var(--muted);
+      }
+      code,
+      pre {
+        font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      }
+      pre {
+        overflow: auto;
+        margin: 12px 0;
+        padding: 16px;
+        border-radius: 10px;
+        background: #11182d;
+        color: #f6f7fb;
+        font-size: 0.83rem;
+        line-height: 1.55;
+        white-space: pre;
+      }
+      .callout {
+        margin: 14px 0;
+        padding: 13px 15px;
+        border-left: 5px solid;
+        border-radius: 7px;
+      }
+      .callout strong {
+        display: block;
+        margin-bottom: 3px;
+      }
+      .danger {
+        color: var(--bad);
+        border-color: var(--bad);
+        background: var(--bad-bg);
+      }
+      .warning {
+        color: var(--warn);
+        border-color: var(--gold);
+        background: var(--warn-bg);
+      }
+      .success {
+        color: var(--ok);
+        border-color: var(--ok);
+        background: var(--ok-bg);
+      }
+      .check {
+        display: grid;
+        grid-template-columns: 26px 1fr;
+        gap: 10px;
+        margin: 10px 0;
+      }
+      .box {
+        width: 21px;
+        height: 21px;
+        border: 2px solid var(--blue);
+        border-radius: 4px;
+      }
+      .table-wrap {
+        overflow: auto;
+      }
+      table {
+        width: 100%;
+        min-width: 630px;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        padding: 11px;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        background: #f6f8fb;
+        font-size: 0.72rem;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+      }
+      .footer {
+        margin-top: 28px;
+        color: var(--muted);
+        font-size: 0.82rem;
+        text-align: center;
+      }
+      @media (max-width: 620px) {
+        .hero {
+          padding: 30px 16px;
+        }
+        main {
+          padding: 12px 10px 55px;
+        }
+        .card {
+          padding: 18px 14px;
+          border-radius: 10px;
+        }
+        pre {
+          font-size: 0.73rem;
+        }
+      }
+      @media print {
+        body {
+          background: white;
+        }
+        .toc {
+          display: none;
+        }
+        .card {
+          box-shadow: none;
+          break-inside: avoid;
+        }
+        pre {
+          white-space: pre-wrap;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="hero">
+        <div class="eyebrow">Production update · PuTTY-safe</div>
+        <h1>Federation hotfix r1/r2 → r3</h1>
+        <p>
+          Update the LOC identity-verification labels and both embedded user
+          manuals. This is a web-only correction for a system already running
+          hotfix r1 or r2.
+        </p>
+        <div class="chips">
+          <span class="chip">Valid base: 9831b72 (r1)</span>
+          <span class="chip">Valid base: c54ae44 (r2)</span>
+          <span class="chip">Target: 5187958 (r3)</span>
+          <span class="chip">Platform + Teams only</span>
+          <span class="chip">No database commands</span>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <nav class="toc" aria-label="Guide sections">
+        <strong>Jump to:</strong>
+        <a href="#scope">Scope</a>
+        <a href="#preflight">Preflight</a>
+        <a href="#stop">Stop web apps</a>
+        <a href="#build">Build</a>
+        <a href="#accept">Acceptance</a>
+        <a href="#rollback">Rollback</a>
+      </nav>
+
+      <section class="card" id="scope">
+        <div class="step">Read first</div>
+        <h2>Exactly what this update changes</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Changed</th>
+                <th>Not changed</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  LOC buttons say “retain for federation review”; Platform
+                  manual; Teams manual; deployment guide tag reference.
+                </td>
+                <td>
+                  API, database schema, database records, identity bucket,
+                  accounts, migrations, teams, players and documents.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout danger">
+          <strong>Do not run any database step.</strong>
+          Do not run <code>db:migrate</code>,
+          <code>db:apply-federation-hotfix</code>, account bootstrap, SQL,
+          <code>pg_dump</code>, or identity-bucket commands for this r1/r2 → r3
+          correction.
+        </div>
+        <div class="callout warning">
+          <strong>PuTTY will remain open.</strong>
+          This guide contains no <code>set -e</code>, <code>exit 1</code>, or
+          automatic shell termination. Run one numbered code block at a time. If
+          a block prints <code>STOP</code>, return to the prompt and do not run
+          the next block.
+        </div>
+      </section>
+
+      <section class="card" id="preflight">
+        <div class="step">Step 1 · Safe shell and variables</div>
+        <h2>Disable strict shell exit and identify the release</h2>
+        <pre><code>set +e
+set +u
+set +o pipefail
+echo "PASS: automatic shell exit is disabled"
+
+export SITE_USER=web6
+export SITE_GROUP=client0
+export SOURCE_ROOT=/var/www/clients/client0/web6/web/gameday/source
+export CACHE_ROOT=/var/www/clients/client0/web6/web/gameday/.cache
+export REQUIRED_R1=9831b728f1b833bf54c90dc3b8cca6736acad7d5
+export REQUIRED_R2=c54ae442f282d0ccbbb3724abfc95f72ed66b599
+export APPROVED_REF=refs/tags/federation-hotfix-2026-09-15-r3
+
+cd "$SOURCE_ROOT"
+pwd
+git status --short
+git fetch --prune --tags origin
+
+export CURRENT_COMMIT="$(git rev-parse HEAD)"
+export TARGET_COMMIT="$(git rev-list -n 1 "$APPROVED_REF")"
+echo "CURRENT_COMMIT=$CURRENT_COMMIT"
+echo "TARGET_COMMIT=$TARGET_COMMIT"</code></pre>
+        <div class="callout warning">
+          <strong>Manual checkpoint</strong>
+          <code>git status --short</code> must print nothing. Do not reset,
+          stash, delete or overwrite production changes. Escalate if it prints
+          any path.
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="step">Step 2 · Exact starting gate</div>
+        <h2>Confirm production is on r1/r2—or already on r3</h2>
+        <pre><code>if [ "$CURRENT_COMMIT" = "$REQUIRED_R1" ]; then
+  echo "PASS: production is on r1 and is ready for this update"
+elif [ "$CURRENT_COMMIT" = "$REQUIRED_R2" ]; then
+  echo "PASS: production is on r2 and is ready for this update"
+elif [ "$CURRENT_COMMIT" = "$TARGET_COMMIT" ]; then
+  echo "ALREADY: r3 is checked out; skip checkout and rebuild web apps only"
+else
+  echo "STOP: production is not on the approved r1, r2 or r3 commit"
+fi</code></pre>
+        <div class="callout danger">
+          <strong>Stop if the last line begins with STOP.</strong>
+          Keep PuTTY open and send the displayed current commit to the lead
+          developer. Do not deploy from an unexpected commit.
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="step">Step 3 · Verify the four-file delta</div>
+        <h2>Review what r3 will change</h2>
+        <pre><code>cd "$SOURCE_ROOT"
+git diff --name-only "$CURRENT_COMMIT" "$TARGET_COMMIT"
+
+echo "API or migration differences (expected: no output):"
+git diff --name-only "$CURRENT_COMMIT" "$TARGET_COMMIT" -- apps/api apps/api/drizzle</code></pre>
+        <p>The first command must print exactly:</p>
+        <pre><code>apps/platform/app/page.tsx
+apps/platform/public/manual/user-guide.html
+apps/teams/public/manual/user-guide.html
+manuals/Federation_Only_Hotfix_Production_Runbook.html</code></pre>
+        <div class="callout success">
+          <strong>Expected</strong>
+          The API/migration check prints no file. There is no database impact.
+        </div>
+      </section>
+
+      <section class="card" id="stop">
+        <div class="step">Step 4 · Short web maintenance window</div>
+        <h2>Stop Platform and Teams only</h2>
+        <p>
+          Tell the LOC and team managers that the two web interfaces will be
+          briefly unavailable. The API remains running.
+        </p>
+        <pre><code>set +e
+set +u
+set +o pipefail
+
+supervisorctl stop gameday-platform gameday-teams
+sleep 5
+supervisorctl status gameday-api gameday-platform gameday-teams
+
+if ss -lntp | grep -E ':3002|:3003'; then
+  echo "STOP: a Platform or Teams listener remains — keep PuTTY open"
+else
+  echo "PASS: Platform and Teams listeners are stopped"
+fi</code></pre>
+        <div class="callout warning">
+          <strong>Manual checkpoint</strong>
+          API should remain RUNNING. Platform and Teams should be STOPPED. Do
+          not continue if port 3002 or 3003 still has a listener.
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="step">Step 5 · Exact checkout</div>
+        <h2>Check out the immutable r3 tag</h2>
+        <pre><code>cd "$SOURCE_ROOT"
+git switch --detach "$TARGET_COMMIT"
+
+export CHECKED_OUT_COMMIT="$(git rev-parse HEAD)"
+echo "CHECKED_OUT_COMMIT=$CHECKED_OUT_COMMIT"
+
+if [ "$CHECKED_OUT_COMMIT" = "$TARGET_COMMIT" ]; then
+  echo "PASS: exact r3 release is checked out"
+else
+  echo "STOP: checkout is not the approved r3 commit"
+fi
+
+git status --short</code></pre>
+        <div class="callout danger">
+          <strong>Do not build after a STOP message.</strong>
+          Git status must also be empty.
+        </div>
+      </section>
+
+      <section class="card" id="build">
+        <div class="step">Step 6 · Build affected apps only</div>
+        <h2>Build Platform, then Teams</h2>
+        <p>
+          Package manifests and the lockfile did not change between r1/r2 and
+          r3, so a dependency install is not required.
+        </p>
+        <pre><code>cd "$SOURCE_ROOT"
+chown -R "$SITE_USER:$SITE_GROUP" "$SOURCE_ROOT"
+install -d -o "$SITE_USER" -g "$SITE_GROUP" -m 0750 \
+  "$CACHE_ROOT" "$CACHE_ROOT/corepack" "$CACHE_ROOT/pnpm"
+
+sudo -u "$SITE_USER" -H env \
+  XDG_CACHE_HOME="$CACHE_ROOT" \
+  COREPACK_HOME="$CACHE_ROOT/corepack" \
+  PNPM_HOME="$CACHE_ROOT/pnpm" \
+  pnpm --filter platform build</code></pre>
+        <div class="callout warning">
+          <strong>Checkpoint</strong>
+          Continue only if the Platform build finishes successfully.
+        </div>
+        <pre><code>cd "$SOURCE_ROOT"
+sudo -u "$SITE_USER" -H env \
+  XDG_CACHE_HOME="$CACHE_ROOT" \
+  COREPACK_HOME="$CACHE_ROOT/corepack" \
+  PNPM_HOME="$CACHE_ROOT/pnpm" \
+  pnpm --filter teams build</code></pre>
+        <div class="callout warning">
+          <strong>Google Fonts retry rule</strong>
+          If the Teams build fails only while requesting
+          <code>fonts.gstatic.com</code>, leave PuTTY open and retry the Teams
+          build once. Escalate any other build failure or a second font failure.
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="step">Step 7 · Source-content proof</div>
+        <h2>Confirm the corrected wording before restart</h2>
+        <pre><code>cd "$SOURCE_ROOT"
+grep -F "Verify and retain for federation review" apps/platform/app/page.tsx
+grep -F "Reject and retain for federation review" apps/platform/app/page.tsx
+grep -F "retained for World Netball eligibility approval" apps/platform/public/manual/user-guide.html
+grep -F "named read-only World Netball reviewer" apps/teams/public/manual/user-guide.html
+
+echo "Old wording check (expected: no output):"
+grep -RniE "verify and delete|reject and delete|file is deleted after|restricted file is deleted" \
+  apps/platform/app apps/platform/public/manual apps/teams/public/manual</code></pre>
+        <div class="callout success">
+          <strong>Expected</strong>
+          Four corrected statements print. The old-wording check prints nothing.
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="step">Step 8 · Restart web interfaces</div>
+        <h2>Start Platform and Teams</h2>
+        <pre><code>supervisorctl start gameday-platform gameday-teams
+sleep 10
+supervisorctl status gameday-api gameday-platform gameday-teams
+ss -lntp | grep -E ':3000|:3002|:3003'
+
+curl -fsS -o /dev/null -w 'Platform %{http_code}\n' \
+  https://platform.netballamericas.org/
+curl -fsS -o /dev/null -w 'Teams %{http_code}\n' \
+  https://teams.netballamericas.org/</code></pre>
+        <div class="callout success">
+          <strong>Expected</strong>
+          All three services are RUNNING; ports 3000, 3002 and 3003 are
+          listening; both web URLs return a successful HTTP response.
+        </div>
+      </section>
+
+      <section class="card" id="accept">
+        <div class="step">Step 9 · Browser acceptance</div>
+        <h2>Hard-refresh and verify all visible wording</h2>
+        <div class="check">
+          <span class="box"></span>
+          <div>
+            Open Platform in a private/incognito window or use a hard refresh to
+            bypass cached JavaScript.
+          </div>
+        </div>
+        <div class="check">
+          <span class="box"></span>
+          <div>
+            Sign in as the LOC reviewer and open a pending identity record.
+          </div>
+        </div>
+        <div class="check">
+          <span class="box"></span>
+          <div>
+            Confirm buttons say
+            <strong>Verify and retain for federation review</strong> and
+            <strong>Reject and retain for federation review</strong>.
+          </div>
+        </div>
+        <div class="check">
+          <span class="box"></span>
+          <div>
+            Open the Platform manual and confirm it says the file is retained
+            through World Netball approval and any appeal window.
+          </div>
+        </div>
+        <div class="check">
+          <span class="box"></span>
+          <div>
+            Open the Teams manual and confirm it names the read-only World
+            Netball reviewer and the same retention window.
+          </div>
+        </div>
+        <div class="check">
+          <span class="box"></span>
+          <div>
+            Do not approve, reject or alter a real player merely to test this
+            copy update.
+          </div>
+        </div>
+        <div class="callout success">
+          <strong>Completion</strong>
+          Record commit
+          <code>518795820f782bb675842ca792602de9afffe197</code> and tag
+          <code>federation-hotfix-2026-09-15-r3</code> in the deployment
+          evidence.
+        </div>
+      </section>
+
+      <section class="card" id="rollback">
+        <div class="step">Rollback</div>
+        <h2>Return only the web layer to its recorded starting commit</h2>
+        <div class="callout warning">
+          <strong>No database rollback is required.</strong>
+          r3 performs no database or object-storage operation.
+        </div>
+        <pre><code>set +e
+set +u
+set +o pipefail
+
+cd "$SOURCE_ROOT"
+supervisorctl stop gameday-platform gameday-teams
+git switch --detach "$CURRENT_COMMIT"
+
+if [ "$(git rev-parse HEAD)" = "$CURRENT_COMMIT" ]; then
+  echo "PASS: the recorded starting commit is checked out"
+else
+  echo "STOP: starting-commit checkout failed — keep PuTTY open"
+fi</code></pre>
+        <div class="callout warning">
+          <strong>Checkpoint</strong>
+          Rebuild only after the starting-commit checkout passes.
+        </div>
+        <pre><code>cd "$SOURCE_ROOT"
+sudo -u "$SITE_USER" -H pnpm --filter platform build
+sudo -u "$SITE_USER" -H pnpm --filter teams build</code></pre>
+        <div class="callout warning">
+          <strong>Checkpoint</strong>
+          Restart only after both rollback builds succeed.
+        </div>
+        <pre><code>supervisorctl start gameday-platform gameday-teams
+sleep 10
+supervisorctl status gameday-api gameday-platform gameday-teams</code></pre>
+      </section>
+
+      <p class="footer">
+        Federation hotfix r1/r2 → r3 · issued 15 September 2026 · web-only
+        update
+      </p>
+    </main>
+  </body>
+</html>

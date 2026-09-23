@@ -26,3 +26,7 @@ tmp/
 backups/
 .local-backups/
 Netball_2026_Qualifiers_Logos.zip
+
+# independently versioned local site and Git worktrees
+sites/registration-uat/
+worktrees/
