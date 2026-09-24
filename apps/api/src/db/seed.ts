@@ -306,17 +306,14 @@ async function main() {
       .insert(schema.venue)
       .values({
         tournamentId: event.id,
-        name: 'G. Sobers Gymnasium',
+        name: 'Garfield Sobers Gymnasium',
         address: 'Wildey, St. Michael, Barbados',
         timezone: 'America/Barbados',
       })
       .returning();
     const seedCourts = await db
       .insert(schema.court)
-      .values([
-        { venueId: seedVenue.id, name: 'Centre Court', sortOrder: 0 },
-        { venueId: seedVenue.id, name: 'Court 2', sortOrder: 1 },
-      ])
+      .values([{ venueId: seedVenue.id, name: 'Centre Court', sortOrder: 0 }])
       .returning();
     const courtIds = Object.fromEntries(
       seedCourts.map((court) => [court.name, court.id]),
@@ -349,7 +346,7 @@ async function main() {
         teamA: 'ARG',
         teamB: 'CAN',
         at: '2026-10-19T20:00:00Z',
-        court: 'Court 2',
+        court: 'Centre Court',
         status: 'final',
         scoreA: 60,
         scoreB: 52,
@@ -360,7 +357,7 @@ async function main() {
         teamA: 'USA',
         teamB: 'TTO',
         at: '2026-10-20T16:00:00Z',
-        court: 'Court 2',
+        court: 'Centre Court',
         status: 'final',
         scoreA: 49,
         scoreB: 58,
@@ -382,7 +379,7 @@ async function main() {
         teamA: 'LCA',
         teamB: 'GUY',
         at: '2026-10-20T19:30:00Z',
-        court: 'Court 2',
+        court: 'Centre Court',
         status: 'scheduled',
         scoreA: 0,
         scoreB: 0,
@@ -404,7 +401,7 @@ async function main() {
         teamA: 'CAN',
         teamB: 'TTO',
         at: '2026-10-21T19:30:00Z',
-        court: 'Court 2',
+        court: 'Centre Court',
         status: 'scheduled',
         scoreA: 0,
         scoreB: 0,
