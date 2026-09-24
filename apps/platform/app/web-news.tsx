@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, type NewsConfig } from "./lib/api";
 
+const PUBLIC_SITE =
+  (process.env.NEXT_PUBLIC_PUBLIC_SITE_URL ?? "https://www.netballamericas.org").replace(/\/+$/, "");
+
 const input =
   "enterprise-input w-full rounded-lg border border-line-strong bg-white px-3 py-2 text-sm text-ink";
 const label =
@@ -169,7 +172,7 @@ export default function WebNews() {
           </p>
         </div>
         <a
-          href="https://www.netballamericas.test/#news"
+          href={`${PUBLIC_SITE}/#news`}
           target="_blank"
           rel="noreferrer"
           className={ghost}

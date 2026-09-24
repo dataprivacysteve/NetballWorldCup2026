@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { api, type SponsorConfig } from "./lib/api";
 
+const PUBLIC_SITE =
+  (process.env.NEXT_PUBLIC_PUBLIC_SITE_URL ?? "https://www.netballamericas.org").replace(/\/+$/, "");
+
 const input =
   "enterprise-input w-full rounded-lg border border-line-strong bg-white px-3 py-2 text-sm text-ink";
 const label =
@@ -247,7 +250,7 @@ export default function Advertising() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <a href="https://www.netballamericas.test/" target="_blank" rel="noreferrer" className={ghost}>
+          <a href={`${PUBLIC_SITE}/`} target="_blank" rel="noreferrer" className={ghost}>
             Preview website
           </a>
           <a href="/display" target="_blank" rel="noreferrer" className={primary}>

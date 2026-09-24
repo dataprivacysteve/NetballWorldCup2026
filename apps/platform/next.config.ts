@@ -12,6 +12,10 @@ const nextConfig: NextConfig = {
   // renders blank. Dev-only.
   allowedDevOrigins: ["netballamericas.test", "*.netballamericas.test"],
   env: {
+    NEXT_PUBLIC_PUBLIC_SITE_URL:
+      process.env.NEXT_PUBLIC_PUBLIC_SITE_URL ||
+      process.env.PUBLIC_BASE_URL ||
+      "https://www.netballamericas.org",
     NEXT_PUBLIC_API_BASE_URL:
       process.env.API_BASE_URL ?? "https://api.netballamericas.test",
   },
