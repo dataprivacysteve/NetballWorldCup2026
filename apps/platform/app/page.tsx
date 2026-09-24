@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import Advertising from "./advertising";
 import WebNews from "./web-news";
+import PhotoGovernance from "./photo-governance";
 import FederationConsole from "./federation-console";
 import {
   api,
@@ -596,6 +597,7 @@ type Section =
   | "overview"
   | "registrations"
   | "review"
+  | "player-images"
   | "matches"
   | "badges"
   | "advertising"
@@ -636,6 +638,12 @@ function Console({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
       label: "Team review",
       description: "People and documents",
       icon: "review",
+    },
+    {
+      id: "player-images",
+      label: "Player images",
+      description: "Consent and website release",
+      icon: "shield",
     },
     {
       id: "matches",
@@ -791,6 +799,8 @@ function Console({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
             <Registrations />
           ) : section === "review" ? (
             <RosterReview />
+          ) : section === "player-images" ? (
+            <PhotoGovernance />
           ) : section === "matches" ? (
             <Matches />
           ) : section === "badges" ? (
@@ -898,7 +908,9 @@ function Overview({
               label="Pending registrations"
               value={data.pending.length}
               detail={
-                data.pending.length ? "Requires LOC validation" : "Queue is clear"
+                data.pending.length
+                  ? "Requires LOC validation"
+                  : "Queue is clear"
               }
               tone={data.pending.length ? "warning" : "success"}
               onClick={() => onNavigate("registrations")}

@@ -49,7 +49,9 @@ function flagPath(code: string) {
 }
 
 function playerPhoto(path: string | null) {
-  return path ? `${PUBLIC_SITE.replace(/\/$/, "")}/${path.replace(/^\//, "")}` : null;
+  if (!path) return null;
+  const origin = path.startsWith("public/players/") ? API : PUBLIC_SITE;
+  return `${origin.replace(/\/$/, "")}/${path.replace(/^\//, "")}`;
 }
 
 function matchTime(value: string | null) {

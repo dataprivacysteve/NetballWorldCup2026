@@ -25,8 +25,12 @@ import type {
   OfflineScanEventDto,
   SaveAdvertisementDto,
   SaveNewsArticleDto,
+  PhotoPublicationDecisionDto,
 } from './admin.dto';
-import { normalizeAdvertisingCreative, normalizeNewsImage } from './advertising.util';
+import {
+  normalizeAdvertisingCreative,
+  normalizeNewsImage,
+} from './advertising.util';
 import { buildNwcSubmissionWorkbook } from './nwc-submission-export';
 
 // STOPGAP OC admin / committee. Runs on the privileged (superuser) pool, which
@@ -651,6 +655,239 @@ export class AdminService {
     return row;
   }
 
+  // ---- LOC decisions for public player photographs ----
+  async photoPublicationRelease() {
+    const { rows } = await this.pool.query<{
+      enabled: boolean;
+      approvedPhotos: number;
+    }>(`SELECT t.player_photos_public_enabled AS enabled,
+              (SELECT count(*)::int FROM player_photo_publication) AS "approvedPhotos"
+       FROM tournament t ORDER BY t.created_at LIMIT 1`);
+    return rows[0] ?? { enabled: false, approvedPhotos: 0 };
+  }
+
+  async setPhotoPublicationRelease(
+    enabled: boolean,
+    decisionReference: string,
+    actorUserId: string,
+  ) {
+    const reference = decisionReference.trim();
+    if (!reference)
+      throw new BadRequestException('LOC decision reference is required');
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const { rows } = await client.query<{ id: string }>(
+        'UPDATE tournament SET player_photos_public_enabled = $1 RETURNING id',
+        [enabled],
+      );
+      if (!rows[0]) throw new NotFoundException('Tournament not found');
+      await client.query(
+        `INSERT INTO loc_audit_event
+           (actor_user_id, action, target_type, target_id, details)
+         VALUES ($1, $2, 'tournament', $3, $4)`,
+        [
+          actorUserId,
+          enabled ? 'photo.publication.enabled' : 'photo.publication.disabled',
+          rows[0].id,
+          JSON.stringify({ decisionReference: reference }),
+        ],
+      );
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+    return this.photoPublicationRelease();
+  }
+
+  async playerPhotoPublication(playerId: string) {
+    const { rows } = await this.pool.query<{
+      playerId: string;
+      delegationId: string;
+      dateOfBirth: string | null;
+      eligibilityDate: string | null;
+      photoId: string | null;
+      contentType: string | null;
+      photoStatus: string | null;
+      objectKey: string | null;
+      accredited: boolean;
+      verified: boolean;
+      approvedPhotoId: string | null;
+      consentParty: 'player' | 'guardian' | null;
+      consentEvidenceReference: string | null;
+      approvedAt: Date | null;
+    }>(
+      `SELECT p.id AS "playerId", d.id AS "delegationId",
+              p.date_of_birth AS "dateOfBirth",
+              t.eligibility_date AS "eligibilityDate",
+              ph.id AS "photoId", ph.content_type AS "contentType",
+              ph.status AS "photoStatus", ph.object_key AS "objectKey",
+              EXISTS (SELECT 1 FROM credential c
+                WHERE c.player_id = p.id AND c.status = 'issued'
+                  AND c.category = 'player') AS accredited,
+              EXISTS (SELECT 1 FROM person_accreditation_review r
+                WHERE r.player_id = p.id AND r.status = 'verified'
+                  AND r.reviewed_at >= p.updated_at
+                  AND ph.uploaded_at IS NOT NULL
+                  AND r.reviewed_at >= ph.uploaded_at) AS verified,
+              pub.photo_id AS "approvedPhotoId",
+              pub.consent_party AS "consentParty",
+              pub.consent_evidence_reference AS "consentEvidenceReference",
+              pub.approved_at AS "approvedAt"
+       FROM player p
+       JOIN delegation d ON d.id = p.delegation_id
+       JOIN tournament t ON t.id = d.tournament_id
+       LEFT JOIN LATERAL (
+         SELECT id, status, content_type, object_key, uploaded_at
+         FROM player_photo WHERE player_id = p.id
+         ORDER BY uploaded_at DESC NULLS LAST, id DESC LIMIT 1
+       ) ph ON true
+       LEFT JOIN player_photo_publication pub ON pub.player_id = p.id
+       WHERE p.id = $1 AND p.category = 'player'
+         AND p.eligibility_reference IS DISTINCT FROM 'DEMO-PRESENTATION-DATA'
+         AND d.registration_status = 'approved' AND d.status = 'approved'`,
+      [playerId],
+    );
+    const row = rows[0];
+    if (!row) throw new NotFoundException('Approved player not found');
+    const photoUsable =
+      row.photoStatus === 'uploaded' &&
+      row.contentType === 'image/jpeg' &&
+      !!row.objectKey &&
+      row.objectKey.startsWith(row.delegationId + '/' + row.playerId + '/') &&
+      /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(
+        row.objectKey.split('/')[2] ?? '',
+      ) &&
+      row.objectKey.split('/').length === 3;
+    return {
+      playerId: row.playerId,
+      photoId: row.photoId,
+      photoUsable,
+      accredited: row.accredited,
+      verified: row.verified,
+      dateOfBirth: row.dateOfBirth,
+      eligibilityDate: row.eligibilityDate,
+      expectedConsentParty:
+        row.dateOfBirth && row.eligibilityDate
+          ? isMinor(row.dateOfBirth, row.eligibilityDate)
+            ? 'guardian'
+            : 'player'
+          : null,
+      approvedPhotoId: row.approvedPhotoId,
+      consentParty: row.consentParty,
+      consentEvidenceReference: row.consentEvidenceReference,
+      approvedAt: row.approvedAt,
+    };
+  }
+
+  async approvePlayerPhotoPublication(
+    playerId: string,
+    decision: PhotoPublicationDecisionDto,
+    actorUserId: string,
+  ) {
+    const current = await this.playerPhotoPublication(playerId);
+    if (
+      !current.photoUsable ||
+      !current.accredited ||
+      !current.verified ||
+      !current.expectedConsentParty ||
+      current.photoId !== decision.photoId ||
+      current.expectedConsentParty !== decision.consentParty
+    ) {
+      throw new BadRequestException(
+        'Player, current photo, accreditation, or photo consent party is not eligible',
+      );
+    }
+    const reference = decision.consentEvidenceReference.trim();
+    if (!reference) {
+      throw new BadRequestException(
+        'Photo publication consent evidence is required',
+      );
+    }
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const { rows } = await client.query(
+        `INSERT INTO player_photo_publication
+           (player_id, photo_id, consent_party, consent_evidence_reference, approved_by)
+         SELECT $1, ph.id, $3, $4, $5
+         FROM player_photo ph
+         WHERE ph.id = $2 AND ph.player_id = $1
+           AND ph.status = 'uploaded' AND ph.content_type = 'image/jpeg'
+           AND ph.id = (SELECT latest.id FROM player_photo latest
+                        WHERE latest.player_id = $1
+                        ORDER BY latest.uploaded_at DESC NULLS LAST, latest.id DESC
+                        LIMIT 1)
+         ON CONFLICT (player_id) DO UPDATE SET
+           photo_id = EXCLUDED.photo_id,
+           consent_party = EXCLUDED.consent_party,
+           consent_evidence_reference = EXCLUDED.consent_evidence_reference,
+           approved_by = EXCLUDED.approved_by,
+           approved_at = now()
+         RETURNING player_id`,
+        [
+          playerId,
+          decision.photoId,
+          decision.consentParty,
+          reference,
+          actorUserId,
+        ],
+      );
+      if (!rows.length)
+        throw new ConflictException('Player photo changed during approval');
+      await client.query(
+        `INSERT INTO loc_audit_event
+           (actor_user_id, action, target_type, target_id, details)
+         VALUES ($1, 'photo.publication.approved', 'player', $2, $3)`,
+        [
+          actorUserId,
+          playerId,
+          JSON.stringify({
+            photoId: decision.photoId,
+            consentParty: decision.consentParty,
+            consentEvidenceReference: reference,
+          }),
+        ],
+      );
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+    return this.playerPhotoPublication(playerId);
+  }
+
+  async revokePlayerPhotoPublication(playerId: string, actorUserId: string) {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const { rowCount } = await client.query(
+        'DELETE FROM player_photo_publication WHERE player_id = $1',
+        [playerId],
+      );
+      if (!rowCount)
+        throw new NotFoundException('Player photo approval not found');
+      await client.query(
+        `INSERT INTO loc_audit_event
+           (actor_user_id, action, target_type, target_id)
+         VALUES ($1, 'photo.publication.revoked', 'player', $2)`,
+        [actorUserId, playerId],
+      );
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+    return { revoked: true };
+  }
+
   // ---- Media for the review screen / credentials (privileged, cross-tenant) ----
   async playerPhoto(playerId: string) {
     const [photo] = await this.db
@@ -1101,7 +1338,9 @@ export class AdminService {
     actorUserId: string,
   ) {
     if (surface !== 'website' && surface !== 'display') {
-      throw new BadRequestException('Creative surface must be website or display');
+      throw new BadRequestException(
+        'Creative surface must be website or display',
+      );
     }
     const [advertisement] = await this.db
       .select()
@@ -1123,8 +1362,7 @@ export class AdminService {
         CacheControl: 'public, max-age=300',
       }),
     );
-    const imageUrl =
-      `${this.publicApiBase}/public/advertising/${id}/${surface}?v=${Date.now()}`;
+    const imageUrl = `${this.publicApiBase}/public/advertising/${id}/${surface}?v=${Date.now()}`;
     const [updated] = await this.db
       .update(schema.sponsor)
       .set(
@@ -1178,34 +1416,49 @@ export class AdminService {
       .select()
       .from(schema.newsArticle)
       .where(eq(schema.newsArticle.tournamentId, event.id))
-      .orderBy(desc(schema.newsArticle.publishedAt), desc(schema.newsArticle.createdAt));
+      .orderBy(
+        desc(schema.newsArticle.publishedAt),
+        desc(schema.newsArticle.createdAt),
+      );
   }
 
   async saveNewsArticle(dto: SaveNewsArticleDto, actorUserId: string) {
     const [event] = await this.db.select().from(schema.tournament).limit(1);
     if (!event) throw new NotFoundException('No tournament is configured');
     const [current] = dto.id
-      ? await this.db.select().from(schema.newsArticle).where(eq(schema.newsArticle.id, dto.id))
+      ? await this.db
+          .select()
+          .from(schema.newsArticle)
+          .where(eq(schema.newsArticle.id, dto.id))
       : [];
     const published = dto.published ?? current?.published ?? false;
     const values = {
       tournamentId: event.id,
-      slug: dto.slug.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+      slug: dto.slug
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, ''),
       title: dto.title.trim(),
       summary: dto.summary.trim(),
       body: dto.body?.trim() || null,
       imageUrl:
         dto.imageUrl !== undefined
           ? dto.imageUrl.trim() || null
-          : current?.imageUrl ?? null,
+          : (current?.imageUrl ?? null),
       published,
-      publishedAt: published ? current?.publishedAt ?? new Date() : null,
+      publishedAt: published ? (current?.publishedAt ?? new Date()) : null,
     };
     const [article] = dto.id
       ? await this.db
           .update(schema.newsArticle)
           .set(values)
-          .where(and(eq(schema.newsArticle.id, dto.id), eq(schema.newsArticle.tournamentId, event.id)))
+          .where(
+            and(
+              eq(schema.newsArticle.id, dto.id),
+              eq(schema.newsArticle.tournamentId, event.id),
+            ),
+          )
           .returning()
       : await this.db.insert(schema.newsArticle).values(values).returning();
     if (!article) throw new NotFoundException('News article not found');

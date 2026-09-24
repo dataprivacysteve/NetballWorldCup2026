@@ -62,6 +62,17 @@ export class VerifyIdentityDto {
   @IsOptional() @IsString() note?: string;
 }
 
+export class PhotoPublicationDecisionDto {
+  @IsUUID() photoId!: string;
+  @IsIn(['player', 'guardian']) consentParty!: 'player' | 'guardian';
+  @IsString() @MinLength(3) consentEvidenceReference!: string;
+}
+
+export class PhotoPublicationReleaseDto {
+  @IsBoolean() enabled!: boolean;
+  @IsString() @MinLength(3) decisionReference!: string;
+}
+
 export class RevokeCredentialDto {
   @IsString() @MinLength(3) reason!: string;
 }

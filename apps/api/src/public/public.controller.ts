@@ -84,6 +84,18 @@ export class PublicController {
     return article;
   }
 
+  @Get('players/:id/photo')
+  @Header('Cache-Control', 'no-store')
+  async playerPhoto(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const image = await this.svc.playerPhoto(id);
+    res.set('Content-Type', image.contentType);
+    res.set('X-Content-Type-Options', 'nosniff');
+    return new StreamableFile(image.buffer);
+  }
+
   @Get('nations/:code/squad')
   @Header('Cache-Control', CACHE)
   async squad(@Param('code') code: string) {

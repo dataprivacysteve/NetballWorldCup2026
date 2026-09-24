@@ -22,6 +22,8 @@ import {
   SetWindowDto,
   VerifyIdentityDto,
   RevokeCredentialDto,
+  PhotoPublicationDecisionDto,
+  PhotoPublicationReleaseDto,
   SyncOfflineScansDto,
 } from './admin.dto';
 import { qrPng } from './qr.util';
@@ -185,6 +187,46 @@ export class AdminController {
     );
     res.set('X-Content-Type-Options', 'nosniff');
     return new StreamableFile(exportFile.buffer);
+  }
+
+  // --- Governed public player photographs ---
+  @Get('photo-publication')
+  photoPublicationRelease() {
+    return this.admin.photoPublicationRelease();
+  }
+
+  @Patch('photo-publication')
+  setPhotoPublicationRelease(
+    @Body() dto: PhotoPublicationReleaseDto,
+    @Req() req: Request & { user: { userId: string } },
+  ) {
+    return this.admin.setPhotoPublicationRelease(
+      dto.enabled,
+      dto.decisionReference,
+      req.user.userId,
+    );
+  }
+
+  @Get('players/:id/photo-publication')
+  playerPhotoPublication(@Param('id', ParseUUIDPipe) id: string) {
+    return this.admin.playerPhotoPublication(id);
+  }
+
+  @Post('players/:id/photo-publication')
+  approvePlayerPhotoPublication(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: PhotoPublicationDecisionDto,
+    @Req() req: Request & { user: { userId: string } },
+  ) {
+    return this.admin.approvePlayerPhotoPublication(id, dto, req.user.userId);
+  }
+
+  @Post('players/:id/photo-publication/revoke')
+  revokePlayerPhotoPublication(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req: Request & { user: { userId: string } },
+  ) {
+    return this.admin.revokePlayerPhotoPublication(id, req.user.userId);
   }
 
   // --- Media ---
