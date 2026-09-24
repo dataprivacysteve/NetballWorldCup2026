@@ -316,6 +316,23 @@ export type OfflineScanEvent = {
   offlineValid: boolean;
   offlineReason?: string;
 };
+export type PhotoPublicationRelease = {
+  enabled: boolean;
+  approvedPhotos: number;
+};
+export type PlayerPhotoPublication = {
+  playerId: string;
+  photoId: string | null;
+  photoUsable: boolean;
+  accredited: boolean;
+  verified: boolean;
+  expectedConsentParty: "player" | "guardian" | null;
+  approvedPhotoId: string | null;
+  consentParty: "player" | "guardian" | null;
+  consentEvidenceReference: string | null;
+  approvedAt: string | null;
+};
+
 export type ReviewQueueItem = {
   id: string;
   name: string;
@@ -748,6 +765,39 @@ export const api = {
     req<{ id: string; status: "issued" }>(`/admin/credentials/${id}/reissue`, {
       method: "POST",
     }),
+
+  // LOC-controlled public player photos
+  photoPublicationRelease: () =>
+    req<PhotoPublicationRelease>("/admin/photo-publication"),
+  setPhotoPublicationRelease: (enabled: boolean, decisionReference: string) =>
+    req<PhotoPublicationRelease>("/admin/photo-publication", {
+      method: "PATCH",
+      body: { enabled, decisionReference },
+    }),
+  playerPhotoPublication: (playerId: string) =>
+    req<PlayerPhotoPublication>(
+      "/admin/players/" + playerId + "/photo-publication",
+    ),
+  approvePlayerPhotoPublication: (
+    playerId: string,
+    photoId: string,
+    consentParty: "player" | "guardian",
+    consentEvidenceReference: string,
+  ) =>
+    req<PlayerPhotoPublication>(
+      "/admin/players/" + playerId + "/photo-publication",
+      {
+        method: "POST",
+        body: { photoId, consentParty, consentEvidenceReference },
+      },
+    ),
+  revokePlayerPhotoPublication: (playerId: string) =>
+    req<{ revoked: boolean }>(
+      "/admin/players/" + playerId + "/photo-publication/revoke",
+      {
+        method: "POST",
+      },
+    ),
 
   // Roster accreditation review
   listReview: () => req<ReviewQueueItem[]>("/admin/review"),

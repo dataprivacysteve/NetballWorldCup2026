@@ -49,6 +49,9 @@ export const tournament = pgTable('tournament', {
   brandPrimaryLogoUrl: text('brand_primary_logo_url'),
   brandReverseLogoUrl: text('brand_reverse_logo_url'),
   publicSiteLive: boolean('public_site_live').notNull().default(false),
+  playerPhotosPublicEnabled: boolean('player_photos_public_enabled')
+    .notNull()
+    .default(false),
   gymDisplayMode: text('gym_display_mode').notNull().default('automatic'),
   configurationStatus: configurationStatus('configuration_status')
     .notNull()

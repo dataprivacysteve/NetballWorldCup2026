@@ -370,6 +370,7 @@ function computeStandings(
 export class PublicService {
   private readonly s3: S3Client;
   private readonly advertisingBucket: string;
+  private readonly photoBucket: string;
 
   constructor(
     @Inject(PUBLIC_POOL) private readonly pool: Pool,
@@ -386,6 +387,7 @@ export class PublicService {
       },
     });
     this.advertisingBucket = config.getOrThrow<string>('S3_BUCKET_BADGES');
+    this.photoBucket = config.getOrThrow<string>('S3_BUCKET_PHOTOS');
   }
 
   async tournament() {
@@ -567,6 +569,41 @@ export class PublicService {
       [slug.trim().toLowerCase()],
     );
     return article.rows[0] ?? null;
+  }
+
+  async playerPhoto(playerId: string) {
+    const { rows } = await this.pool.query<{
+      objectKey: string;
+      contentType: string;
+    }>(
+      `SELECT object_key AS "objectKey", content_type AS "contentType"
+       FROM v_public_player_photo WHERE player_id = $1 LIMIT 1`,
+      [playerId],
+    );
+    const photo = rows[0];
+    if (!photo || photo.contentType !== 'image/jpeg') {
+      throw new NotFoundException('Player photo not found');
+    }
+    try {
+      const object = await this.s3.send(
+        new GetObjectCommand({
+          Bucket: this.photoBucket,
+          Key: photo.objectKey,
+        }),
+      );
+      const buffer = Buffer.from(await object.Body!.transformToByteArray());
+      if (
+        buffer.length < 3 ||
+        buffer[0] !== 0xff ||
+        buffer[1] !== 0xd8 ||
+        buffer[2] !== 0xff
+      ) {
+        throw new NotFoundException('Player photo not found');
+      }
+      return { contentType: 'image/jpeg', buffer };
+    } catch {
+      throw new NotFoundException('Player photo not found');
+    }
   }
 
   async squad(code: string) {

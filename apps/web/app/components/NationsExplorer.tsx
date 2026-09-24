@@ -46,7 +46,8 @@ export function NationsExplorer({
             <div>
               <div className="h-nm">{squad.nation.name}</div>
               <div className="h-meta">
-                {squad.members.length} {squad.members.length === 1 ? "player" : "players"} · {active}
+                {squad.members.length}{" "}
+                {squad.members.length === 1 ? "player" : "players"} · {active}
               </div>
             </div>
           </div>
@@ -57,7 +58,11 @@ export function NationsExplorer({
                 {p.photoAssetPath ? (
                   <img
                     className="av athlete-photo"
-                    src={`/${p.photoAssetPath}`}
+                    src={
+                      p.photoAssetPath.startsWith("public/players/")
+                        ? `${(process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://api.netballamericas.test").replace(/\/$/, "")}/${p.photoAssetPath}`
+                        : `/${p.photoAssetPath}`
+                    }
                     alt={`${p.firstName} ${p.lastName}, ${p.role ?? "squad member"}`}
                   />
                 ) : (
@@ -89,7 +94,8 @@ export function NationsExplorer({
           </div>
           <div className="squad-note">
             Listed positions are primary preferences, not fixed match
-            assignments. Match-day selection remains subject to tournament eligibility.
+            assignments. Match-day selection remains subject to tournament
+            eligibility.
           </div>
         </div>
       )}
