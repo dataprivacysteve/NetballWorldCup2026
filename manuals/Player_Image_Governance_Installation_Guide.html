@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>GameDay · Player Image Governance Installation Guide</title>
+  <style>
+    :root{--navy:#111a3b;--navy2:#1d2b5b;--gold:#e5b849;--paper:#f5f4f0;--white:#fff;--ink:#172039;--muted:#58647b;--line:#dce2ea;--green:#116044;--greenbg:#eaf7f0;--amber:#8d5705;--amberbg:#fff5d9;--red:#9c2734;--redbg:#fff0f1;--bluebg:#edf2ff}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif}a{color:#254a9a}a:hover{text-decoration-thickness:2px}.hero{background:radial-gradient(circle at 86% 18%,#344678 0,transparent 32%),linear-gradient(135deg,#0b112b,var(--navy2));color:#fff;padding:52px 24px 42px;border-bottom:5px solid var(--gold)}.shell{max-width:1320px;margin:auto}.hero-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(280px,.7fr);gap:32px;align-items:end}.eyebrow{font:800 11px/1.3 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.18em;text-transform:uppercase;color:var(--gold)}h1{font:700 clamp(35px,4.5vw,60px)/1.06 Georgia,serif;letter-spacing:-.025em;margin:14px 0}h2{font:700 27px/1.2 Georgia,serif;margin:0 0 14px}h3{font-size:17px;line-height:1.3;margin:25px 0 8px}p{margin:10px 0}.lede{font-size:17px;color:#e2e8fb;max-width:760px}.hero-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}.hero-meta span{border:1px solid #65739e;border-radius:999px;padding:5px 11px;color:#e6ebfc;font-size:12px}.release-state{border:1px solid #8492bf;background:rgba(255,255,255,.08);border-radius:18px;padding:22px;box-shadow:0 14px 35px rgba(0,0,0,.12)}.release-state strong{display:block;color:var(--gold);font:800 30px/1.1 ui-monospace,Consolas,monospace;margin:10px 0}.release-state p{color:#e2e8fb;font-size:13px;margin:0}.toolbar{display:flex;gap:9px;margin-top:16px}.toolbar button{border:1px solid #8492bf;background:#fff;color:var(--navy);border-radius:8px;padding:8px 12px;font-weight:750;cursor:pointer}.layout{display:grid;grid-template-columns:235px minmax(0,1fr);gap:25px;padding:30px 24px 70px}.toc{position:sticky;top:18px;align-self:start;background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px;max-height:calc(100vh - 36px);overflow:auto}.toc h2{font:800 12px/1.2 ui-monospace,Consolas,monospace;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin:0 0 12px}.toc a{display:block;text-decoration:none;color:var(--ink);font-size:13px;padding:6px 9px;border-radius:7px}.toc a:hover,.toc a:focus{background:var(--bluebg)}.toc .minor{padding-left:20px;color:var(--muted)}.content{min-width:0}.card{background:var(--white);border:1px solid var(--line);border-radius:17px;padding:27px 30px;margin-bottom:20px;box-shadow:0 6px 24px rgba(17,26,59,.045)}.step-top{display:flex;gap:15px;align-items:start;margin-bottom:16px}.step-no{flex:none;display:grid;place-items:center;width:42px;height:42px;border-radius:12px;background:var(--navy);color:white;font:800 17px ui-monospace,Consolas,monospace}.step-top h2{margin:1px 0 0}.sub{color:var(--muted);margin-top:0}.callout{padding:15px 17px;margin:17px 0;border-left:4px solid var(--gold);background:var(--amberbg);border-radius:8px}.callout strong{display:block;margin-bottom:3px}.callout.danger{border-color:var(--red);background:var(--redbg)}.callout.success{border-color:var(--green);background:var(--greenbg)}.callout.info{border-color:#4b65a6;background:var(--bluebg)}.pill{display:inline-block;border-radius:999px;padding:3px 10px;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}.pill.off{color:var(--green);background:var(--greenbg)}.pill.stop{color:var(--red);background:var(--redbg)}.pill.review{color:var(--amber);background:var(--amberbg)}.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:20px 0}.flow div{border:1px solid var(--line);border-radius:10px;padding:13px;background:#f8faff}.flow b{display:block;color:var(--navy);font-size:13px}.flow span{display:block;color:var(--muted);font-size:12px}.code-wrap{position:relative;margin:14px 0 20px}.code-label{position:absolute;left:16px;top:10px;color:#a6b6e8;font:800 10px ui-monospace,Consolas,monospace;letter-spacing:.12em;text-transform:uppercase}.copy{position:absolute;right:10px;top:8px;color:#fff;background:#344676;border:1px solid #7384b2;border-radius:6px;padding:5px 9px;font-size:11px;cursor:pointer}pre{overflow:auto;margin:0;padding:38px 16px 16px;background:#0d142d;color:#e5ebfa;border-radius:10px;font:12.5px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;tab-size:2}pre code{font:inherit}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}p code,li code,td code{font-size:.91em;background:#eef1f7;border-radius:4px;padding:1px 4px}table{width:100%;border-collapse:collapse;margin:13px 0 18px}th,td{text-align:left;vertical-align:top;border-bottom:1px solid var(--line);padding:10px 9px}th{font:800 11px ui-monospace,Consolas,monospace;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}ul,ol{padding-left:23px}li{margin:5px 0}.checklist{list-style:none;padding:0}.checklist li{padding:9px 10px;margin:6px 0;border:1px solid var(--line);border-radius:8px}.checklist li:before{content:"□";font-size:18px;margin-right:10px;color:var(--navy)}.note{color:var(--muted);font-size:13px}.footer{color:var(--muted);font-size:12px;text-align:center;padding:16px}.anchor{scroll-margin-top:16px}@media(max-width:900px){.hero-grid{grid-template-columns:1fr}.layout{grid-template-columns:1fr}.toc{position:static;max-height:none}.flow{grid-template-columns:repeat(2,1fr)}}@media(max-width:600px){.hero{padding:35px 18px}.layout{padding:20px 14px}.card{padding:20px}.flow{grid-template-columns:1fr}pre{font-size:11px}}@media print{body{background:#fff;font-size:11pt}.hero{padding:24px;color:#fff;print-color-adjust:exact}.layout{display:block;padding:10px 0}.toc,.copy,.toolbar{display:none}.card{box-shadow:none;break-inside:avoid;padding:15px;margin:0 0 10px}pre{white-space:pre-wrap;overflow:visible;print-color-adjust:exact}.flow{grid-template-columns:repeat(4,1fr)}a{color:inherit;text-decoration:none}}
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="shell hero-grid">
+      <div>
+        <div class="eyebrow">SportsBB · GameDay · production runbook · 24 September 2026</div>
+        <h1>Player image governance<br>installation guide</h1>
+        <p class="lede">Install the consent-gated athlete photo release without opening the private storage bucket or publishing any existing image. Code deployment and LOC activation are separate, recorded steps.</p>
+        <div class="hero-meta"><span>Debian / ISPConfig</span><span>Supervisor</span><span>PostgreSQL migration 0042</span><span>API + platform + web</span><span>Node 24.14.0 · pnpm 9.15.0</span></div>
+      </div>
+      <div class="release-state">
+        <div class="eyebrow">Release state at installation</div>
+        <strong>OFF by default</strong>
+        <p>Migration 0042 creates no photo approvals. The tournament-wide switch is false. Real squad photos remain null until the LOC approves individual images and explicitly enables publication.</p>
+        <div class="toolbar"><button type="button" onclick="window.print()">Print / save PDF</button></div>
+      </div>
+    </div>
+  </header>
+  <div class="shell layout">
+    <nav class="toc" aria-label="Installation steps">
+      <h2>On this page</h2>
+      <a href="#scope">Release boundaries</a>
+      <a href="#s1">1 · Approvals and roles</a>
+      <a href="#s2">2 · Inventory production</a>
+      <a href="#s3">3 · Pin the approved commit</a>
+      <a href="#s4">4 · Check database baseline</a>
+      <a href="#s5">5 · Backup and staging</a>
+      <a href="#s6">6 · Export a new release</a>
+      <a href="#s7">7 · Validate configuration</a>
+      <a href="#s8">8 · Install and build</a>
+      <a href="#s9">9 · Maintenance and migration</a>
+      <a href="#s10">10 · Cut over services</a>
+      <a href="#s11">11 · Verify default-off state</a>
+      <a href="#s12">12 · LOC photo approval</a>
+      <a href="#s13">13 · Activate and verify</a>
+      <a href="#rollback">Rollback and kill switch</a>
+      <a href="#trouble">Troubleshooting</a>
+      <a href="#handoff">Evidence and handoff</a>
+    </nav>
+    <main class="content">
+      <section class="card anchor" id="scope">
+        <div class="eyebrow">Read first</div><h2>Two gates, one private storage boundary</h2>
+        <div class="flow">
+          <div><b>1 · Deploy code</b><span>Migration adds an empty approval table and an off switch.</span></div>
+          <div><b>2 · Review consent</b><span>LOC reviews the exact image and website-photo consent evidence.</span></div>
+          <div><b>3 · Approve image</b><span>Approval is tied to the current uploaded JPEG, player and credential.</span></div>
+          <div><b>4 · Enable release</b><span>Only approved images are streamed by the API.</span></div>
+        </div>
+        <table><thead><tr><th>Item</th><th>Expected result</th></tr></thead><tbody>
+          <tr><td>Public squad before LOC activation</td><td><code>photoAssetPath: null</code> for real players; names, positions and numbers continue to show.</td></tr>
+          <tr><td>Public squad after both gates</td><td><code>public/players/{id}/photo</code> appears only for the eligible approved image.</td></tr>
+          <tr><td>Storage</td><td>The photos bucket stays private; passports and identity documents are never served by this route.</td></tr>
+          <tr><td>Review candidate</td><td><a href="https://github.com/dataprivacysteve/NetballWorldCup2026/pull/5">Draft PR #5</a>, initial implementation commit <code>d10cd8f</code>. Use the eventual reviewed, merged commit for production.</td></tr>
+        </tbody></table>
+        <div class="callout danger"><strong>Stop until the PR is reviewed and merged.</strong> The guide is preparation, not authorization to publish photographs. Do not make the B2/S3 bucket public, add a public bucket policy, point a web server at it, or remove the consent gate from the view.</div>
+      </section>
+
+      <section class="card anchor" id="s1"><div class="step-top"><div class="step-no">01</div><div><div class="eyebrow">Decision gate</div><h2>Assign people and record approvals</h2></div></div>
+        <p>Before touching production, name the lead developer, deployment operator, database backup owner and LOC officer. Steven reviews the code and the exact diff. The LOC separately decides whether athlete portraits may be published and how consent evidence is checked. The release may be installed with the switch off before the LOC activation decision, but nobody should approve or enable images until that decision is recorded.</p>
+        <ul class="checklist"><li>PR #5 is merged after code review; record its final full commit SHA.</li><li>Maintenance window and rollback owner are agreed.</li><li>LOC decision reference and consent review method are documented before publication.</li><li>A named LOC officer account exists; do not create a shared login or re-bootstrap an existing account.</li></ul>
+        <div class="callout info"><strong>Separate consent</strong>The existing accreditation consent record does not establish consent to display a photo on the website. The LOC screen records only a reference to the specific publication-consent evidence, not the evidence document or private identity details.</div>
+      </section>
+
+      <section class="card anchor" id="s2"><div class="step-top"><div class="step-no">02</div><div><div class="eyebrow">Production host · root Bash session</div><h2>Inventory the running installation</h2></div></div>
+        <p>The supplied production shell used <code>/var/www/clients/client0/web6/web/gameday/releases/…</code>. That exported release has no <code>.git</code>. The retained checkout is normally <code>gameday/source</code>; verify both locations and the actual Supervisor program names. The public website program name may differ between hosts.</p>
+        <div class="code-wrap"><span class="code-label">Bash · run on web18</span><button class="copy" type="button">Copy</button><pre><code>set -euo pipefail
+umask 077
+export BASE_ROOT=/var/www/clients/client0/web6/web/gameday
+export GIT_ROOT="$BASE_ROOT/source"
+export SITE_USER=web6
+export SITE_GROUP="$(id -gn "$SITE_USER")"
+export CACHE_ROOT="$BASE_ROOT/.cache"
+export EXPECTED_BASE=dbd17836b7ff7a8988ac85ffac998e5b8ef4a13c
+
+test -d "$GIT_ROOT/.git" || { echo "STOP: retained Git checkout missing"; exit 1; }
+git -C "$GIT_ROOT" status --short
+git -C "$GIT_ROOT" remote -v
+supervisorctl status
+ss -lntp | grep -E ':3000|:3001|:3003'
+for program in gameday-api gameday-platform; do
+  pid="$(supervisorctl pid "$program")"
+  echo "$program PID $pid"
+  readlink -f "/proc/$pid/cwd"
+done
+read -r -p "Verified public website Supervisor program: " WEB_PROGRAM
+test -n "$WEB_PROGRAM"
+WEB_PID="$(supervisorctl pid "$WEB_PROGRAM")"
+readlink -f "/proc/$WEB_PID/cwd"</code></pre></div>
+        <p>Inspect the relevant Supervisor files locally; do not paste their environment lines into tickets or chat. Record the actual API, platform and website release directories. If a process uses a wrapper, verify its child process too. Keep <code>WEB_PROGRAM</code> in the same root shell for Steps 9 and 10.</p>
+        <div class="callout danger"><strong>Stop on an unexplained baseline.</strong> If the source checkout is dirty, the live service paths are unknown, the remote is unexpected, or the code differs from the intended baseline, reconcile those differences before export. Do not initialize Git inside an exported release or run a destructive reset.</div>
+      </section>
+
+      <section class="card anchor" id="s3"><div class="step-top"><div class="step-no">03</div><div><div class="eyebrow">Immutable source</div><h2>Pin the final reviewed commit</h2></div></div>
+        <p>Fetch into the retained checkout without changing the live release. Enter the full merge commit SHA from the approved PR, not merely the draft-branch head. The approved commit must be on <code>origin/main</code>; a squash merge need not preserve the draft branch's commit SHA.</p>
+        <div class="code-wrap"><span class="code-label">Bash · review gate</span><button class="copy" type="button">Copy</button><pre><code>cd "$GIT_ROOT"
+git fetch origin
+read -r -p "Full approved merge commit SHA: " APPROVED_COMMIT
+[[ "$APPROVED_COMMIT" =~ ^[0-9a-f]{40}$ ]] || { echo "STOP: invalid SHA"; exit 1; }
+export APPROVED_COMMIT
+git cat-file -e "$APPROVED_COMMIT^{commit}"
+git merge-base --is-ancestor "$APPROVED_COMMIT" origin/main
+git diff --name-status "$EXPECTED_BASE" "$APPROVED_COMMIT"
+git show "$APPROVED_COMMIT:apps/api/drizzle/0042_player_photo_publication.sql" | head -n 8</code></pre></div>
+        <p>Review every changed path. This release should add migration 0042 and its journal entry, API publication controls, the LOC platform screen, website and lineup URL handling, and documentation. An unexpected migration, storage ACL, identity-document path, or unrelated application change needs a revised release plan. If production is no longer at the supplied <code>dbd1783</code> baseline, compare the actual live commits before proceeding.</p>
+      </section>
+
+      <section class="card anchor" id="s4"><div class="step-top"><div class="step-no">04</div><div><div class="eyebrow">Database baseline</div><h2>Prove which migrations have run</h2></div></div>
+        <p>Set <code>ACTIVE_API_RELEASE</code> to the verified path from Step 2. Read the production migration URL from its protected <code>.env</code> without printing it or executing the file as Bash. Node 24 supports <code>--env-file</code>. Never enable shell tracing.</p>
+        <div class="code-wrap"><span class="code-label">Bash · adapt one verified path</span><button class="copy" type="button">Copy</button><pre><code>read -r -p "Verified active API release directory: " ACTIVE_API_RELEASE
+test -f "$ACTIVE_API_RELEASE/.env" || { echo "STOP: API env missing"; exit 1; }
+set +x
+MIGRATION_DATABASE_URL="$(env -u MIGRATION_DATABASE_URL node --env-file="$ACTIVE_API_RELEASE/.env" -e 'const v=process.env.MIGRATION_DATABASE_URL; try { const u=new URL(v); if (!["postgres:","postgresql:"].includes(u.protocol) || !u.hostname || u.pathname.length&lt;2) throw 0; } catch { process.exit(1); } process.stdout.write(v);')"
+test -n "$MIGRATION_DATABASE_URL" || { echo "STOP: migration URL missing"; exit 1; }
+export MIGRATION_DATABASE_URL
+
+psql "$MIGRATION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atc 'SELECT COALESCE(MAX(created_at),0) FROM drizzle.__drizzle_migrations'
+psql "$MIGRATION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM delegation"
+psql "$MIGRATION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM player"
+psql "$MIGRATION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -Atc "SELECT count(*) FROM player_photo"</code></pre></div>
+        <p>The expected immediately preceding journal timestamp is <code>1789344000000</code> (migration 0041). The new migration is <code>1790208000000</code>. If production is behind 0041 or already beyond it, stop and review the full pending set; the migrator applies all unapplied migrations, not only 0042. Record counts without exporting player names, documents or object keys.</p>
+        <div class="callout info"><strong>Observed production symptom</strong>Previously supplied output showed uploaded photos for all 126 entered players, zero demo profiles, and <code>photoAssetPath:null</code>. That was correct for migration 0037. Recheck the live baseline instead of treating the old counts as current.</div>
+      </section>
+
+      <section class="card anchor" id="s5"><div class="step-top"><div class="step-no">05</div><div><div class="eyebrow">Recovery gate</div><h2>Back up and rehearse in staging</h2></div></div>
+        <p>First restore a fresh production backup to isolated staging with staging-only API domains and object-storage credentials. Apply 0042 there. Verify default-off output, privileges, one consented test approval, credential revocation, photo replacement and the emergency switch. Keep outbound mail, external webhooks and edge sync disabled in staging. Do not use real player portraits for a public staging site.</p>
+        <p>Before production migration, put the site into its established maintenance mode and pause all writers, scheduled jobs and edge sync. Back up the current database and the exact service configurations. Keep the active exported releases intact.</p>
+        <div class="code-wrap"><span class="code-label">Bash · protected backup</span><button class="copy" type="button">Copy</button><pre><code>export RELEASE_TIME="$(date -u +%Y%m%dT%H%M%SZ)"
+export EVIDENCE_ROOT="/var/backups/gameday/player-images-$RELEASE_TIME"
+install -d -m 0700 "$EVIDENCE_ROOT"
+pg_dump "$MIGRATION_DATABASE_URL" -Fc -f "$EVIDENCE_ROOT/database-before.dump"
+pg_restore --list "$EVIDENCE_ROOT/database-before.dump" &gt; "$EVIDENCE_ROOT/database-restore-list.txt"
+printf '%s\n' "$ACTIVE_API_RELEASE" &gt; "$EVIDENCE_ROOT/previous-api-release.txt"
+git -C "$GIT_ROOT" rev-parse HEAD &gt; "$EVIDENCE_ROOT/source-commit-before.txt"</code></pre></div>
+        <p>Store the verified website and platform release paths, Supervisor config file paths and copies, and the existing private storage snapshots under restricted access. A <code>pg_restore --list</code> check proves the archive is readable; the staging restore proves it can actually be recovered. Keep credentials and backup contents out of the deployment summary.</p>
+      </section>
+
+      <section class="card anchor" id="s6"><div class="step-top"><div class="step-no">06</div><div><div class="eyebrow">Prepared release · no live change yet</div><h2>Export the approved source into a new directory</h2></div></div>
+        <p>Do not build inside the running release and do not pull into it. Export the pinned commit from <code>source</code> into a new timestamped directory. Copy the protected production environment from the verified active API release, then review values before building.</p>
+        <div class="code-wrap"><span class="code-label">Bash · immutable export</span><button class="copy" type="button">Copy</button><pre><code>export NEW_RELEASE="$BASE_ROOT/releases/$APPROVED_COMMIT-$RELEASE_TIME"
+test ! -e "$NEW_RELEASE" || { echo "STOP: release path already exists"; exit 1; }
+git -C "$GIT_ROOT" archive --output="$EVIDENCE_ROOT/release.tar" "$APPROVED_COMMIT"
+install -d -m 0750 -o "$SITE_USER" -g "$SITE_GROUP" "$NEW_RELEASE"
+tar -xf "$EVIDENCE_ROOT/release.tar" -C "$NEW_RELEASE"
+printf '%s\n' "$APPROVED_COMMIT" &gt; "$NEW_RELEASE/RELEASE_COMMIT"
+chown -R "$SITE_USER:$SITE_GROUP" "$NEW_RELEASE"
+install -m 0600 -o "$SITE_USER" -g "$SITE_GROUP" "$ACTIVE_API_RELEASE/.env" "$NEW_RELEASE/.env"
+test -f "$NEW_RELEASE/apps/api/drizzle/0042_player_photo_publication.sql"
+test -f "$NEW_RELEASE/apps/platform/app/photo-governance.tsx"
+test -f "$NEW_RELEASE/apps/web/app/components/NationsExplorer.tsx"
+cat "$NEW_RELEASE/RELEASE_COMMIT"</code></pre></div>
+        <p>The exported folder has no Git metadata; identify it by <code>RELEASE_COMMIT</code>. Do not copy old <code>node_modules</code>, <code>.next</code> or <code>dist</code> output into the new release. Do not copy a development <code>.env</code> or <code>.env.example</code> over production secrets.</p>
+      </section>
+
+      <section class="card anchor" id="s7"><div class="step-top"><div class="step-no">07</div><div><div class="eyebrow">Runtime configuration</div><h2>Verify API, website and private storage settings</h2></div></div>
+        <p>Review <code>$NEW_RELEASE/.env</code> and any app-specific env files or Supervisor overrides. Preserve live database, session, mail and S3 credentials. This release introduces no new required secret. The publication switch is a database value, not an environment flag.</p>
+        <table><thead><tr><th>Setting</th><th>Expected production role</th></tr></thead><tbody>
+          <tr><td><code>API_BASE_URL</code></td><td><code>https://api.netballamericas.org</code>; compiled into both browser bundles as <code>NEXT_PUBLIC_API_BASE_URL</code>.</td></tr>
+          <tr><td><code>PUBLIC_BASE_URL</code></td><td><code>https://www.netballamericas.org</code>; verify actual public hostname.</td></tr>
+          <tr><td><code>PLATFORM_BASE_URL</code></td><td><code>https://platform.netballamericas.org</code>; LOC screen must reach the production API.</td></tr>
+          <tr><td><code>PUBLIC_DATABASE_URL</code></td><td>Read-only <code>gameday_public</code> role; do not grant it base-table access.</td></tr>
+          <tr><td><code>PLATFORM_DATABASE_URL</code></td><td><code>gameday_platform</code> role for LOC decisions.</td></tr>
+          <tr><td><code>MIGRATION_DATABASE_URL</code></td><td>Existing migration role for DDL only; confirm it targets the backed-up database.</td></tr>
+          <tr><td><code>S3_BUCKET_PHOTOS</code></td><td>Existing private photo bucket. Do not change ACL, policy or endpoint to make it public.</td></tr>
+        </tbody></table>
+        <div class="callout danger"><strong>Build-time domain check</strong>The website and platform <code>next.config.ts</code> files derive the browser API URL from <code>API_BASE_URL</code>. A stale <code>.test</code> value in the shell or Supervisor environment can be baked into the build. Correct it before Step 8; restarting later will not repair an old bundle.</div>
+      </section>
+
+      <section class="card anchor" id="s8"><div class="step-top"><div class="step-no">08</div><div><div class="eyebrow">Build as the ISPConfig site user</div><h2>Install dependencies and build three affected services</h2></div></div>
+        <p>Use the release's pinned Node <code>24.14.0</code> and pnpm <code>9.15.0</code>. Resolve absolute runtime paths from the host and ensure Supervisor will use the same runtime. The API, public website and platform must all be built from the same approved release. Teams and stats code do not change in this PR.</p>
+        <div class="code-wrap"><span class="code-label">Bash · build before cutover</span><button class="copy" type="button">Copy</button><pre><code>export NODE_BIN="$(command -v node)"
+export PNPM_BIN="$(command -v pnpm)"
+test "$("$NODE_BIN" --version)" = "v24.14.0"
+test "$("$PNPM_BIN" --version)" = "9.15.0"
+export RUNTIME_PATH="$(dirname "$NODE_BIN"):$(dirname "$PNPM_BIN"):/usr/local/bin:/usr/bin:/bin"
+install -d -m 0750 -o "$SITE_USER" -g "$SITE_GROUP" "$CACHE_ROOT" "$CACHE_ROOT/corepack" "$CACHE_ROOT/pnpm"
+run_app() {
+  sudo -u "$SITE_USER" -H env PATH="$RUNTIME_PATH" CI=true XDG_CACHE_HOME="$CACHE_ROOT" COREPACK_HOME="$CACHE_ROOT/corepack" PNPM_HOME="$CACHE_ROOT/pnpm" API_BASE_URL=https://api.netballamericas.org PUBLIC_BASE_URL=https://www.netballamericas.org NEXT_PUBLIC_PUBLIC_SITE_URL=https://www.netballamericas.org "$@"
+}
+cd "$NEW_RELEASE"
+run_app "$PNPM_BIN" install --frozen-lockfile --prod=false
+run_app "$PNPM_BIN" --filter api build
+run_app "$PNPM_BIN" --filter web build
+run_app "$PNPM_BIN" --filter platform build
+test -f "$NEW_RELEASE/apps/api/dist/src/main.js"
+test -f "$NEW_RELEASE/apps/web/.next/BUILD_ID"
+test -f "$NEW_RELEASE/apps/platform/.next/BUILD_ID"</code></pre></div>
+        <div class="callout danger"><strong>Stop on any failure.</strong> Do not run the migration or alter Supervisor if install or build fails. The old release remains intact. Do not run <code>db:seed</code>, <code>db:prepare-demo-teams</code>, <code>db:prepare-rehearsal</code> or a Docker volume reset in production.</div>
+      </section>
+
+      <section class="card anchor" id="s9"><div class="step-top"><div class="step-no">09</div><div><div class="eyebrow">Additive database migration</div><h2>Pause writers, apply 0042, and prove it starts off</h2></div></div>
+        <p>Keep maintenance active. Stop the verified API, website and platform programs. Also stop Teams, stats, edge sync and scheduled writers by their verified names if present; check <code>supervisorctl status</code> and the host's timer/cron inventory. Confirm the backup is complete before applying the migration. The migration sets <code>player_photos_public_enabled=false</code> and inserts no approvals.</p>
+        <div class="code-wrap"><span class="code-label">Bash · migration and invariants</span><button class="copy" type="button">Copy</button><pre><code>cd "$NEW_RELEASE"
+test -n "$WEB_PROGRAM" || { echo "STOP: website program not verified"; exit 1; }
+supervisorctl stop gameday-api "$WEB_PROGRAM" gameday-platform
+supervisorctl status
+# Stop any additional verified writers and scheduled jobs before continuing.
+BEFORE_JOURNAL="$(psql "$MIGRATION_DATABASE_URL" -X -Atc 'SELECT COALESCE(MAX(created_at),0) FROM drizzle.__drizzle_migrations')"
+test "$BEFORE_JOURNAL" = "1789344000000" || { echo "STOP: unexpected migration baseline"; exit 1; }
+
+# Use the new release's protected .env and the same database just backed up.
+run_app "$PNPM_BIN" --filter api db:migrate
+
+AFTER_JOURNAL="$(psql "$MIGRATION_DATABASE_URL" -X -Atc 'SELECT COALESCE(MAX(created_at),0) FROM drizzle.__drizzle_migrations')"
+test "$AFTER_JOURNAL" = "1790208000000" || { echo "STOP: migration journal mismatch"; exit 1; }
+psql "$MIGRATION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -c "SELECT player_photos_public_enabled FROM tournament"
+psql "$MIGRATION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -c "SELECT count(*) AS approvals FROM player_photo_publication"
+psql "$MIGRATION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -c "SELECT has_table_privilege('gameday_public','player_photo_publication','SELECT') AS public_can_read_decisions, has_table_privilege('gameday_platform','player_photo_publication','INSERT') AS loc_can_approve"
+psql "$MIGRATION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -c "SELECT count(*) AS published_real_photos FROM v_public_player_photo"</code></pre></div>
+        <p>Expected: journal <code>1790208000000</code>; switch <code>false</code>; approvals <code>0</code>; public role cannot select the decision table; LOC role can insert; published real photo count <code>0</code>. Compare protected delegation, player, photo, credential and identity-document counts with Step 4. A mismatch or migration error is a stop condition; do not hand-edit the Drizzle journal or grant base-table rights to the public role.</p>
+      </section>
+
+      <section class="card anchor" id="s10"><div class="step-top"><div class="step-no">10</div><div><div class="eyebrow">Controlled service cutover</div><h2>Point API, website and platform to the new release</h2></div></div>
+        <p>Back up each verified Supervisor config and edit only the affected stanzas. Set their working directories to the new release's <code>apps/api</code>, <code>apps/web</code> and <code>apps/platform</code>. Update any absolute command paths. Preserve the service user, production environment, logs, restart policy and loopback ports 3000, 3001 and 3003.</p>
+        <table><thead><tr><th>Service</th><th>Directory</th><th>Command pattern</th></tr></thead><tbody>
+          <tr><td>API</td><td><code>$NEW_RELEASE/apps/api</code></td><td>Verified Node binary + <code>dist/src/main.js</code>, port 3000</td></tr>
+          <tr><td>Website</td><td><code>$NEW_RELEASE/apps/web</code></td><td>Verified pnpm binary + <code>start --hostname 127.0.0.1 --port 3001</code></td></tr>
+          <tr><td>Platform</td><td><code>$NEW_RELEASE/apps/platform</code></td><td>Verified pnpm binary + <code>start --hostname 127.0.0.1 --port 3003</code></td></tr>
+        </tbody></table>
+        <div class="code-wrap"><span class="code-label">Bash · inspect, then scoped update</span><button class="copy" type="button">Copy</button><pre><code>grep -Rnl '^\[program:gameday-api\]\|^\[program:gameday-platform\]' /etc/supervisor 2&gt;/dev/null || true
+supervisorctl reread
+# Inspect the changed-program list. Update only the reviewed programs.
+supervisorctl update gameday-api
+supervisorctl status gameday-api | grep -q RUNNING || supervisorctl start gameday-api
+supervisorctl status gameday-api
+curl -fsS http://127.0.0.1:3000/public/nations/BRB/squad -o /dev/null
+
+supervisorctl update "$WEB_PROGRAM"
+supervisorctl status "$WEB_PROGRAM" | grep -q RUNNING || supervisorctl start "$WEB_PROGRAM"
+supervisorctl update gameday-platform
+supervisorctl status gameday-platform | grep -q RUNNING || supervisorctl start gameday-platform
+supervisorctl status gameday-api "$WEB_PROGRAM" gameday-platform</code></pre></div>
+        <p>Supervisor does not inherit <code>NEW_RELEASE</code> from your shell: write the actual absolute paths into its config. <code>supervisorctl update</code> may restart changed programs. Recheck the PIDs and their real working directories after cutover, not just the RUNNING label. Confirm Caddy/proxy still routes public hostnames to the same loopback ports.</p>
+      </section>
+
+      <section class="card anchor" id="s11"><div class="step-top"><div class="step-no">11</div><div><div class="eyebrow">Pre-activation acceptance</div><h2>Prove the live release publishes no real photos</h2></div></div>
+        <div class="code-wrap"><span class="code-label">Bash · privacy-safe smoke checks</span><button class="copy" type="button">Copy</button><pre><code>curl -sS -o /dev/null -w 'API squad: %{http_code}\n' https://api.netballamericas.org/public/nations/BRB/squad
+curl -sS -o /dev/null -w 'Website: %{http_code}\n' https://www.netballamericas.org/
+curl -sS -o /dev/null -w 'Platform: %{http_code}\n' https://platform.netballamericas.org/
+psql "$MIGRATION_DATABASE_URL" -X -Atc "SELECT count(*) FROM v_public_player_photo"
+psql "$MIGRATION_DATABASE_URL" -X -Atc "SELECT count(*) FROM v_public_squad_member WHERE photo_asset_path LIKE 'public/players/%'"
+
+CHECK_PLAYER_ID="$(psql "$MIGRATION_DATABASE_URL" -X -Atc "SELECT p.id FROM player p JOIN delegation d ON d.id=p.delegation_id WHERE d.country_code='BRB' AND p.category='player' ORDER BY p.id LIMIT 1")"
+test -n "$CHECK_PLAYER_ID"
+CHECK_STATUS="$(curl -sS -o /dev/null -w '%{http_code}' "http://127.0.0.1:3000/public/players/$CHECK_PLAYER_ID/photo")"
+test "$CHECK_STATUS" = "404"</code></pre></div>
+        <p>Expected: the three public services respond; both SQL counts are zero; an unapproved real player image returns 404. In the LOC console, <strong>Player images</strong> must show <strong>Disabled · 0 individual approvals</strong>. A real public squad still shows names and positions with no photograph. USA remains hidden while its delegation is under review. Do not treat missing jersey numbers as a photo deployment failure.</p>
+        <div class="callout success"><strong>Technical installation complete</strong>At this point it is safe to end maintenance while leaving the photo switch off. The following two steps are an LOC publication workflow and may happen later.</div>
+      </section>
+
+      <section class="card anchor" id="s12"><div class="step-top"><div class="step-no">12</div><div><div class="eyebrow">LOC officer · after decision</div><h2>Review and approve exact images</h2></div></div>
+        <ol>
+          <li>Sign in to <code>https://platform.netballamericas.org/</code> with the named LOC account. Open <strong>Player images</strong>.</li>
+          <li>Confirm the release is still <strong>Disabled</strong>. Select an accredited team. Only accredited teams appear in this list.</li>
+          <li>For each player, choose <strong>Review current photo</strong>. Confirm it is the correct portrait; do not approve an identity document, an unclear photo or an unexpected image.</li>
+          <li>Review separate evidence authorizing website publication. If the player was under 18 on the tournament eligibility date, verify guardian consent. For an adult, verify the player's consent.</li>
+          <li>Enter only the evidence reference, not the form, identity number, phone number or a quote from the consent document. Choose <strong>Approve this exact photo</strong>.</li>
+          <li>Repeat only for eligible players whose consent is confirmed. An uploaded photo alone is not approval; no bulk approval is part of this release.</li>
+        </ol>
+        <p>The screen requires a current uploaded JPEG, current individual accreditation review, issued player credential, approved delegation and correct consent party. Approval is tied to the photo ID. Replacing the photo removes the prior approval; a new review and approval are required.</p>
+        <div class="callout danger"><strong>Do not force a blocked approval.</strong>If a person is marked ineligible, correct the underlying accreditation or photo workflow through the existing Teams and LOC screens. Do not patch player-photo metadata, issue a credential only to make a portrait appear, or update the public view by hand.</div>
+      </section>
+
+      <section class="card anchor" id="s13"><div class="step-top"><div class="step-no">13</div><div><div class="eyebrow">LOC release decision</div><h2>Enable, verify, and monitor publication</h2></div></div>
+        <p>After individual approvals and the recorded LOC decision, enter the decision reference under <strong>Website release</strong> in <strong>Player images</strong>, then choose <strong>Enable approved photos</strong>. Verify one explicitly approved player first. Keep the approved player's UUID inside restricted operational evidence.</p>
+        <div class="code-wrap"><span class="code-label">Bash · substitute an LOC-approved player ID</span><button class="copy" type="button">Copy</button><pre><code>read -r -p "Approved player UUID for verification: " APPROVED_PLAYER_ID
+curl -sS -D - -o /dev/null "https://api.netballamericas.org/public/players/$APPROVED_PLAYER_ID/photo"
+psql "$MIGRATION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -c "SELECT player_photos_public_enabled FROM tournament"
+psql "$MIGRATION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -c "SELECT count(*) AS published_real_photos FROM v_public_player_photo"</code></pre></div>
+        <p>The selected endpoint should return <code>200</code>, <code>Content-Type: image/jpeg</code>, <code>X-Content-Type-Options: nosniff</code>, and <code>Cache-Control: no-store</code>. The public squad should contain <code>public/players/{id}/photo</code> for that approved player only. Check an unapproved player still returns 404. Do not print image bytes to the terminal or attach athlete portraits to a deployment ticket.</p>
+        <p>On staging, also exercise: wrong consent party, revoked credential, returned accreditation review, replacement photo, individual revoke, and global disable. In production, conduct those mutating tests only with a documented, authorized test profile or when a genuine revocation occurs. The squad JSON can briefly retain a cached path for up to its short refresh interval; the image endpoint must deny the bytes immediately after revoke or disable.</p>
+      </section>
+
+      <section class="card anchor" id="rollback"><div class="eyebrow">Recovery plan</div><h2>Stop publication first; then roll back code if needed</h2>
+        <ol>
+          <li><strong>Fast kill switch:</strong> a named LOC officer opens <strong>Player images</strong>, records the decision/incident reference and chooses <strong>Disable all real photos</strong>. Verify <code>v_public_player_photo</code> returns zero rows and image requests return 404.</li>
+          <li><strong>If the LOC screen is unavailable:</strong> the authorized database operator may use the emergency SQL block below after checking there is exactly one tournament. Record the emergency change outside the app audit trail because direct SQL does not create a LOC audit event.</li>
+          <li><strong>If application cutover fails:</strong> restore the saved API, website and platform Supervisor stanzas to their recorded prior release directories, <code>reread</code>, and update only those programs. Verify each process path and health endpoint.</li>
+          <li><strong>Leave migration 0042 in place.</strong> It is additive. Do not drop the approval table or rewrite the Drizzle journal as a routine rollback. With the switch off, real photos remain hidden even if the old application is restored.</li>
+        </ol>
+        <div class="code-wrap"><span class="code-label">Bash · emergency database kill switch only</span><button class="copy" type="button">Copy</button><pre><code>test "$(psql "$MIGRATION_DATABASE_URL" -X -Atc 'SELECT count(*) FROM tournament')" = "1" || { echo "STOP: unexpected tournament count"; exit 1; }
+psql "$MIGRATION_DATABASE_URL" -X -v ON_ERROR_STOP=1 -c 'UPDATE tournament SET player_photos_public_enabled = false'
+psql "$MIGRATION_DATABASE_URL" -X -Atc 'SELECT count(*) FROM v_public_player_photo'</code></pre></div>
+        <div class="callout danger"><strong>Database restore is not the routine rollback.</strong>A full restore could discard registrations, accreditation reviews, consent decisions and match data created after the backup. Use it only through a separately reviewed recovery plan. Never make the bucket public to work around an image failure.</div>
+      </section>
+
+      <section class="card anchor" id="trouble"><div class="eyebrow">Diagnosis</div><h2>Common symptoms and safe response</h2>
+        <table><thead><tr><th>Symptom</th><th>Check</th><th>Safe action</th></tr></thead><tbody>
+          <tr><td>All real <code>photoAssetPath</code> values are null</td><td>Switch, approvals, delegation, credential, review and consent party.</td><td>Expected before LOC activation. Review in the LOC screen; do not expose the bucket.</td></tr>
+          <tr><td>Photo uploaded but player is “Not eligible”</td><td>Current photo ID, JPEG type, approved delegation, issued credential and review freshness.</td><td>Use Teams and LOC accreditation workflows; re-review after photo replacement.</td></tr>
+          <tr><td>Image endpoint returns 404 after a squad path appears</td><td>Credential/review changes, replacement, revoke or global disable.</td><td>Treat 404 as a deny. Refresh the squad; investigate the gate.</td></tr>
+          <tr><td>Image endpoint returns 500 or S3 error</td><td>Private photo bucket availability and API logs, without printing credentials or object contents.</td><td>Keep the switch off or disable it; repair private storage access.</td></tr>
+          <tr><td>Browser tries a <code>.test</code> API host</td><td><code>API_BASE_URL</code> at build time and Supervisor overrides.</td><td>Correct configuration, rebuild web and platform, then cut over reviewed binaries.</td></tr>
+          <tr><td>Public DB query gets permission error</td><td>Migration 0042 and view grants.</td><td>Reconcile migration; never grant <code>gameday_public</code> direct access to private tables.</td></tr>
+          <tr><td>Migration journal is not 0041 before install</td><td>Actual pending migration set.</td><td>Stop. Prepare a separate migration plan; do not edit journal rows.</td></tr>
+          <tr><td>Website squad absent for USA</td><td>Delegation status still <code>under_review</code>.</td><td>Await LOC approval; image release does not change roster publication.</td></tr>
+        </tbody></table>
+      </section>
+
+      <section class="card anchor" id="handoff"><div class="eyebrow">Completion record</div><h2>What to hand to Steven and the LOC</h2>
+        <ul class="checklist"><li>Final approved merge commit, previous service release paths and new release path recorded.</li><li>Migration before/after timestamps, protected database backup and restore rehearsal recorded.</li><li>API, website and platform build results and Supervisor process paths recorded.</li><li>Default-off SQL and HTTP checks passed before any LOC activation.</li><li>LOC publication decision reference, reviewer, time and per-player approval count recorded separately from deployment.</li><li>Approved sample image delivered 200 with safe headers; unapproved sample returned 404; rollback route verified.</li></ul>
+        <p>Share only aggregate counts, commit SHA, migration timestamp, PASS/FAIL outcomes, service status, decision references and operator names through the approved channel. Keep database dumps, credentials, identity documents, photo bytes and person-level evidence in restricted storage.</p>
+      </section>
+      <p class="footer">GameDay player image governance · Standalone installation guide · Candidate PR #5 · Production activation requires a separate LOC decision.</p>
+    </main>
+  </div>
+  <script>
+    document.querySelectorAll(".copy").forEach((button) => {
+      button.addEventListener("click", async () => {
+        const code = button.parentElement.querySelector("code");
+        try {
+          await navigator.clipboard.writeText(code.textContent);
+          const previous = button.textContent;
+          button.textContent = "Copied";
+          setTimeout(() => { button.textContent = previous; }, 1800);
+        } catch {
+          button.textContent = "Select code";
+          setTimeout(() => { button.textContent = "Copy"; }, 1800);
+        }
+      });
+    });
+  </script>
+</body>
+</html>
