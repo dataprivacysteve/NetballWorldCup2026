@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>18 October 2026 — GameDay live-server update guide</title>
+<style>
+:root{--navy:#111b36;--gold:#f5c84c;--ink:#202b40;--muted:#58657c;--line:#dbe2ed}*{box-sizing:border-box}body{margin:0;background:#f2f5fa;color:var(--ink);font:16px/1.65 system-ui,sans-serif}header{background:var(--navy);color:white;padding:38px max(24px,calc((100vw - 1040px)/2));border-bottom:5px solid var(--gold)}header p{color:#d2dbee}header small{color:var(--gold);letter-spacing:.12em;text-transform:uppercase}h1{font-size:clamp(28px,4vw,44px);line-height:1.2}main{max-width:1040px;margin:28px auto;padding:0 22px 40px}section{padding:26px;background:white;border:1px solid var(--line);border-radius:12px;margin:20px 0}h2{margin-top:0;color:var(--navy);font-size:24px}h3{font-size:18px}a{color:#244fb3;overflow-wrap:anywhere}code{font: .88em ui-monospace,Consolas,monospace;overflow-wrap:anywhere}p code,li code,td code{background:#edf1f8;padding:2px 4px;border-radius:4px}pre{position:relative;white-space:pre;overflow:auto;background:var(--navy);color:#ecf0fa;border-radius:8px;padding:20px;font-size:13px;line-height:1.6}table{width:100%;border-collapse:collapse;font-size:14px}th,td{border:1px solid var(--line);padding:10px;vertical-align:top;text-align:left}th{background:#edf1f8}.note{padding:15px;border-left:4px solid #c69516;background:#fffae8}.stop{padding:15px;border-left:4px solid #b83240;background:#fff1f2}li{margin:8px 0}button{border:0;background:var(--gold);color:var(--navy);border-radius:6px;padding:10px 16px;cursor:pointer;font-weight:700}.code-copy{float:right;margin:0 0 8px 10px;font-size:12px}nav{display:flex;gap:12px;flex-wrap:wrap;font-size:14px}.meta{font-size:14px}.steps{counter-reset:steps}footer{font-size:13px;color:var(--muted);padding:20px;text-align:center}@media(max-width:600px){section{padding:18px}table{font-size:12px}th,td{padding:7px}}@media print{@page{size:A4;margin:15mm}body{background:white;font-size:10pt}header{padding:18px}main{margin:0;padding:0}section{border:0;padding:14px 0;margin:10px 0;border-bottom:1px solid #ddd}h2,h3{break-after:avoid}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f0f3f8;color:#16213a;font-size:8pt;break-inside:auto}button,nav{display:none}tr{break-inside:avoid}a{color:inherit}}
+</style>
+</head>
+<body>
+<header><small>Netball Americas · GameDay · Production update</small><h1>Deploy the 18 October launch update</h1><p>A step-by-step guide for the existing Debian / ISPConfig / Supervisor installation. Preserve the live database, accounts, roster images and existing production settings.</p><p class="meta">Application release: <code>3bf1fc6c20005b7d1a9471b7649105d0a11979e4</code><br>Previous GitHub main: <code>01015c42afb6b6fa25aa08de46435ea8da8bbd26</code><br>Prepared 18 October 2026 · Games begin 19 October, Barbados time</p><button onclick="window.print()">Print / Save as PDF</button></header>
+<main>
+<section><h2>What this update contains</h2>
+<ul><li>Editable GameDay operator accounts: correct emails, update names/roles/passwords, delete unused accounts with assignment/history safeguards.</li><li>Scorer and timekeeper match lists grouped by date, ordered by time, with the selected match date visible.</li><li>LOC fixtures ordered by date; past/final/cancelled games hidden by default with a history checkbox.</li><li>Public live scoreboard polling approximately every second; schedule, results and standings refreshing together approximately every five seconds. Standings count confirmed final results. Polling pauses in hidden tabs and reconnects after failures.</li><li>Live scores remain visible beside an embedded video. Pending scores are labelled provisional. Existing scoring rules are retained.</li><li>BTMI lead-partner animated banner and official logo, both linking to Visit Barbados; privacy page; footer layout changes; removal of public ticket, travel and venue promotions.</li><li>Pending player-photo governance, withdrawal controls and roster-photo publication; official/rehearsal separation and public fixture date filtering.</li></ul>
+<p class="note"><strong>Important migration distinction:</strong> the new account editor and live updates do not add schema changes. The <em>complete release</em> also includes photo migrations <code>0042_player_photo_publication</code> and <code>0043_loc_roster_photo_release</code>. Check the actual live migration ledger before deciding whether a migration is needed. Migration 0043 enables the recorded LOC roster-photo release for <code>americas-qualifier-2026</code>; individual withdrawals still override publication.</p>
+<p>GitHub: <a href="https://github.com/dataprivacysteve/NetballWorldCup2026/commit/3bf1fc6c20005b7d1a9471b7649105d0a11979e4">pinned application release</a>. This guide was prepared from repository evidence, not a new live-server session. Previous runbooks identify the <code>web6</code> installation under <code>/var/www/clients/client0/web6/web/gameday</code>; verify it now. Supervisor names, runtime paths, live release directories and database state remain on-server checks.</p>
+<p class="stop"><strong>Do not run:</strong> <code>db:seed</code>, <code>infra:reset</code>, <code>db:prepare-rehearsal</code>, <code>db:prepare-demo-teams</code>, a fixture importer, password bootstrap scripts, or database restores as part of this update. Git does not transfer local database contents. Never copy the laptop’s <code>.env</code> or replace live settings with <code>.env.example</code>. The new local API port 3105 is not an instruction to change the production API port or Apache routing.</p>
+<nav><a href="#inventory">1. Inventory</a><a href="#source">2. Source</a><a href="#release">3. Release</a><a href="#settings">4. Settings</a><a href="#build">5. Build</a><a href="#database">6. Database</a><a href="#migrate">7. Migrate</a><a href="#switch">8. Switch</a><a href="#verify">9. Verify</a><a href="#accounts">10. Accounts</a><a href="#rollback">11. Rollback</a></nav></section>
+
+<section id="inventory"><h2>1. Identify the installation and record the current services</h2>
+<p><strong>Actor:</strong> root or the existing authorised deployment administrator, in a Bash shell on the live Debian server. Keep this shell open. Run blocks in order and stop on an error. Parenthesised blocks use a subshell so an error does not log you out.</p>
+<p>A <a href="collect-host-facts.sh">read-only host inventory script</a> is supplied beside this guide. Run it on the target host with the established site identity and review its output locally. It does not replace the service-specific checks below. No fresh host inventory was available when this guide was authored.</p>
+<p>First record the active services and application listeners. Inspect only this site’s Supervisor configuration; do not publish credentials from its environment lines.</p>
+<pre><code>date -u
+supervisorctl status
+ss -lntp | grep -E ':3000|:3001|:3002|:3003|:3004|:3105'
+command -v node pnpm git psql pg_dump pg_restore
+</code></pre>
+<p>Enter verified values at the prompts. <code>GIT_ROOT</code> is the retained checkout containing <code>.git</code>, typically the documented <code>gameday/source</code>. An exported live release normally has no <code>.git</code>; do not initialise Git there. <code>ACTIVE_RELEASE</code> must be the release root supplying the running API’s production <code>.env</code>. If different apps use different settings, reconcile them before copying the configuration.</p>
+<pre><code>export TARGET_COMMIT=3bf1fc6c20005b7d1a9471b7649105d0a11979e4
+read -r -e -p 'Verified GameDay base directory: ' BASE_ROOT
+read -r -e -p 'Verified retained Git checkout: ' GIT_ROOT
+read -r -e -p 'Verified active API release root: ' ACTIVE_RELEASE
+read -r -p 'Verified site Linux user: ' SITE_USER
+read -r -e -p 'Absolute Node binary used by this site: ' NODE_BIN
+read -r -e -p 'Absolute pnpm binary: ' PNPM_BIN
+read -r -p 'API Supervisor program name: ' API_SERVICE
+read -r -p 'Website Supervisor program name: ' WEB_SERVICE
+read -r -p 'Platform Supervisor program name: ' PLATFORM_SERVICE
+export BASE_ROOT GIT_ROOT ACTIVE_RELEASE SITE_USER NODE_BIN PNPM_BIN
+export API_SERVICE WEB_SERVICE PLATFORM_SERVICE
+export SITE_GROUP="$(id -gn "$SITE_USER")"
+export RUNTIME_PATH="$(dirname "$NODE_BIN"):$(dirname "$PNPM_BIN"):/usr/local/bin:/usr/bin:/bin"
+export RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)"
+export NEW_RELEASE="$BASE_ROOT/releases/$TARGET_COMMIT-$RUN_ID"
+export BACKUP_ROOT="/var/backups/gameday/launch-$RUN_ID"
+export CACHE_ROOT="$BASE_ROOT/.cache"
+</code></pre>
+<pre><code>(
+  set -euo pipefail
+  test -d "$BASE_ROOT" &amp;&amp; test -d "$GIT_ROOT/.git"
+  test -f "$ACTIVE_RELEASE/.env"
+  test -x "$NODE_BIN" &amp;&amp; test -x "$PNPM_BIN"
+  "$NODE_BIN" --version
+  env PATH="$RUNTIME_PATH" "$PNPM_BIN" --version
+  supervisorctl status "$API_SERVICE" "$WEB_SERVICE" "$PLATFORM_SERVICE"
+  for service in "$API_SERVICE" "$WEB_SERVICE" "$PLATFORM_SERVICE"; do
+    pid="$(supervisorctl pid "$service")"
+    test "$pid" -gt 0
+    printf '%s cwd: ' "$service"
+    readlink -f "/proc/$pid/cwd"
+  done
+  git -C "$GIT_ROOT" status --short
+  git -C "$GIT_ROOT" rev-parse HEAD
+)
+</code></pre>
+<p>Record each service’s old directory, complete command, port and configuration file. Commands may run through wrappers: inspect the actual child process if the reported working directory is ambiguous. If the source checkout is dirty, preserve and reconcile its changes; do not reset it. Use the repository’s pinned Node <strong>24.14.0</strong> and pnpm <strong>9.15.0</strong> for this release. Use an isolated installed runtime; do not replace the shared host’s system Node.</p>
+</section>
+
+<section id="source"><h2>2. Fetch and verify the exact pushed release</h2>
+<p><strong>Actor:</strong> use the established repository owner and its existing read-only deployment credential. Keep the verified GitHub host-key configuration. If Git reports ownership or credential problems, use the existing owner’s normal Git command instead of granting broad safe-directory access.</p>
+<pre><code>(
+  set -euo pipefail
+  git -C "$GIT_ROOT" fetch origin
+  git -C "$GIT_ROOT" cat-file -e "$TARGET_COMMIT^{commit}"
+  git -C "$GIT_ROOT" merge-base --is-ancestor "$TARGET_COMMIT" origin/main
+  git -C "$GIT_ROOT" show --no-patch --format=fuller "$TARGET_COMMIT"
+)
+</code></pre>
+<p><strong>Expected:</strong> target <code>3bf1fc6c20005b7d1a9471b7649105d0a11979e4</code> is present and is on the fetched main history. Do not deploy a moving <code>main</code> checkout in place of the pinned identity. A later documentation-only commit may be above this release.</p>
+</section>
+
+<section id="release"><h2>3. Export a separate release and preserve the production environment</h2>
+<pre><code>(
+  set -euo pipefail
+  umask 077
+  test ! -e "$NEW_RELEASE"
+  install -d -m 700 "$BACKUP_ROOT"
+  install -d -o "$SITE_USER" -g "$SITE_GROUP" -m 750 "$NEW_RELEASE" "$CACHE_ROOT"
+  git -C "$GIT_ROOT" archive "$TARGET_COMMIT" | tar -x -C "$NEW_RELEASE"
+  printf '%s\n' "$TARGET_COMMIT" &gt; "$NEW_RELEASE/RELEASE_COMMIT"
+  cp -p "$ACTIVE_RELEASE/.env" "$NEW_RELEASE/.env"
+  chmod 600 "$NEW_RELEASE/.env"
+  chown -R "$SITE_USER:$SITE_GROUP" "$NEW_RELEASE"
+  cp -p "$ACTIVE_RELEASE/.env" "$BACKUP_ROOT/production.env"
+  supervisorctl status &gt; "$BACKUP_ROOT/supervisor-before.txt"
+  printf '%s\n' "$ACTIVE_RELEASE" &gt; "$BACKUP_ROOT/old-api-release.txt"
+  printf '%s\n' "$NEW_RELEASE" &gt; "$BACKUP_ROOT/new-release.txt"
+)
+</code></pre>
+<p>Back up the specific Supervisor files identified in step 1 into <code>$BACKUP_ROOT</code>. Preserve each old service command and working directory even if the three currently run different releases. Copy any app-specific production environment files into their corresponding new paths; review overrides before building. Existing photos and identity files stay in the existing object storage; confirm that its established backup/recovery arrangements are available. Do not move buckets, upload recovered archives, or run photo imports.</p>
+</section>
+
+<section id="settings"><h2>4. Confirm production URLs before building</h2>
+<p>Edit only the new release’s environment using the existing approved configuration process. Preserve database connections, storage settings, email settings, session secret, cookie domain and actual production port. The expected public destinations from the project’s runbooks are below; use the live host’s verified equivalents if they differ.</p>
+<pre><code>API_BASE_URL=https://api.netballamericas.org
+PUBLIC_BASE_URL=https://www.netballamericas.org
+NEXT_PUBLIC_PUBLIC_SITE_URL=https://www.netballamericas.org
+PLATFORM_BASE_URL=https://platform.netballamericas.org
+TEAMS_BASE_URL=https://teams.netballamericas.org
+COOKIE_DOMAIN=.netballamericas.org
+</code></pre>
+<p><code>API_ORIGIN</code> must point the website’s server-side reader at the production API, preferably its existing loopback URL and port. <code>PORT</code> must match the current API Supervisor/proxy configuration. Do not copy the new <strong>local-only</strong> port 3105 or the Caddy <code>.test</code> configuration onto ISPConfig/Apache. Browser API URLs are embedded during the Next.js build; correcting a value after building requires a rebuild. Remove stale conflicting app-specific or Supervisor overrides only after reviewing their purpose.</p>
+<p>Keep ISPConfig responsible for Apache/TLS. Existing public hostnames and routes are reused. Confirm that source, secrets and backup files cannot be fetched over HTTPS; <code>.env</code>, package manifests and source directories under the web root must remain denied (403/404).</p>
+</section>
+
+<section id="build"><h2>5. Install locked dependencies and build the inactive release</h2>
+<p>The running services remain on their old builds during this step. Build as the site user, not root. This release changes the API, public website and platform; the unchanged Teams and Stats apps can stay on their recorded old releases. Do not point those services at this new directory unless you also build their apps.</p>
+<pre><code>run_app() {
+  sudo -u "$SITE_USER" -H env PATH="$RUNTIME_PATH" CI=true \
+    XDG_CACHE_HOME="$CACHE_ROOT" COREPACK_HOME="$CACHE_ROOT/corepack" \
+    "$PNPM_BIN" "$@"
+}
+(
+  set -euo pipefail
+  test "$("$NODE_BIN" --version)" = 'v24.14.0'
+  test "$(env PATH="$RUNTIME_PATH" "$PNPM_BIN" --version)" = '9.15.0'
+  run_app --dir "$NEW_RELEASE" install --frozen-lockfile
+  run_app --dir "$NEW_RELEASE" --filter api build
+  run_app --dir "$NEW_RELEASE" --filter web build
+  run_app --dir "$NEW_RELEASE" --filter platform build
+  test -f "$NEW_RELEASE/apps/api/dist/src/main.js"
+  test -f "$NEW_RELEASE/apps/web/.next/BUILD_ID"
+  test -f "$NEW_RELEASE/apps/platform/.next/BUILD_ID"
+)
+</code></pre>
+<p><strong>Stop on any failed build.</strong> Do not switch the services to a partially built release. These are normal <code>next start</code> builds; this repository does not configure Next.js standalone output. Do not invent a standalone <code>server.js</code> command. Keep the current production launch method and verified runtime paths.</p>
+</section>
+
+<section id="database"><h2>6. Pause event writes, back up and inspect the migration ledger</h2>
+<p>Schedule a brief deployment window before a match starts. Have LOC staff stop account, roster and score edits; stop or pause any venue edge-sync writer using its documented procedure. Record active worker names for restart. Do not stop unrelated sites or the shared database. The DBA must have a recoverable backup and enough free space. This block reads the connection from the copied production <code>.env</code> without displaying it or treating it as shell code.</p>
+<pre><code>set +x
+export MIGRATION_DATABASE_URL="$(env -u MIGRATION_DATABASE_URL \
+  "$NODE_BIN" --env-file="$NEW_RELEASE/.env" -e '
+  const v = process.env.MIGRATION_DATABASE_URL;
+  try { const u = new URL(v); if (!["postgres:", "postgresql:"].includes(u.protocol) || !u.hostname || u.pathname.length &lt; 2) throw 0; }
+  catch { console.error("STOP: invalid migration connection"); process.exit(1); }
+  process.stdout.write(v);')"
+(
+  set -euo pipefail
+  test -n "$MIGRATION_DATABASE_URL"
+  umask 077
+  PGDATABASE="$MIGRATION_DATABASE_URL" psql -X -v ON_ERROR_STOP=1 \
+    -c 'SELECT current_database(), current_user, inet_server_addr(), inet_server_port();'
+  PGDATABASE="$MIGRATION_DATABASE_URL" psql -X -v ON_ERROR_STOP=1 \
+    -c 'SELECT id, hash, created_at FROM drizzle.__drizzle_migrations ORDER BY created_at;' \
+    &gt; "$BACKUP_ROOT/migrations-before.txt"
+  cat "$BACKUP_ROOT/migrations-before.txt"
+  PGDATABASE="$MIGRATION_DATABASE_URL" pg_dump --format=custom \
+    --file="$BACKUP_ROOT/database-before.dump"
+  test -s "$BACKUP_ROOT/database-before.dump"
+  pg_restore --list "$BACKUP_ROOT/database-before.dump" &gt; "$BACKUP_ROOT/restore-list.txt"
+  sha256sum "$BACKUP_ROOT/database-before.dump" &gt; "$BACKUP_ROOT/database-before.sha256"
+)
+</code></pre>
+<p>Confirm the displayed database identity is the intended live GameDay database. Keep the backup private and transfer it using the existing approved off-server backup method. Listing a dump proves readability, not a completed restore rehearsal; retain the existing restore procedure and DBA contact.</p>
+<table><thead><tr><th>Newest ledger timestamp</th><th>Meaning and action</th></tr></thead><tbody>
+<tr><td><code>1789344000000</code></td><td>Through 0041: both 0042 and 0043 are pending.</td></tr>
+<tr><td><code>1790208000000</code></td><td>Through 0042: only 0043 is pending.</td></tr>
+<tr><td><code>1791158400000</code></td><td>Through 0043: no new migrations from this bundle; skip step 7’s migrate command.</td></tr>
+<tr><td>Missing ledger, earlier or unexpected value</td><td>Stop the quick update. Reconcile the earlier upgrade and migration history with the DBA before running migrations. Do not add fake ledger entries or apply individual SQL fragments.</td></tr>
+</tbody></table>
+<p>Compare ledger hashes against any previous release record if migrations were applied manually. A duplicate-column error is a reconciliation issue, not permission to delete data or change migration history.</p>
+</section>
+
+<section id="migrate"><h2>7. Apply pending photo migrations, then verify the release state</h2>
+<p>If step 6 proves that only 0042/0043 are pending and the backup is accepted, run the checked-in migration command once. It applies outstanding journal entries. Do not run <code>drizzle-kit push</code> or manually execute the two files outside the journal.</p>
+<pre><code>(
+  set -euo pipefail
+  run_app --dir "$NEW_RELEASE" --filter api db:migrate
+)
+</code></pre>
+<p>If 0043 is already recorded, skip that command and run only the checks below. Existing registrations, accounts, fixtures, passwords, scores and object files must remain intact. No fixture import or reseed is needed.</p>
+<pre><code>(
+  set -euo pipefail
+  PGDATABASE="$MIGRATION_DATABASE_URL" psql -X -v ON_ERROR_STOP=1 \
+    -c 'SELECT id, hash, created_at FROM drizzle.__drizzle_migrations ORDER BY created_at DESC LIMIT 3;'
+  PGDATABASE="$MIGRATION_DATABASE_URL" psql -X -v ON_ERROR_STOP=1 \
+    -c "SELECT slug, player_photos_public_enabled, player_photo_release_reference FROM tournament WHERE slug = 'americas-qualifier-2026';"
+  PGDATABASE="$MIGRATION_DATABASE_URL" psql -X -v ON_ERROR_STOP=1 \
+    -c 'SELECT count(*) AS published_portraits FROM v_public_player_photo;'
+)
+</code></pre>
+<p>Expected latest timestamp: <code>1791158400000</code>. Confirm that the LOC’s recorded photo-release decision is still appropriate; use the new Player images screen to disable it or withdraw an individual portrait if directed by the LOC. A zero portrait count may reflect roster/photo eligibility, not an application fault. Migrations add publication controls and views; do not drop them during a routine application rollback.</p>
+</section>
+
+<section id="switch"><h2>8. Switch the API, website and platform in the same change window</h2>
+<p>Before activation, briefly smoke-run the inactive API and both Next apps on <strong>verified free loopback ports</strong> using the site’s approved temporary Supervisor procedure. Check the API’s <code>/public/match-centre</code>, the website’s <code>/privacy</code> and assets, and the platform login; stop those temporary processes after the check. Override the temporary website’s <code>API_ORIGIN</code> to the temporary API if needed. Never bind a second process to an occupied live port or send real scores during this check.</p>
+<ol><li>Open each confirmed GameDay Supervisor configuration file with the normal administrator editor. Its backup must already exist under <code>$BACKUP_ROOT</code>.</li><li>Change the API program’s <code>directory</code> to <code>$NEW_RELEASE/apps/api</code> and update the old release prefix in its complete <code>command</code>. Preserve the verified Node path, environment, port, log paths, user and restart policy.</li><li>Do the same for the website (<code>apps/web</code>) and platform (<code>apps/platform</code>). Preserve their existing production <code>next start</code>/pnpm commands and ports. Shell variables like <code>$NEW_RELEASE</code> are <strong>not</strong> expanded in Supervisor configuration: paste the actual absolute path printed below.</li><li>If the site already uses a shared <code>current</code> symlink for all five apps, either build Teams/Stats first and keep that established switch procedure, or update only the three program paths. Do not move a shared symlink to a release missing builds used by other services.</li></ol>
+<pre><code>printf 'New release: %s\n' "$NEW_RELEASE"
+printf 'API directory: %s/apps/api\n' "$NEW_RELEASE"
+printf 'Website directory: %s/apps/web\n' "$NEW_RELEASE"
+printf 'Platform directory: %s/apps/platform\n' "$NEW_RELEASE"
+</code></pre>
+<p>After saving the three backed-up configurations:</p>
+<pre><code>(
+  set -euo pipefail
+  supervisorctl reread
+  supervisorctl update "$API_SERVICE" "$WEB_SERVICE" "$PLATFORM_SERVICE"
+  supervisorctl restart "$API_SERVICE"
+  supervisorctl restart "$WEB_SERVICE" "$PLATFORM_SERVICE"
+  supervisorctl status "$API_SERVICE" "$WEB_SERVICE" "$PLATFORM_SERVICE"
+)
+</code></pre>
+<p><code>supervisorctl update</code> may already restart changed programs; the explicit restarts ensure an unchanged wrapper path also loads the release. Keep the write pause until all three are healthy. Do not run <code>restart all</code>. A new website talking to an old API will not have the new <code>/public/match-centre</code> endpoint.</p>
+</section>
+
+<section id="verify"><h2>9. Confirm the live result before handing it back</h2>
+<p>Enter the actual public HTTPS origins (without trailing slashes). Expected values are the established <code>api</code>, <code>www</code> and <code>platform.netballamericas.org</code> hosts. Run these read-only checks from the server and repeat the pages from an external browser.</p>
+<pre><code>read -r -p 'Verified API HTTPS origin: ' LIVE_API
+read -r -p 'Verified public website HTTPS origin: ' LIVE_WEB
+read -r -p 'Verified platform HTTPS origin: ' LIVE_PLATFORM
+export LIVE_API LIVE_WEB LIVE_PLATFORM
+(
+  set -euo pipefail
+  curl --fail --silent --show-error "$LIVE_API/public/match-centre" \
+    -o "$BACKUP_ROOT/public-match-centre.json"
+  curl --fail --silent --show-error -D "$BACKUP_ROOT/match-centre-headers.txt" \
+    -o /dev/null "$LIVE_API/public/match-centre"
+  grep -i '^cache-control:' "$BACKUP_ROOT/match-centre-headers.txt"
+  curl --fail --silent --show-error -o /dev/null "$LIVE_WEB/"
+  curl --fail --silent --show-error -o /dev/null "$LIVE_WEB/privacy"
+  curl --fail --silent --show-error -o /dev/null "$LIVE_WEB/partners/btmi-lead-banner.gif"
+  curl --fail --silent --show-error -o /dev/null "$LIVE_WEB/partners/btmi-logo-white.png"
+  curl --fail --silent --show-error -o /dev/null "$LIVE_PLATFORM/"
+)
+</code></pre>
+<p>Expected <code>Cache-Control: no-store, max-age=0</code>. If a CDN or ISPConfig proxy caches API responses despite this header, exclude <code>/public/match-centre</code>, <code>/public/broadcast/*</code>, and the public fixtures/results/standings endpoints from that cache and purge old entries through the existing cache administration process. No new proxy is required. A 404 on the default broadcast feed is normal when no eligible official match is selected; <code>/public/match-centre</code> must still return 200.</p>
+<ul><li>Public page: BTMI animation runs; bottom logo and banner both open <code>https://www.visitbarbados.org/</code>; privacy link opens; ticket/travel promotion links are absent.</li><li>Network panel: one <code>/public/match-centre</code> poll roughly every five seconds and one live-score poll roughly every second while visible. No full-page reload. Hidden tabs pause; connection recovery resumes updates.</li><li>LOC: Matches shows ordered upcoming fixtures and “Show past games”; Existing role accounts exposes Edit/Delete; Player images displays the release status.</li><li>Scorer/timekeeper: separate logins, correct roles and assignments, date headings and Barbados start times; confirm the selected teams/date before touching Start game or score controls.</li><li>Public scores remain provisional during play; results and standings change only after authorised Final confirmation. The current configured points rule awards two points per win. Do not invent a draw/extra-time policy during installation.</li><li>Default public feeds and standings exclude rehearsal teams/matches. Do not use an official fixture for a dummy scoring test. Use a designated rehearsal fixture and its explicit rehearsal feed if a demonstration is required.</li><li>Confirm registrations and existing account counts against the pre-update state, review service logs, then resume LOC writes and any paused edge/background writers.</li></ul>
+<p>Keep the exact deployed commit, migration result, service paths and verification time in the private release record. The local build and isolated scoring/account checks passed before push; this guide does not assert that the production server has already passed these steps.</p>
+</section>
+
+<section id="accounts"><h2>10. Correct the live timekeeper account</h2>
+<ol><li>Sign in to the live platform as the LOC officer. Open <strong>Matches → GameDay staffing &amp; access → Existing role accounts</strong>.</li><li>Find <code>timekeeper@netballamerics.org</code>, choose <strong>Edit</strong>, and change it to <code>timekeeper@netballamericas.org</code>.</li><li>Leave the new-password field blank to keep the existing password. Save. Email correction keeps the account ID and match assignments; the operator must sign in again.</li><li>Confirm the account duty is <strong>Dedicated timekeeper</strong>. If it was created as a scorer, remove its existing assignments from scheduled fixtures, change the role, and assign it as timekeeper. Role changes are blocked while assignments exist; do not delete official history to bypass this.</li><li>Create or confirm <code>scorer@netballamericas.org</code> with <strong>Scorer + match clock</strong> duty. Each operator uses a separate account and password of at least 12 characters.</li><li>Assign the correct operator to each dated fixture. Keep the timekeeper and scorer selections distinct. A scorer is required; a dedicated timekeeper is optional in the model, but should be assigned when using two operators.</li></ol>
+<p>No live password reset or account correction was performed by preparing this release. Do not put passwords into the guide, GitHub, screenshots or command logs.</p>
+</section>
+
+<section id="rollback"><h2>11. Recovery if a service fails</h2>
+<p>If API calls fail, the website goes blank or Supervisor reports BACKOFF/FATAL, keep the event write pause and inspect the affected program’s logs using its verified name:</p>
+<pre><code>supervisorctl status "$API_SERVICE" "$WEB_SERVICE" "$PLATFORM_SERVICE"
+supervisorctl tail "$API_SERVICE" stderr
+supervisorctl tail "$WEB_SERVICE" stderr
+supervisorctl tail "$PLATFORM_SERVICE" stderr
+</code></pre>
+<table><thead><tr><th>Symptom</th><th>First action</th></tr></thead><tbody>
+<tr><td>404 at <code>/public/match-centre</code></td><td>Confirm API service directory/command and <code>RELEASE_COMMIT</code>. Do not fix only the website.</td></tr>
+<tr><td>“Column does not exist” or missing photo view</td><td>Check the actual live migration ledger and database identity; resolve pending 0042/0043. Do not seed or manually fabricate migration history.</td></tr>
+<tr><td>Browser tries a <code>.test</code> host / CORS error</td><td>Correct new-release URL settings and conflicting overrides; rebuild the affected Next app, then restart it.</td></tr>
+<tr><td>Public results stop changing</td><td>Inspect network errors/cache headers and API logs. Check that the game is official and Final confirmation occurred. A hidden tab deliberately pauses polling.</td></tr>
+<tr><td>Portrait missing</td><td>Check LOC release status, individual withdrawal, approved roster and usable latest JPEG. Do not expose a private storage bucket.</td></tr>
+<tr><td>Permission denied / Next cannot start</td><td>Confirm site-user ownership/traversal, runtime path, built app artifacts, working directory and actual port availability.</td></tr>
+</tbody></table>
+<p><strong>Application rollback:</strong> restore the backed-up Supervisor configuration for all three updated services, preserving each one’s actual old release/command; restore a shared symlink only if that was the verified deployment mechanism. Run <code>supervisorctl reread</code>, <code>supervisorctl update</code> for those specific programs, and restart them. Confirm old API/site/login health before resuming writes. Keep the new release and logs for diagnosis.</p>
+<p><strong>Database rollback:</strong> leave the additive publication tables/columns/views in place for a normal application rollback. An earlier application may still observe changed public-view behaviour; have the LOC review image-publication status and, if required, disable publication using the new Player images control before rolling back. A full database restore is a DBA-led recovery operation requiring a controlled outage and reconciliation of any writes after the backup. Never overwrite an advancing live database to undo a UI problem, and never drop the new tables as an improvised rollback.</p>
+<p>Keep both old and new builds, the protected configuration backup and the database recovery point until the event’s deployment owner accepts the update. Do not delete release directories or alter unrelated hosted services during this handoff.</p>
+</section>
+</main><footer>GameDay · Launch update guide · Prepared 18 October 2026 · No production deployment was performed by creating this document.</footer>
+<script>
+document.querySelectorAll('pre').forEach(pre=>{const button=document.createElement('button');button.type='button';button.className='code-copy';button.textContent='Copy commands';button.onclick=async()=>{const text=pre.querySelector('code').textContent;try{await navigator.clipboard.writeText(text);button.textContent='Copied';}catch{button.textContent='Select and copy below';}setTimeout(()=>button.textContent='Copy commands',2200);};pre.before(button);});
+</script>
+</body></html>

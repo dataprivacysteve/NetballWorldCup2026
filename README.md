@@ -1,5 +1,7 @@
 # GameDay — Phase 0 Local Chassis
 
+For the 18 October 2026 live-server update, use the [launch deployment guide](manuals/Launch_Update_2026-10-18.html). It pins the pushed application release and covers the existing ISPConfig/Supervisor installation, pending photo migrations, service activation and rollback.
+
 The local foundation for the NetballAmericas GameDay platform. This repo
 brings up the backing services on your laptop and wires the four
 application surfaces to local HTTPS subdomains, so the whole stack runs
