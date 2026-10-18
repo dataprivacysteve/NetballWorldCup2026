@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { usePublicPoll } from "./usePublicPoll";
 
 type Feed = {
   MatchId: string;
@@ -19,44 +19,23 @@ type Feed = {
   UpdatedAt: string;
 };
 
-const API = process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://api.netballamericas.test";
-
-export function LiveScore({ delayedMessage }: { delayedMessage?: string | null }) {
-  const [feed, setFeed] = useState<Feed | null>(null);
-  const [delayed, setDelayed] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    let failures = 0;
-    const load = async () => {
-      try {
-        const response = await fetch(`${API}/public/broadcast/live.json`, {
-          cache: "no-store",
-        });
-        if (!response.ok) throw new Error("Feed unavailable");
-        const next = (await response.json()) as Feed;
-        if (active) {
-          setFeed(next);
-          setDelayed(false);
-          failures = 0;
-        }
-      } catch {
-        failures += 1;
-        if (active && failures >= 3) setDelayed(true);
-      }
-    };
-    void load();
-    const timer = window.setInterval(() => void load(), 1000);
-    return () => {
-      active = false;
-      window.clearInterval(timer);
-    };
-  }, []);
+export function LiveScore({
+  delayedMessage,
+}: {
+  delayedMessage?: string | null;
+}) {
+  const { data: feed, delayed } = usePublicPoll<Feed | null>(
+    "/public/broadcast/live.json",
+    null,
+    1_000,
+  );
 
   if (!feed) {
     return (
       <div className="live-score-empty">
-        {delayed ? delayedMessage ?? "Live updates are temporarily delayed." : "Live match feed will appear here."}
+        {delayed
+          ? (delayedMessage ?? "Live updates are temporarily delayed.")
+          : "Live match feed will appear here."}
       </div>
     );
   }
@@ -80,8 +59,12 @@ export function LiveScore({ delayedMessage }: { delayedMessage?: string | null }
           <b>{feed.TeamBScore}</b>
         </div>
       </div>
-      <p>{feed.Venue}{feed.Court ? ` · ${feed.Court}` : ""}{feed.Provisional ? " · Provisional" : " · Confirmed"}</p>
-      {delayed && <div className="live-delay">{delayedMessage ?? "Live updates are temporarily delayed."}</div>}
+      <p>{feed.Provisional ? "Provisional" : "Confirmed"}</p>
+      {delayed && (
+        <div className="live-delay">
+          {delayedMessage ?? "Live updates are temporarily delayed."}
+        </div>
+      )}
     </div>
   );
 }

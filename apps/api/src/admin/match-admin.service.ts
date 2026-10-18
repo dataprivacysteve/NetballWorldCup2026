@@ -11,9 +11,12 @@ import { and, asc, eq, or, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { PRIVILEGED_POOL } from '../db/db.tokens';
 import * as schema from '../db/schema';
+import { REHEARSAL_MATCH_SQL } from '../public/rehearsal-policy';
 import {
   AssignGameDayOfficialDto,
   CreateGameDayAccountDto,
+  UpdateGameDayAccountDto,
+  GAME_DAY_ROLES,
   type GameDayRole,
 } from '../gameday/gameday.dto';
 import {
@@ -123,6 +126,17 @@ export class MatchAdminService {
   async upsertBroadcast(matchId: string, dto: UpsertMatchBroadcastDto) {
     await this.requireMatch(matchId);
     if (dto.featured) {
+      const classification = await this.db.execute<{
+        isRehearsal: boolean;
+      }>(sql`
+        SELECT ${sql.raw(REHEARSAL_MATCH_SQL)} AS "isRehearsal"
+        FROM "match" m WHERE m.id = ${matchId}
+      `);
+      if (classification.rows[0]?.isRehearsal) {
+        throw new BadRequestException(
+          'Training matches cannot be featured. Use the match-specific broadcast feed.',
+        );
+      }
       await this.db
         .update(schema.matchBroadcast)
         .set({ featured: false, updatedAt: new Date() });
@@ -195,28 +209,137 @@ export class MatchAdminService {
   }
 
   async createGameDayAccount(dto: CreateGameDayAccountDto) {
+    dto.email = dto.email.trim().toLowerCase();
+    dto.displayName = dto.displayName.trim();
+    if (dto.displayName.length < 2)
+      throw new BadRequestException(
+        'Operator name must contain at least 2 characters',
+      );
     const [existing] = await this.db
       .select({ id: schema.appUser.id })
       .from(schema.appUser)
       .where(eq(schema.appUser.email, dto.email.toLowerCase()));
     if (existing)
       throw new ConflictException('An account already uses this email');
-    const [row] = await this.db
-      .insert(schema.appUser)
-      .values({
-        email: dto.email.toLowerCase(),
-        displayName: dto.displayName.trim(),
-        passwordHash: await hashPassword(dto.password),
-        platformRole: dto.role,
-        isAdmin: true,
-      })
-      .returning({
-        id: schema.appUser.id,
-        email: schema.appUser.email,
-        displayName: schema.appUser.displayName,
-        role: schema.appUser.platformRole,
+    try {
+      const [row] = await this.db
+        .insert(schema.appUser)
+        .values({
+          email: dto.email.toLowerCase(),
+          displayName: dto.displayName.trim(),
+          passwordHash: await hashPassword(dto.password),
+          platformRole: dto.role,
+          isAdmin: true,
+        })
+        .returning({
+          id: schema.appUser.id,
+          email: schema.appUser.email,
+          displayName: schema.appUser.displayName,
+          role: schema.appUser.platformRole,
+        });
+      return row;
+    } catch (error) {
+      if (hasDatabaseCode(error, '23505'))
+        throw new ConflictException('An account already uses this email');
+      throw error;
+    }
+  }
+
+  async updateGameDayAccount(id: string, dto: UpdateGameDayAccountDto) {
+    const displayName = dto.displayName.trim();
+    const email = dto.email.trim().toLowerCase();
+    if (displayName.length < 2)
+      throw new BadRequestException(
+        'Operator name must contain at least 2 characters',
+      );
+    const passwordHash =
+      dto.password === undefined ? undefined : await hashPassword(dto.password);
+    try {
+      return await this.db.transaction(async (tx) => {
+        const [user] = await tx
+          .select()
+          .from(schema.appUser)
+          .where(eq(schema.appUser.id, id))
+          .for('update');
+        if (!user || !GAME_DAY_ROLES.includes(user.platformRole as GameDayRole))
+          throw new NotFoundException('GameDay role account not found');
+        if (dto.role !== user.platformRole) {
+          const [assignment] = await tx
+            .select({ id: schema.matchOfficialAssignment.id })
+            .from(schema.matchOfficialAssignment)
+            .where(eq(schema.matchOfficialAssignment.appUserId, id))
+            .limit(1);
+          if (assignment)
+            throw new ConflictException(
+              'Remove this account’s match assignments before changing its role.',
+            );
+        }
+        const revokeSessions =
+          email !== user.email ||
+          dto.role !== user.platformRole ||
+          passwordHash !== undefined;
+        const [updated] = await tx
+          .update(schema.appUser)
+          .set({
+            email,
+            displayName,
+            platformRole: dto.role,
+            ...(passwordHash !== undefined ? { passwordHash } : {}),
+            ...(revokeSessions
+              ? { authVersion: sql`${schema.appUser.authVersion} + 1` }
+              : {}),
+          })
+          .where(eq(schema.appUser.id, id))
+          .returning({
+            id: schema.appUser.id,
+            email: schema.appUser.email,
+            displayName: schema.appUser.displayName,
+            role: schema.appUser.platformRole,
+            createdAt: schema.appUser.createdAt,
+          });
+        if (revokeSessions) {
+          await tx
+            .delete(schema.passwordResetToken)
+            .where(eq(schema.passwordResetToken.appUserId, id));
+        }
+        return updated;
       });
-    return row;
+    } catch (error) {
+      if (hasDatabaseCode(error, '23505'))
+        throw new ConflictException('An account already uses this email');
+      throw error;
+    }
+  }
+
+  async deleteGameDayAccount(id: string) {
+    try {
+      return await this.db.transaction(async (tx) => {
+        const [user] = await tx
+          .select()
+          .from(schema.appUser)
+          .where(eq(schema.appUser.id, id))
+          .for('update');
+        if (!user || !GAME_DAY_ROLES.includes(user.platformRole as GameDayRole))
+          throw new NotFoundException('GameDay role account not found');
+        const [assignment] = await tx
+          .select({ id: schema.matchOfficialAssignment.id })
+          .from(schema.matchOfficialAssignment)
+          .where(eq(schema.matchOfficialAssignment.appUserId, id))
+          .limit(1);
+        if (assignment)
+          throw new ConflictException(
+            'Remove this account’s match assignments before deleting it.',
+          );
+        await tx.delete(schema.appUser).where(eq(schema.appUser.id, id));
+        return { ok: true };
+      });
+    } catch (error) {
+      if (hasDatabaseCode(error, '23503'))
+        throw new ConflictException(
+          'This account has recorded activity and cannot be deleted. You can still correct its email or password.',
+        );
+      throw error;
+    }
   }
 
   async listAssignments(matchId: string) {
@@ -243,40 +366,44 @@ export class MatchAdminService {
   }
 
   async assignOfficial(matchId: string, dto: AssignGameDayOfficialDto) {
-    const [[match], [user]] = await Promise.all([
-      this.db
-        .select({ id: schema.match.id, status: schema.match.status })
-        .from(schema.match)
-        .where(eq(schema.match.id, matchId)),
-      this.db
-        .select({ id: schema.appUser.id, role: schema.appUser.platformRole })
-        .from(schema.appUser)
-        .where(eq(schema.appUser.id, dto.appUserId)),
-    ]);
-    if (!match) throw new NotFoundException('Match not found');
-    if (!user || user.role !== dto.role) {
-      throw new BadRequestException(
-        'The account role must match the assignment role',
-      );
-    }
-    if (!['scheduled', 'postponed'].includes(match.status)) {
-      throw new BadRequestException(
-        'Officials cannot be reassigned after match preparation begins',
-      );
-    }
-    await this.db
-      .delete(schema.matchOfficialAssignment)
-      .where(
-        and(
-          eq(schema.matchOfficialAssignment.matchId, matchId),
-          eq(schema.matchOfficialAssignment.role, dto.role),
-        ),
-      );
-    const [row] = await this.db
-      .insert(schema.matchOfficialAssignment)
-      .values({ matchId, appUserId: dto.appUserId, role: dto.role })
-      .returning();
-    return row;
+    return this.db.transaction(async (tx) => {
+      const [[match], [user]] = await Promise.all([
+        tx
+          .select({ id: schema.match.id, status: schema.match.status })
+          .from(schema.match)
+          .where(eq(schema.match.id, matchId))
+          .for('update'),
+        tx
+          .select({ id: schema.appUser.id, role: schema.appUser.platformRole })
+          .from(schema.appUser)
+          .where(eq(schema.appUser.id, dto.appUserId))
+          .for('update'),
+      ]);
+      if (!match) throw new NotFoundException('Match not found');
+      if (!user || user.role !== dto.role) {
+        throw new BadRequestException(
+          'The account role must match the assignment role',
+        );
+      }
+      if (!['scheduled', 'postponed'].includes(match.status)) {
+        throw new BadRequestException(
+          'Officials cannot be reassigned after match preparation begins',
+        );
+      }
+      await tx
+        .delete(schema.matchOfficialAssignment)
+        .where(
+          and(
+            eq(schema.matchOfficialAssignment.matchId, matchId),
+            eq(schema.matchOfficialAssignment.role, dto.role),
+          ),
+        );
+      const [row] = await tx
+        .insert(schema.matchOfficialAssignment)
+        .values({ matchId, appUserId: dto.appUserId, role: dto.role })
+        .returning();
+      return row;
+    });
   }
 
   async unassignOfficial(matchId: string, role: GameDayRole) {
@@ -628,5 +755,13 @@ export class MatchAdminService {
         );
     }
   }
+}
 
+function hasDatabaseCode(error: unknown, code: string) {
+  return [error, (error as { cause?: unknown })?.cause].some(
+    (candidate) =>
+      typeof candidate === 'object' &&
+      candidate !== null &&
+      (candidate as { code?: string }).code === code,
+  );
 }

@@ -3,6 +3,7 @@ import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Pool } from 'pg';
 import { ConfigService } from '@nestjs/config';
 import { PUBLIC_POOL } from '../db/db.tokens';
+import { OFFICIAL_MATCH_SQL, REHEARSAL_MATCH_SQL } from './rehearsal-policy';
 import {
   aggregateMatchAnalytics,
   aggregatePeriodScores,
@@ -37,6 +38,7 @@ const POSITION_NAMES: Record<string, string> = {
 
 const MATCH_SELECT = `
   SELECT m.id, m.scheduled_at AS "scheduledAt", v.name AS venue, c.name AS court,
+         ${REHEARSAL_MATCH_SQL} AS "isRehearsal",
          m.round_label AS "roundLabel", m.status,
          m.team_a_score AS "teamAScore", m.team_b_score AS "teamBScore",
          m.current_period AS "currentPeriod",
@@ -60,6 +62,7 @@ const MATCH_SELECT = `
 `;
 
 interface MatchRow {
+  isRehearsal?: boolean;
   id: string;
   scheduledAt: Date | null;
   venue: string | null;
@@ -142,6 +145,7 @@ function shapeMatch(r: MatchRow) {
   ].includes(r.status);
   return {
     id: r.id,
+    isRehearsal: r.isRehearsal ?? false,
     scheduledAt: r.scheduledAt,
     venue: r.venue,
     court: r.court,
@@ -277,7 +281,7 @@ export function shapeBroadcastFeed(
     TeamBFlag: `${flagOrigin.replace(/\/$/, '')}/flags/${row.teamBCode.toLowerCase()}.svg`,
     Venue: row.venue ?? '',
     Court: row.court ?? '',
-    Provisional: row.status !== 'final',
+    Provisional: row.isRehearsal === true || row.status !== 'final',
     UpdatedAt: now.toISOString(),
   };
 }
@@ -285,8 +289,9 @@ export function shapeBroadcastFeed(
 export function liveBroadcastFilter(matchId?: string) {
   return matchId
     ? 'WHERE m.id = $1'
-    : `WHERE m.status IN ('ready', 'live', 'suspended', 'awaiting_confirmation', 'final')
-       OR (COALESCE(mb.featured, false) = true AND m.status = 'scheduled')`;
+    : `WHERE ${OFFICIAL_MATCH_SQL}
+       AND (m.status IN ('ready', 'live', 'suspended', 'awaiting_confirmation', 'final')
+       OR (COALESCE(mb.featured, false) = true AND m.status = 'scheduled'))`;
 }
 
 export interface StandingRow {
@@ -370,6 +375,7 @@ function computeStandings(
 export class PublicService {
   private readonly s3: S3Client;
   private readonly advertisingBucket: string;
+  private readonly photoBucket: string;
 
   constructor(
     @Inject(PUBLIC_POOL) private readonly pool: Pool,
@@ -386,6 +392,7 @@ export class PublicService {
       },
     });
     this.advertisingBucket = config.getOrThrow<string>('S3_BUCKET_BADGES');
+    this.photoBucket = config.getOrThrow<string>('S3_BUCKET_PHOTOS');
   }
 
   async tournament() {
@@ -426,6 +433,8 @@ export class PublicService {
       FROM v_public_nation n
       LEFT JOIN group_entry ge ON ge.delegation_id = n.id
       LEFT JOIN stage s ON s.id = ge.stage_id
+        AND lower(btrim(s.name)) <> lower('Presentation Rehearsal')
+      WHERE upper(btrim(n.country_code)) NOT IN ('XTA', 'XTB')
       GROUP BY n.country_code, n.name
       ORDER BY "group" NULLS LAST, n.name`);
     return rows;
@@ -569,6 +578,41 @@ export class PublicService {
     return article.rows[0] ?? null;
   }
 
+  async playerPhoto(playerId: string) {
+    const { rows } = await this.pool.query<{
+      objectKey: string;
+      contentType: string;
+    }>(
+      `SELECT object_key AS "objectKey", content_type AS "contentType"
+       FROM v_public_player_photo WHERE player_id = $1 LIMIT 1`,
+      [playerId],
+    );
+    const photo = rows[0];
+    if (!photo || photo.contentType !== 'image/jpeg') {
+      throw new NotFoundException('Player photo not found');
+    }
+    try {
+      const object = await this.s3.send(
+        new GetObjectCommand({
+          Bucket: this.photoBucket,
+          Key: photo.objectKey,
+        }),
+      );
+      const buffer = Buffer.from(await object.Body!.transformToByteArray());
+      if (
+        buffer.length < 3 ||
+        buffer[0] !== 0xff ||
+        buffer[1] !== 0xd8 ||
+        buffer[2] !== 0xff
+      ) {
+        throw new NotFoundException('Player photo not found');
+      }
+      return { contentType: 'image/jpeg', buffer };
+    } catch {
+      throw new NotFoundException('Player photo not found');
+    }
+  }
+
   async squad(code: string) {
     const nat = await this.pool.query<Omit<NationRow, 'group'>>(
       `SELECT country_code AS "countryCode", name FROM v_public_nation
@@ -592,7 +636,7 @@ export class PublicService {
 
   async fixtures() {
     const { rows } = await this.pool.query<MatchRow>(
-      `${MATCH_SELECT} WHERE m.status <> 'final'
+      `${MATCH_SELECT} WHERE ${OFFICIAL_MATCH_SQL} AND m.status <> 'final'
        ORDER BY m.scheduled_at ASC NULLS LAST, m.sort_order`,
     );
     return rows.map(shapeMatch);
@@ -690,7 +734,7 @@ export class PublicService {
 
   async results() {
     const { rows } = await this.pool.query<MatchRow>(
-      `${MATCH_SELECT} WHERE m.status = 'final'
+      `${MATCH_SELECT} WHERE ${OFFICIAL_MATCH_SQL} AND m.status = 'final'
        ORDER BY m.scheduled_at DESC NULLS LAST, m.sort_order`,
     );
     return rows.map(shapeMatch);
@@ -698,18 +742,18 @@ export class PublicService {
 
   async lastNext() {
     const last = await this.pool.query<MatchRow>(
-      `${MATCH_SELECT} WHERE m.status = 'final'
+      `${MATCH_SELECT} WHERE ${OFFICIAL_MATCH_SQL} AND m.status = 'final'
        ORDER BY m.scheduled_at DESC NULLS LAST LIMIT 1`,
     );
     let next = await this.pool.query<MatchRow>(
-      `${MATCH_SELECT} WHERE m.status = 'scheduled' AND m.scheduled_at >= now()
+      `${MATCH_SELECT} WHERE ${OFFICIAL_MATCH_SQL} AND m.status = 'scheduled' AND m.scheduled_at >= now()
        ORDER BY m.scheduled_at ASC LIMIT 1`,
     );
     if (!next.rows[0]) {
       // No future fixture (e.g. demo dataset is in the past) — fall back to the
       // earliest scheduled match so the "Next Game" card still has something.
       next = await this.pool.query<MatchRow>(
-        `${MATCH_SELECT} WHERE m.status = 'scheduled'
+        `${MATCH_SELECT} WHERE ${OFFICIAL_MATCH_SQL} AND m.status = 'scheduled'
          ORDER BY m.scheduled_at ASC NULLS LAST LIMIT 1`,
       );
     }
@@ -790,7 +834,7 @@ export class PublicService {
   async broadcasts() {
     const { rows } = await this.pool.query<MatchRow>(
       `${MATCH_SELECT}
-       WHERE mb.status IS NOT NULL AND mb.status <> 'unassigned'
+       WHERE ${OFFICIAL_MATCH_SQL} AND mb.status IS NOT NULL AND mb.status <> 'unassigned'
        ORDER BY COALESCE(mb.featured, false) DESC,
          m.scheduled_at ASC NULLS LAST`,
     );
@@ -815,8 +859,14 @@ export class PublicService {
       match: shapeMatch(matches.rows[0]),
       ...aggregateMatchAnalytics(rows),
       provenance: {
-        source: 'GameDay confirmed event ledger',
-        status: matches.rows[0].status === 'final' ? 'official' : 'provisional',
+        source: matches.rows[0].isRehearsal
+          ? 'Training match event ledger — excluded from official records'
+          : 'GameDay confirmed event ledger',
+        status: matches.rows[0].isRehearsal
+          ? 'training'
+          : matches.rows[0].status === 'final'
+            ? 'official'
+            : 'provisional',
       },
     };
   }
@@ -1036,7 +1086,7 @@ export class PublicService {
         ? configuredMinimum
         : 1;
     const { rows } = await this.pool.query<MatchRow>(
-      `${MATCH_SELECT} WHERE m.status = 'final'
+      `${MATCH_SELECT} WHERE ${OFFICIAL_MATCH_SQL} AND m.status = 'final'
        ORDER BY m.scheduled_at ASC NULLS LAST, m.sort_order`,
     );
     const results = rows.map((row) => ({ row, match: shapeMatch(row) }));
@@ -1062,7 +1112,7 @@ export class PublicService {
               e.last_name AS "lastName", e.jersey_number AS "jerseyNumber",
               e.reverses_event_id AS "reversesEventId"
        FROM v_public_match_event e JOIN match m ON m.id = e.match_id
-       WHERE m.status = 'final' ORDER BY e.recorded_at`,
+       WHERE ${OFFICIAL_MATCH_SQL} AND m.status = 'final' ORDER BY e.recorded_at`,
     );
     const topScorer = selectEligibleTopScorer(
       eventRows.rows,
@@ -1116,7 +1166,7 @@ export class PublicService {
   async standings(stageId?: string) {
     const stages = await this.pool.query<StageRow>(
       `SELECT id, name FROM stage
-       WHERE lower(name) <> lower('Presentation Rehearsal')
+       WHERE lower(btrim(name)) <> lower('Presentation Rehearsal')
          ${stageId ? 'AND id = $1' : ''}
        ORDER BY sort_order, name`,
       stageId ? [stageId] : [],
@@ -1130,7 +1180,8 @@ export class PublicService {
       const entries = await this.pool.query<StandingEntryRow>(
         `SELECT n.country_code AS "countryCode", n.name
          FROM group_entry ge JOIN v_public_nation n ON n.id = ge.delegation_id
-         WHERE ge.stage_id = $1 ORDER BY ge.sort_order`,
+         WHERE ge.stage_id = $1 AND upper(btrim(n.country_code)) NOT IN ('XTA', 'XTB')
+         ORDER BY ge.sort_order`,
         [st.id],
       );
       const matches = await this.pool.query<StandingMatchRow>(
@@ -1139,7 +1190,7 @@ export class PublicService {
          FROM match m
          JOIN v_public_nation ta ON ta.id = m.team_a_delegation_id
          JOIN v_public_nation tb ON tb.id = m.team_b_delegation_id
-         WHERE m.stage_id = $1 AND m.status = 'final'
+         WHERE ${OFFICIAL_MATCH_SQL} AND m.stage_id = $1 AND m.status = 'final'
            AND m.team_a_score IS NOT NULL AND m.team_b_score IS NOT NULL`,
         [st.id],
       );

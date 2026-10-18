@@ -13,6 +13,7 @@ import { and, asc, desc, eq, max, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { PRIVILEGED_POOL } from '../db/db.tokens';
 import * as schema from '../db/schema';
+import { REHEARSAL_MATCH_SQL } from '../public/rehearsal-policy';
 import type { PlatformRole } from '../auth/auth.service';
 import {
   ClockCommandDto,
@@ -892,6 +893,13 @@ export class GameDayService {
         })
         .where(eq(schema.match.id, matchId))
         .returning();
+      const classification = await db.execute<{ isRehearsal: boolean }>(sql`
+        SELECT ${sql.raw(REHEARSAL_MATCH_SQL)} AS "isRehearsal"
+        FROM "match" m WHERE m.id = ${matchId}
+      `);
+      // Rehearsal events remain usable by the assigned crew but must never be
+      // registered as an official historical result.
+      if (classification.rows[0]?.isRehearsal) return updated;
       const [provenance] = await db
         .insert(schema.historicalMatchProvenance)
         .values({

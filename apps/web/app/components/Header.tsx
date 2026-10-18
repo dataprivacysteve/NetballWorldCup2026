@@ -7,10 +7,8 @@ import { federation } from "../lib/config";
 // Fixed top nav. Transparent over the hero, gains a blurred backdrop on scroll.
 export function Header({
   logoSrc,
-  shopUrl,
 }: {
   logoSrc?: string | null;
-  shopUrl?: string | null;
 }) {
   const [scrolled, setScrolled] = useState(false);
   const [logoFailed, setLogoFailed] = useState(false);
@@ -51,9 +49,6 @@ export function Header({
             </a>
           ))}
         </nav>
-        <a className="nav-cta" href={shopUrl ?? federation.links.shop}>
-          Shop now
-        </a>
       </div>
     </header>
   );

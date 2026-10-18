@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  assignedMatchSchedule,
+  groupAssignedMatches,
+} from "../lib/assigned-match-dates";
+import {
   api,
   ApiError,
   type GameDayMatch,
@@ -66,21 +70,25 @@ export default function GameDayPage() {
   }, [refresh]);
 
   async function command(work: (version: number) => Promise<unknown>) {
-    if (!state) return;
+    if (!state || state.match.id !== selected?.id) return;
     setBusy(true);
     setError(null);
     try {
       await work(state.match.version);
       await refresh();
     } catch (reason) {
-      setError((reason as Error).message);
       await refresh();
+      setError((reason as Error).message);
     } finally {
       setBusy(false);
     }
   }
 
   const role = selected?.assignmentRole;
+  const matchDays = groupAssignedMatches(matches);
+  const selectedSchedule = selected
+    ? assignedMatchSchedule(selected.scheduledAt)
+    : null;
   const reversedGoalIds = new Set(
     state?.events
       .filter((event) => event.eventType === "goal_correction")
@@ -151,24 +159,46 @@ export default function GameDayPage() {
           <p className="px-2 pb-3 font-mono text-[0.6rem] uppercase tracking-[0.12em] text-white/45">
             Assigned matches
           </p>
-          <div className="space-y-2">
-            {matches.map((match) => (
-              <button
-                key={match.id}
-                onClick={() => {
-                  setSelected(match);
-                  setState(null);
-                }}
-                className={`w-full rounded-xl p-3 text-left ${selected?.id === match.id ? "bg-[#1f2a61] ring-1 ring-[#f5c84c]/50" : "bg-white/[0.04] hover:bg-white/[0.08]"}`}
-              >
-                <p className="text-sm font-bold">
-                  {match.teamACode} <span className="text-white/35">vs</span>{" "}
-                  {match.teamBCode}
-                </p>
-                <p className="mt-1 text-xs text-white/45">
-                  {match.roundLabel ?? "Fixture"}
-                </p>
-              </button>
+          <p className="px-2 pb-4 text-xs text-white/60">
+            All times: Barbados (AST)
+          </p>
+          <div className="space-y-5">
+            {matchDays.map((day) => (
+              <section key={day.key} aria-labelledby={`match-day-${day.key}`}>
+                <h2
+                  id={`match-day-${day.key}`}
+                  className="mb-2 border-b border-[#f5c84c]/25 px-2 pb-2 text-sm font-bold text-[#f5c84c]"
+                >
+                  {day.date}
+                </h2>
+                <div className="space-y-2">
+                  {day.matches.map((match) => (
+                    <button
+                      key={match.id}
+                      type="button"
+                      aria-pressed={selected?.id === match.id}
+                      disabled={busy}
+                      onClick={() => {
+                        setSelected(match);
+                        setState(null);
+                      }}
+                      className={`w-full rounded-xl p-3 text-left disabled:opacity-50 ${selected?.id === match.id ? "bg-[#1f2a61] ring-1 ring-[#f5c84c]/50" : "bg-white/[0.04] hover:bg-white/[0.08]"}`}
+                    >
+                      <p className="mb-1 font-mono text-sm font-bold text-[#f5c84c]">
+                        {assignedMatchSchedule(match.scheduledAt).time}
+                      </p>
+                      <p className="text-sm font-bold">
+                        {match.teamACode}{" "}
+                        <span className="text-white/35">vs</span>{" "}
+                        {match.teamBCode}
+                      </p>
+                      <p className="mt-1 text-xs text-white/45">
+                        {match.roundLabel ?? "Fixture"}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </section>
             ))}
             {!matches.length && (
               <p className="rounded-xl bg-white/[0.04] p-4 text-sm text-white/50">
@@ -184,9 +214,13 @@ export default function GameDayPage() {
               {error}
             </div>
           )}
-          {selected && state ? (
+          {selected && state && state.match.id === selected.id ? (
             <>
               <div className="rounded-2xl border border-white/10 bg-[#11183b] p-5">
+                <p className="mb-4 border-b border-white/10 pb-3 text-center text-sm font-bold text-[#f5c84c]">
+                  {selectedSchedule?.date} · {selectedSchedule?.time} · Barbados
+                  (AST)
+                </p>
                 <div className="grid items-center gap-5 md:grid-cols-[1fr_auto_1fr]">
                   <TeamScore
                     label="Team A"

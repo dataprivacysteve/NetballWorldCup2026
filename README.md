@@ -146,7 +146,7 @@ Then set each app's dev port so Caddy can reach it. In each app's
 
 | App             | Folder          | Dev port | Set the dev script to        |
 |-----------------|-----------------|----------|------------------------------|
-| API (NestJS)    | `apps/api`      | 3000     | listens on `PORT` (default 3000) |
+| API (NestJS)    | `apps/api`      | 3105     | listens on `PORT=3105` from `.env` |
 | Public (www)    | `apps/web`      | 3001     | `next dev -p 3001`           |
 | Delegations     | `apps/teams`    | 3002     | `next dev -p 3002`           |
 | Operations      | `apps/platform` | 3003     | `next dev -p 3003`           |

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { Header } from "../../components/Header";
 import { publicApi } from "../../lib/api";
 
@@ -23,10 +24,9 @@ export default async function NewsArticlePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const [article, tournament, experience] = await Promise.all([
+  const [article, tournament] = await Promise.all([
     publicApi.newsArticle(slug),
     publicApi.tournament(),
-    publicApi.experience(),
   ]);
   if (!article) notFound();
 
@@ -43,13 +43,12 @@ export default async function NewsArticlePage({
     <>
       <Header
         logoSrc={tournament?.brandReverseLogoUrl}
-        shopUrl={experience?.merchandiseUrl}
       />
       <main className="news-detail">
         <div className="wrap">
-          <a className="news-back" href="/#news">
+          <Link className="news-back" href="/#news">
             ← Back to Latest
-          </a>
+          </Link>
           <article className="news-detail-card">
             {article.imageUrl && (
               <div className="news-detail-image">

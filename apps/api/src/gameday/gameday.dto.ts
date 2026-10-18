@@ -12,6 +12,7 @@ import {
   Min,
   MinLength,
   ValidateNested,
+  ValidateIf,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -28,6 +29,16 @@ export class CreateGameDayAccountDto {
   @IsString() @MinLength(2) displayName!: string;
   @IsString() @MinLength(12) password!: string;
   @IsIn(GAME_DAY_ROLES) role!: GameDayRole;
+}
+
+export class UpdateGameDayAccountDto {
+  @IsEmail() email!: string;
+  @IsString() @MinLength(2) displayName!: string;
+  @IsIn(GAME_DAY_ROLES) role!: GameDayRole;
+  @ValidateIf((_object, value: unknown) => value !== undefined)
+  @IsString()
+  @MinLength(12)
+  password?: string;
 }
 
 export class AssignGameDayOfficialDto {

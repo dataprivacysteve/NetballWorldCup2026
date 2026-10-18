@@ -84,6 +84,18 @@ export class PublicController {
     return article;
   }
 
+  @Get('players/:id/photo')
+  @Header('Cache-Control', 'no-store')
+  async playerPhoto(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const image = await this.svc.playerPhoto(id);
+    res.set('Content-Type', image.contentType);
+    res.set('X-Content-Type-Options', 'nosniff');
+    return new StreamableFile(image.buffer);
+  }
+
   @Get('nations/:code/squad')
   @Header('Cache-Control', CACHE)
   async squad(@Param('code') code: string) {
@@ -93,7 +105,7 @@ export class PublicController {
   }
 
   @Get('fixtures')
-  @Header('Cache-Control', CACHE)
+  @Header('Cache-Control', 'no-store, max-age=0')
   fixtures() {
     return this.svc.fixtures();
   }
@@ -107,27 +119,41 @@ export class PublicController {
   }
 
   @Get('results')
-  @Header('Cache-Control', CACHE)
+  @Header('Cache-Control', 'no-store, max-age=0')
   results() {
     return this.svc.results();
   }
 
   @Get('standings')
-  @Header('Cache-Control', CACHE)
+  @Header('Cache-Control', 'no-store, max-age=0')
   standings(@Query('stage') stage?: string) {
     return this.svc.standings(stage);
   }
 
   @Get('last-next')
-  @Header('Cache-Control', CACHE)
+  @Header('Cache-Control', 'no-store, max-age=0')
   lastNext() {
     return this.svc.lastNext();
   }
 
   @Get('broadcasts')
-  @Header('Cache-Control', CACHE)
+  @Header('Cache-Control', 'no-store, max-age=0')
   broadcasts() {
     return this.svc.broadcasts();
+  }
+
+  @Get('match-centre')
+  @Header('Cache-Control', 'no-store, max-age=0')
+  async matchCentre() {
+    const [fixtures, results, standings, lastNext, broadcasts] =
+      await Promise.all([
+        this.svc.fixtures(),
+        this.svc.results(),
+        this.svc.standings(),
+        this.svc.lastNext(),
+        this.svc.broadcasts(),
+      ]);
+    return { fixtures, results, standings, lastNext, broadcasts };
   }
 
   @Get('analytics/matches/:id')

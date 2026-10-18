@@ -17,6 +17,7 @@ import { MatchAdminService } from '../admin/match-admin.service';
 import {
   AssignGameDayOfficialDto,
   CreateGameDayAccountDto,
+  UpdateGameDayAccountDto,
   GAME_DAY_ROLES,
   type GameDayRole,
 } from '../gameday/gameday.dto';
@@ -161,6 +162,19 @@ export class ControlController {
   @Post('gameday/accounts')
   createGameDayAccount(@Body() dto: CreateGameDayAccountDto) {
     return this.matchAdmin.createGameDayAccount(dto);
+  }
+
+  @Patch('gameday/accounts/:id')
+  updateGameDayAccount(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateGameDayAccountDto,
+  ) {
+    return this.matchAdmin.updateGameDayAccount(id, dto);
+  }
+
+  @Delete('gameday/accounts/:id')
+  deleteGameDayAccount(@Param('id', ParseUUIDPipe) id: string) {
+    return this.matchAdmin.deleteGameDayAccount(id);
   }
 
   @Get('gameday/matches/:id/assignments')

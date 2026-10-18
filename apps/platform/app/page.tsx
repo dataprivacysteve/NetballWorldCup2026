@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import Advertising from "./advertising";
 import WebNews from "./web-news";
+import PhotoGovernance from "./photo-governance";
+import GameDayAccounts from "./game-day-accounts";
 import FederationConsole from "./federation-console";
 import {
   api,
@@ -26,6 +28,7 @@ import {
   type Stage,
 } from "./lib/api";
 import { countryFlag, countryLabel } from "./lib/countries";
+import { visibleFixtures } from "./lib/fixtures";
 
 const labelCls =
   "mb-1 block font-mono text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-ink-muted";
@@ -596,6 +599,7 @@ type Section =
   | "overview"
   | "registrations"
   | "review"
+  | "player-images"
   | "matches"
   | "badges"
   | "advertising"
@@ -636,6 +640,12 @@ function Console({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
       label: "Team review",
       description: "People and documents",
       icon: "review",
+    },
+    {
+      id: "player-images",
+      label: "Player images",
+      description: "Consent and website release",
+      icon: "shield",
     },
     {
       id: "matches",
@@ -791,6 +801,8 @@ function Console({ me, onSignOut }: { me: Me; onSignOut: () => void }) {
             <Registrations />
           ) : section === "review" ? (
             <RosterReview />
+          ) : section === "player-images" ? (
+            <PhotoGovernance />
           ) : section === "matches" ? (
             <Matches />
           ) : section === "badges" ? (
@@ -898,7 +910,9 @@ function Overview({
               label="Pending registrations"
               value={data.pending.length}
               detail={
-                data.pending.length ? "Requires LOC validation" : "Queue is clear"
+                data.pending.length
+                  ? "Requires LOC validation"
+                  : "Queue is clear"
               }
               tone={data.pending.length ? "warning" : "success"}
               onClick={() => onNavigate("registrations")}
@@ -1899,6 +1913,8 @@ function whenLabel(iso: string | null) {
   });
 }
 function Matches() {
+  const [now, setNow] = useState(() => Date.now());
+  const [showPast, setShowPast] = useState(false);
   const [nations, setNations] = useState<MatchNation[] | null>(null);
   const [stages, setStages] = useState<Stage[] | null>(null);
   const [venues, setVenues] = useState<MatchVenue[] | null>(null);
@@ -1954,6 +1970,33 @@ function Matches() {
     };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    let refreshing = false;
+    const refresh = async () => {
+      setNow(Date.now());
+      if (refreshing) return;
+      refreshing = true;
+      try {
+        const nextMatches = await api.matches();
+        if (active) setMatches(nextMatches);
+      } catch {
+        // Keep the last successful list when a background refresh fails.
+      } finally {
+        refreshing = false;
+      }
+    };
+    const timer = window.setInterval(() => void refresh(), 30_000);
+    window.addEventListener("focus", refresh);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refresh);
+    };
+  }, []);
+
+  const fixtures = matches === null ? null : visibleFixtures(matches, now, showPast);
+
   return (
     <div className="space-y-8">
       <PageHeading
@@ -1998,22 +2041,34 @@ function Matches() {
       />
 
       <section>
-        <h2 className={labelCls}>Fixtures ({matches?.length ?? 0})</h2>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <h2 className={labelCls}>Fixtures ({fixtures?.length ?? 0})</h2>
+          <label className="flex items-center gap-2 text-sm text-ink-muted">
+            <input
+              type="checkbox"
+              checked={showPast}
+              onChange={(event) => setShowPast(event.target.checked)}
+            />
+            Show past games
+          </label>
+        </div>
         <div className={`${panel} divide-y divide-line`}>
           {matches === null ? (
             <div className="p-5">
               <LoadingBlock rows={4} />
             </div>
-          ) : matches.length === 0 ? (
+          ) : fixtures?.length === 0 ? (
             <div className="p-5">
               <EmptyState
                 icon="matches"
-                title="No fixtures yet"
-                description="Use the fixture form above to create the first match."
+                title={matches.length === 0 ? "No fixtures yet" : "No upcoming fixtures"}
+                description={matches.length === 0
+                  ? "Use the fixture form above to create the first match."
+                  : "Show past games to view earlier fixtures and results."}
               />
             </div>
           ) : (
-            matches.map((m) => (
+            fixtures?.map((m) => (
               <MatchRow
                 key={m.id}
                 m={m}
@@ -2262,7 +2317,7 @@ function GameDayStaffing({
       <h2 className={labelCls}>GameDay staffing &amp; access</h2>
       <ErrorBanner error={error} />
       <div className="grid gap-4 lg:grid-cols-2">
-        <form onSubmit={createAccount} className={`${panel} space-y-3 p-5`}>
+        <form onSubmit={createAccount} autoComplete="off" className={`${panel} space-y-3 p-5`}>
           <h3 className="font-display text-lg font-bold text-ink">
             Create role account
           </h3>
@@ -2274,6 +2329,9 @@ function GameDayStaffing({
             className={inputCls}
             required
             placeholder="Operator name"
+            aria-label="Operator name"
+            name="new-operator-name"
+            minLength={2}
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
           />
@@ -2282,6 +2340,9 @@ function GameDayStaffing({
             required
             type="email"
             placeholder="Email address"
+            aria-label="Operator email address"
+            name="new-operator-email"
+            autoComplete="off"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
@@ -2291,6 +2352,9 @@ function GameDayStaffing({
             minLength={12}
             type="password"
             placeholder="Temporary password (12+ characters)"
+            aria-label="Operator temporary password"
+            name="new-operator-password"
+            autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
@@ -2370,6 +2434,7 @@ function GameDayStaffing({
           )}
         </div>
       </div>
+      <GameDayAccounts accounts={accounts} onChanged={onChange} />
     </section>
   );
 }

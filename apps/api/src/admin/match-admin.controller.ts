@@ -1,6 +1,7 @@
 import {
   AssignGameDayOfficialDto,
   CreateGameDayAccountDto,
+  UpdateGameDayAccountDto,
   GAME_DAY_ROLES,
   type GameDayRole,
 } from '../gameday/gameday.dto';
@@ -48,6 +49,19 @@ export class MatchAdminController {
   @Post('officials')
   createOfficial(@Body() dto: CreateGameDayAccountDto) {
     return this.svc.createGameDayAccount(dto);
+  }
+
+  @Patch('officials/:id')
+  updateOfficial(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateGameDayAccountDto,
+  ) {
+    return this.svc.updateGameDayAccount(id, dto);
+  }
+
+  @Delete('officials/:id')
+  deleteOfficial(@Param('id', ParseUUIDPipe) id: string) {
+    return this.svc.deleteGameDayAccount(id);
   }
 
   @Get('matches/:id/assignments')

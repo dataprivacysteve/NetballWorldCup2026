@@ -2,7 +2,7 @@
 // Federation config — the export-product seam.
 //
 // Everything that makes the public site "this federation's" lives here:
-// wordmark, nav, ticket/shop links, sponsor + ad slots, and the per-nation
+// wordmark, nav, sponsor + ad slots, and the per-nation
 // theme (flag + colour). The live tournament data (fixtures/results/standings/
 // squads) comes from the API; this is only the brand/marketing chrome. Standing
 // up a new federation = editing this file + the :root tokens in globals.css.
@@ -31,18 +31,12 @@ export const federation = {
     titleLines: ["Americas", "Netball", "Qualifier"],
     outlinedIndex: 1,
     subLead: "1 court ·",
-    subAccent: "1 ticket to the World Cup",
+    subAccent: "1 place at the World Cup",
     host: "Barbados",
     // Big hero background photo (e.g. the players jumping). Served from
     // apps/web/public/. Drop the file there and it shows behind the scrim;
     // falls back to the gradient if missing. Use a wide, compressed JPG/WebP.
     image: "/photos/netball-action-shot.png" as string | null,
-  },
-
-  // External destinations (demo: alert stubs; swap for real URLs).
-  links: {
-    tickets: "#tickets",
-    shop: "#shop",
   },
 
   nav: [
@@ -52,17 +46,21 @@ export const federation = {
     { label: "Watch", href: "#watch" },
     { label: "News", href: "#news" },
     { label: "About", href: "#about" },
-    { label: "Tickets", href: "#tickets" },
   ],
 
   // Sponsor ad slots — self-hosted static creative. src null => placeholder.
+  leadPartner: {
+    name: "Barbados Tourism Marketing Inc. (BTMI)",
+    href: "https://www.visitbarbados.org/",
+    bannerSrc: "/partners/btmi-lead-banner.gif",
+    logoSrc: "/partners/btmi-logo-white.png",
+  },
+
   ads: {
     gold: { src: null, href: "#", alt: "Gold partner" } as AdSlot,
     silver: { src: null, href: "#", alt: "Silver partner" } as AdSlot,
     bronze: { src: null, href: "#", alt: "Bronze partner" } as AdSlot,
   },
-  // Merch graphic -> Shopify (artist-supplied artwork).
-  merch: { src: null as string | null, href: "#shop" },
   // Basic sponsors / supporters: logos only (null => placeholder box).
   sponsorLogos: [null, null, null, null, null, null] as (string | null)[],
 
@@ -77,6 +75,7 @@ export const federation = {
     KNA: { flag: "🇰🇳", color: "#009E49" },
     LCA: { flag: "🇱🇨", color: "#1187C9" },
     SVG: { flag: "🇻🇨", color: "#009E60" },
+    VCT: { flag: "🇻🇨", color: "#009E60" },
     TTO: { flag: "🇹🇹", color: "#DA1A35" },
     USA: { flag: "🇺🇸", color: "#3C3B6E" },
     VGB: { flag: "🇻🇬", color: "#0067B1" },
@@ -96,5 +95,5 @@ export function nationTheme(code: string) {
 // tries this first and falls back to the emoji/ISO monogram if the file is
 // missing, so dropping flag files in is all that's needed.
 export function flagSrc(code: string) {
-  return `/flags/${code.toLowerCase()}.svg`;
+  return `/flags/${(code === "VCT" ? "SVG" : code).toLowerCase()}.svg`;
 }

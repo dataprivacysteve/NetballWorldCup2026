@@ -6,22 +6,26 @@ import './env';
 import { randomUUID } from 'node:crypto';
 import { Pool, type PoolClient } from 'pg';
 import { hashPassword } from '../auth/password.util';
+import {
+  REHEARSAL_ROUND_LABEL,
+  REHEARSAL_STAGE_NAME,
+} from '../public/rehearsal-policy';
 
-const ROUND_LABEL = 'LOC Presentation Rehearsal';
-const STAGE_NAME = 'Presentation Rehearsal';
+const ROUND_LABEL = REHEARSAL_ROUND_LABEL;
+const STAGE_NAME = REHEARSAL_STAGE_NAME;
 const EDGE_NODE_ID = '7d9bf462-fd86-4b93-a52d-8abf39a4ac16';
 const TEAM_DEFINITIONS = [
   {
     code: 'XTA',
-    name: 'Barbados',
-    association: 'Barbados Netball Association',
+    name: 'Training Team A',
+    association: 'LOC Training',
     managerEmail: 'rehearsal.team-a@netballamericas.test',
     managerName: 'Training Manager A',
   },
   {
     code: 'XTB',
-    name: 'Grenada',
-    association: 'Grenada Netball Association',
+    name: 'Training Team B',
+    association: 'LOC Training',
     managerEmail: 'rehearsal.team-b@netballamericas.test',
     managerName: 'Training Manager B',
   },
@@ -392,10 +396,8 @@ async function main() {
     }
 
     const passwordHash = await hashPassword(password);
-    await client.query(`UPDATE app_user SET password_hash = $2 WHERE id = $1`, [
-      reviewer.id,
-      passwordHash,
-    ]);
+    // The existing LOC officer retains their own credentials. Only synthetic
+    // training users receive the supplied rehearsal password.
     const teams: RehearsalTeam[] = [];
     for (const definition of TEAM_DEFINITIONS) {
       teams.push(
@@ -546,9 +548,6 @@ async function main() {
     }
 
     await client.query(
-      `UPDATE match_broadcast SET featured = false WHERE featured = true`,
-    );
-    await client.query(
       `INSERT INTO match_broadcast
          (match_id, provider, external_id, watch_url, embed_url,
           status, featured, updated_at)
@@ -556,7 +555,7 @@ async function main() {
          ($1, 'vMix rehearsal', 'loc-presentation',
           'https://example.invalid/watch/loc-presentation',
           'https://example.invalid/embed/loc-presentation',
-          'scheduled', true, now())
+          'scheduled', false, now())
        ON CONFLICT (match_id) DO UPDATE SET
          provider = EXCLUDED.provider,
          external_id = EXCLUDED.external_id,
@@ -564,7 +563,7 @@ async function main() {
          embed_url = EXCLUDED.embed_url,
          replay_url = NULL,
          status = EXCLUDED.status,
-         featured = true,
+         featured = false,
          updated_at = now()`,
       [match.id],
     );
@@ -574,8 +573,8 @@ async function main() {
     console.log(`Fixture: ${ROUND_LABEL} (${match.id})`);
     console.log(`Teams: ${teams.map((team) => team.code).join(' v ')}`);
     console.log(`Venue edge node: ${EDGE_NODE_ID}`);
-    console.log('Accounts use the supplied REHEARSAL_PASSWORD:');
-    console.log(`  Training LOC Officer: ${reviewer.email}`);
+    console.log(`LOC officer keeps their existing password: ${reviewer.email}`);
+    console.log('Training accounts use the supplied REHEARSAL_PASSWORD:');
     for (const definition of TEAM_DEFINITIONS) {
       console.log(`  Team manager: ${definition.managerEmail}`);
     }

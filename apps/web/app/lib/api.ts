@@ -71,7 +71,11 @@ export type PublicExperience = {
   sponsors: Sponsor[];
   news: NewsArticle[];
 };
-export type Nation = { countryCode: string; name: string; group: string | null };
+export type Nation = {
+  countryCode: string;
+  name: string;
+  group: string | null;
+};
 export type Side = { code: string; name: string; score: number | null };
 export type Match = {
   id: string;
@@ -118,6 +122,13 @@ export type StandingsGroup = {
   rows: StandingRow[];
   qualifyTop: number;
 };
+export type MatchCentreData = {
+  fixtures: Match[];
+  results: Match[];
+  standings: StandingsGroup[];
+  lastNext: { last: Match | null; next: Match | null };
+  broadcasts: Match[];
+};
 export type SquadMember = {
   firstName: string;
   lastName: string;
@@ -134,6 +145,14 @@ export type Squad = {
 };
 
 export const publicApi = {
+  matchCentre: () =>
+    getFresh<MatchCentreData>("/match-centre", {
+      fixtures: [],
+      results: [],
+      standings: [],
+      lastNext: { last: null, next: null },
+      broadcasts: [],
+    }),
   siteMode: () => getFresh<{ live: boolean }>("/site-mode", { live: false }),
   tournament: () => get<Tournament | null>("/tournament", null),
   experience: () => get<PublicExperience | null>("/experience", null),

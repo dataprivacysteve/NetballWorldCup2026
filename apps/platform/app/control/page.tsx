@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import GameDayAccounts from "../game-day-accounts";
 import {
   api,
   type AdminMatch,
@@ -610,16 +611,16 @@ function GameDayOperations() {
         <ErrorNotice error={error} />
         {notice && <p role="status" className="rounded-xl border border-ok-line bg-ok-soft p-3 text-sm font-semibold text-ok">{notice}</p>}
         <div className="grid gap-5 xl:grid-cols-2">
-          <form onSubmit={createAccount} className="space-y-3 rounded-xl border border-line bg-bg p-5">
+          <form onSubmit={createAccount} autoComplete="off" className="space-y-3 rounded-xl border border-line bg-bg p-5">
             <div>
               <h3 className="font-display text-xl font-bold">Create named operator</h3>
               <p className="mt-1 text-sm text-ink-muted">Use one account per person. Do not share scorer credentials.</p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <label><span className={label}>Operator name</span><input className={input} required value={displayName} onChange={(event) => setDisplayName(event.target.value)} /></label>
-              <label><span className={label}>Email</span><input className={input} type="email" required value={email} onChange={(event) => setEmail(event.target.value)} /></label>
+              <label><span className={label}>Email</span><input className={input} type="email" name="new-operator-email" autoComplete="off" required value={email} onChange={(event) => setEmail(event.target.value)} /></label>
             </div>
-            <label><span className={label}>Temporary password</span><input className={input} type="password" minLength={12} required value={password} onChange={(event) => setPassword(event.target.value)} placeholder="At least 12 characters" /></label>
+            <label><span className={label}>Temporary password</span><input className={input} type="password" name="new-operator-password" autoComplete="new-password" minLength={12} required value={password} onChange={(event) => setPassword(event.target.value)} placeholder="At least 12 characters" /></label>
             <label><span className={label}>Account duty</span><select className={input} value={role} onChange={(event) => setRole(event.target.value as GameDayRole)}>{gameDayRoles.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
             <button className={`${gold} w-full`} disabled={busy}>Create operator account</button>
           </form>
@@ -638,6 +639,7 @@ function GameDayOperations() {
             </div>
           </div>
         </div>
+        <GameDayAccounts accounts={accounts} onChanged={load} control />
         <div className="grid gap-3 text-sm md:grid-cols-3">
           <a className="rounded-xl border border-line bg-white p-4 font-semibold text-navy hover:border-gold" href="/gameday">Phone/tablet scorer login →</a>
           <a className="rounded-xl border border-line bg-white p-4 font-semibold text-navy hover:border-gold" href="/gym">Controlled gymnasium projector →</a>

@@ -316,6 +316,27 @@ export type OfflineScanEvent = {
   offlineValid: boolean;
   offlineReason?: string;
 };
+export type PhotoPublicationRelease = {
+  enabled: boolean;
+  approvedPhotos: number;
+  publicPhotos: number;
+  decisionReference: string | null;
+};
+export type PlayerPhotoPublication = {
+  published: boolean;
+  withdrawn: boolean;
+  playerId: string;
+  photoId: string | null;
+  photoUsable: boolean;
+  accredited: boolean;
+  verified: boolean;
+  expectedConsentParty: "player" | "guardian" | null;
+  approvedPhotoId: string | null;
+  consentParty: "player" | "guardian" | null;
+  consentEvidenceReference: string | null;
+  approvedAt: string | null;
+};
+
 export type ReviewQueueItem = {
   id: string;
   name: string;
@@ -485,6 +506,12 @@ export type GameDayAccount = {
   displayName: string;
   role: GameDayRole;
   createdAt?: string;
+};
+export type UpdateGameDayAccount = {
+  email: string;
+  displayName: string;
+  role: GameDayRole;
+  password?: string;
 };
 export type GameDayAssignment = {
   id: string;
@@ -696,6 +723,10 @@ export const api = {
   controlGameDayMatches: () => req<AdminMatch[]>("/control/gameday/matches"),
   controlGameDayAccounts: () =>
     req<GameDayAccount[]>("/control/gameday/accounts"),
+  updateControlGameDayAccount: (id: string, body: UpdateGameDayAccount) =>
+    req<GameDayAccount>(`/control/gameday/accounts/${id}`, { method: "PATCH", body }),
+  deleteControlGameDayAccount: (id: string) =>
+    req<{ ok: boolean }>(`/control/gameday/accounts/${id}`, { method: "DELETE" }),
   createControlGameDayAccount: (body: {
     email: string;
     displayName: string;
@@ -748,6 +779,42 @@ export const api = {
     req<{ id: string; status: "issued" }>(`/admin/credentials/${id}/reissue`, {
       method: "POST",
     }),
+
+  // LOC-controlled public player photos
+  photoPublicationRelease: () =>
+    req<PhotoPublicationRelease>("/admin/photo-publication"),
+  setPhotoPublicationRelease: (enabled: boolean, decisionReference: string) =>
+    req<PhotoPublicationRelease>("/admin/photo-publication", {
+      method: "PATCH",
+      body: { enabled, decisionReference },
+    }),
+  playerPhotoPublication: (playerId: string) =>
+    req<PlayerPhotoPublication>(
+      "/admin/players/" + playerId + "/photo-publication",
+    ),
+  approvePlayerPhotoPublication: (
+    playerId: string,
+    photoId: string,
+    consentParty: "player" | "guardian",
+    consentEvidenceReference: string,
+  ) =>
+    req<PlayerPhotoPublication>(
+      "/admin/players/" + playerId + "/photo-publication",
+      {
+        method: "POST",
+        body: { photoId, consentParty, consentEvidenceReference },
+      },
+    ),
+  revokePlayerPhotoPublication: (playerId: string) =>
+    req<{ revoked: boolean }>(
+      "/admin/players/" + playerId + "/photo-publication/revoke",
+      {
+        method: "POST",
+      },
+    ),
+
+  restorePlayerPhotoPublication: (playerId: string) =>
+    req<PlayerPhotoPublication>("/admin/players/" + playerId + "/photo-publication/restore", { method: "POST" }),
 
   // Roster accreditation review
   listReview: () => req<ReviewQueueItem[]>("/admin/review"),
@@ -840,6 +907,10 @@ export const api = {
   deactivateEdgeNode: (id: string) =>
     req<EdgeNode>(`/admin/match/edge-nodes/${id}`, { method: "DELETE" }),
   gameDayAccounts: () => req<GameDayAccount[]>("/admin/match/officials"),
+  updateGameDayAccount: (id: string, body: UpdateGameDayAccount) =>
+    req<GameDayAccount>(`/admin/match/officials/${id}`, { method: "PATCH", body }),
+  deleteGameDayAccount: (id: string) =>
+    req<{ ok: boolean }>(`/admin/match/officials/${id}`, { method: "DELETE" }),
   createGameDayAccount: (body: {
     email: string;
     displayName: string;

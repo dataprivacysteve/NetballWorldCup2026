@@ -17,6 +17,11 @@ import {
 } from './enums';
 import { delegation } from './delegation';
 
+export const playerPhotoPublicationWithdrawal = pgTable(
+  'player_photo_publication_withdrawal',
+  { playerId: uuid('player_id').primaryKey().references(() => player.id, { onDelete: 'cascade' }) },
+);
+
 // A player on a delegation's roster.
 //
 // Date of birth is collected for players only. It drives age eligibility and

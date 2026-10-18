@@ -13,10 +13,10 @@
 	tls /etc/caddy/certs/netballamericas.test.pem /etc/caddy/certs/netballamericas.test-key.pem
 }
 
-# NestJS API
+# NestJS API — dedicated port to coexist with LivePlay on 3000.
 api.netballamericas.test {
 	import tls_local
-	reverse_proxy host.docker.internal:3000
+	reverse_proxy host.docker.internal:3105
 }
 
 # Public surface (www) — Next.js. Login-free, no personal data.
