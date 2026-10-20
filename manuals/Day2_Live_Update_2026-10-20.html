@@ -1,0 +1,290 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>20 October — GameDay developer deployment guide</title><style>
+:root{--navy:#111831;--gold:#f5c84c;--ink:#24324b;--line:#dce2ed}*{box-sizing:border-box}body{margin:0;background:#f3f5f9;color:var(--ink);font:16px/1.65 system-ui,sans-serif}header{background:var(--navy);color:#fff;padding:36px max(24px,calc((100vw - 1240px)/2));border-bottom:5px solid var(--gold)}header small{color:var(--gold);letter-spacing:.14em;text-transform:uppercase}header h1{font-size:clamp(27px,4vw,42px);line-height:1.15;margin:12px 0}header p{color:#d9e2f2;max-width:880px}.layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:24px;max-width:1240px;padding:24px;margin:auto}aside{position:sticky;top:20px;align-self:start;background:#fff;border:1px solid var(--line);padding:18px;border-radius:12px}aside a{display:block;font-size:12px;margin:10px 0;line-height:1.4}main{min-width:0;padding:32px;background:#fff;border:1px solid var(--line);border-radius:12px}h1{font-size:27px;line-height:1.3}h2{font-size:24px;line-height:1.3;border-top:2px solid var(--line);padding-top:24px;margin:36px 0 16px;scroll-margin-top:20px}h3{font-size:19px}a{color:#214ea2;overflow-wrap:anywhere}p,li{overflow-wrap:anywhere}li{margin:8px 0}code{font: .87em ui-monospace,Consolas,monospace;background:#eef1f7;border-radius:3px;padding:2px 4px}pre{background:var(--navy);color:#f2f5fd;padding:20px;border-radius:9px;overflow:auto;line-height:1.6}pre code{font-size:12px;background:transparent;padding:0}table{border-collapse:collapse;width:100%;font-size:13px}th,td{border:1px solid var(--line);padding:10px;text-align:left;vertical-align:top}th{background:#eef1f7}button{background:var(--gold);color:var(--navy);font-weight:700;border:0;border-radius:6px;padding:12px 16px;cursor:pointer}footer{text-align:center;font-size:12px;padding:24px;color:#64728a}@media(max-width:850px){.layout{grid-template-columns:1fr;padding:14px}aside{position:static}main{padding:20px}pre{padding:14px}table{font-size:12px}}@media print{@page{size:A4;margin:15mm}body{background:#fff;font-size:10pt}header{padding:18px}header h1{font-size:25pt}.layout{display:block;padding:0;margin:0;max-width:none}aside,button{display:none}main{border:0;padding:16px 0}h2{font-size:16pt;break-after:avoid}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f1f3f7;color:#182443}pre code{font-size:8pt}tr{break-inside:avoid}a{color:inherit}}
+</style></head><body><header><small>Netball Americas · developer handoff</small><h1>20 October live tournament update</h1><p>Timekeeper controls, countdown cues, standings repair, daily coverage and replays, and the approved tournament homepage. Pinned application release: <code>1e42bfe3d614e21b7effc3ca4fe28b68ede23a9b</code>.</p><button onclick="window.print()">Print / Save as PDF</button></header><div class="layout"><aside><strong>Deployment sequence</strong><a href="#1-what-this-release-contains">1. What this release contains</a><a href="#2-timing-responsibility-and-stop-conditions">2. Timing, responsibility and stop conditions</a><a href="#3-inventory-the-running-installation-server-administrator">3. Inventory the running installation — server administrator</a><a href="#4-fetch-the-immutable-release-and-preserve-configuration">4. Fetch the immutable release and preserve configuration</a><a href="#5-install-and-build-the-inactive-release-site-user">5. Install and build the inactive release — site user</a><a href="#6-back-up-and-rehearse-the-database-changes-before-activation">6. Back up and rehearse the database changes before activation</a><a href="#7-smoke-test-inactive-artifacts">7. Smoke-test inactive artifacts</a><a href="#8-apply-live-changes-between-games">8. Apply live changes between games</a><a href="#9-switch-only-the-recorded-services">9. Switch only the recorded services</a><a href="#10-acceptance-owner-developer-and-officials">10. Acceptance — owner, developer and officials</a><a href="#11-troubleshooting-and-recovery">11. Troubleshooting and recovery</a><a href="#local-release-evidence">Local release evidence</a></aside><main><h1 id="gameday-live-update-developer-deployment-guide">GameDay live update — developer deployment guide</h1>
+<p>Prepared <strong>20 October 2026, Barbados time</strong>. The owner confirmed that the existing Debian/ISPConfig, web6, Supervisor, Node <strong>24.14.0</strong> and pnpm <strong>9.15.0</strong> setup is unchanged. Service paths, ports and Supervisor program names must still be read from the running installation below; do not substitute the laptop&#39;s ports or settings.</p>
+<p><strong>Pinned application commit:</strong> <code>1e42bfe3d614e21b7effc3ca4fe28b68ede23a9b</code>.</p>
+<p>Repository: <a href="https://github.com/dataprivacysteve/NetballWorldCup2026">https://github.com/dataprivacysteve/NetballWorldCup2026</a>. A subsequent documentation-only commit adds this guide; deploy the pinned application commit above. All application changes from this chat are in that commit. No production database changes or service switch were performed from the local workspace.</p>
+<h2 id="1-what-this-release-contains">1. What this release contains</h2>
+<ul>
+<li>Independent scoring and clock controls; scoring opens on Start Game and closes on End Game. Pause, zero, suspension and quarter intervals do not lock scoring.</li>
+<li>Timekeeper clock correction, explicit quarter/game controls, immediate quarter starts and recovery controls. Preparation countdowns do not block the operator. In-app start/end confirmations replace browser popups.</li>
+<li>5/10/15/20-minute pregame countdowns, preserved <strong>4/8/4-minute breaks</strong>, and a red final-minute cue on preparation countdowns only. Playing clocks keep their usual color.</li>
+<li>Updated public/arena/gym/statistics displays and edge synchronization fields.</li>
+<li>A competition-first homepage; the approved live score/video/schedule area; seven daily YouTube streams, day selection and replay browsing; BTMI-only partner placements.</li>
+<li>A <strong>separate, explicit standings metadata repair</strong>, and a <strong>separate daily video configuration update</strong>. Both default to dry-run. Neither changes scores, schedules, match status or clock data.</li>
+<li>Migration <strong>0044_timekeeper_controls</strong>, adding nullable <code>period_ended_at</code> and <code>start_countdown_ends_at</code> columns to <code>match</code>.</li>
+</ul>
+<p>The live public API was inspected during preparation: four Day 1 results were final, the 27 official competition fixtures had no stage, and <code>/public/standings</code> returned <code>[]</code>. These are observations, not required deployment counts: more matches may have finished by installation time. The repair links the eight existing teams and existing official fixtures; it does not create or replace fixtures.</p>
+<h2 id="2-timing-responsibility-and-stop-conditions">2. Timing, responsibility and stop conditions</h2>
+<p>The requested handoff leaves four hours for deployment and testing before games start in seven hours. Reserve the final two hours of that four-hour window for operator testing. Build and rehearse first; activate between games. Stop if a migration other than 0044 is unexpectedly pending, if a repair reports conflicting league assignments, if a video day has no fixture, or if any build fails. Preserve the old running release until acceptance.</p>
+<p><strong>Actors:</strong> the authorized server administrator performs inventory/backups/Supervisor steps; the site user installs/builds; the migration identity performs database updates; the timekeeper and scorer perform acceptance. Agree who can authorize rollback. This guide does not replace ISPConfig configuration or change shared-host Node, Apache, ports, TLS, storage, sessions or account passwords.</p>
+<h2 id="3-inventory-the-running-installation-server-administrator">3. Inventory the running installation — server administrator</h2>
+<p>Use one persistent Bash shell. Blocks are wrapped where useful so a failed command does not log you out. Do not enable <code>set -x</code>, print <code>.env</code>, or share raw Supervisor environment values.</p>
+<pre><code class="language-bash">umask 077
+date -u
+supervisorctl status
+ss -lntp
+read -r -e -p &#39;Existing GameDay base directory: &#39; BASE_ROOT
+read -r -e -p &#39;Retained Git checkout containing .git: &#39; GIT_ROOT
+read -r -e -p &#39;Active API release root containing .env: &#39; ACTIVE_RELEASE
+read -r -p &#39;Site Linux user (existing deployment uses web6): &#39; SITE_USER
+read -r -e -p &#39;Absolute site Node binary: &#39; NODE_BIN
+read -r -e -p &#39;Absolute pnpm binary: &#39; PNPM_BIN
+read -r -p &#39;API Supervisor program: &#39; API_SERVICE
+read -r -p &#39;Website Supervisor program: &#39; WEB_SERVICE
+read -r -p &#39;Platform Supervisor program: &#39; PLATFORM_SERVICE
+read -r -p &#39;Statistics Supervisor program (blank if not installed): &#39; STATS_SERVICE
+read -r -p &#39;Teams Supervisor program (blank if it has its own unchanged release): &#39; TEAMS_SERVICE
+export BASE_ROOT GIT_ROOT ACTIVE_RELEASE SITE_USER NODE_BIN PNPM_BIN
+export API_SERVICE WEB_SERVICE PLATFORM_SERVICE STATS_SERVICE TEAMS_SERVICE
+export TARGET_COMMIT=1e42bfe3d614e21b7effc3ca4fe28b68ede23a9b
+export RUN_ID=&quot;$(date -u +%Y%m%dT%H%M%SZ)&quot;
+export NEW_RELEASE=&quot;$BASE_ROOT/releases/$TARGET_COMMIT-$RUN_ID&quot;
+export BACKUP_ROOT=&quot;/var/backups/gameday/day2-$RUN_ID&quot;
+export CACHE_ROOT=&quot;$BASE_ROOT/.cache&quot;
+export SITE_GROUP=&quot;$(id -gn &quot;$SITE_USER&quot;)&quot;
+export RUNTIME_PATH=&quot;$(dirname &quot;$NODE_BIN&quot;):$(dirname &quot;$PNPM_BIN&quot;):/usr/local/bin:/usr/bin:/bin&quot;
+SERVICES=(&quot;$API_SERVICE&quot; &quot;$WEB_SERVICE&quot; &quot;$PLATFORM_SERVICE&quot;)
+test -z &quot;$STATS_SERVICE&quot; || SERVICES+=(&quot;$STATS_SERVICE&quot;)
+test -z &quot;$TEAMS_SERVICE&quot; || SERVICES+=(&quot;$TEAMS_SERVICE&quot;)
+</code></pre>
+<pre><code class="language-bash">(
+  set -euo pipefail
+  test -d &quot;$GIT_ROOT/.git&quot;
+  test -f &quot;$ACTIVE_RELEASE/.env&quot;
+  test ! -e &quot;$NEW_RELEASE&quot;
+  test &quot;$(&quot;$NODE_BIN&quot; --version)&quot; = v24.14.0
+  test &quot;$(env PATH=&quot;$RUNTIME_PATH&quot; &quot;$PNPM_BIN&quot; --version)&quot; = 9.15.0
+  supervisorctl status &quot;${SERVICES[@]}&quot;
+  for service in &quot;${SERVICES[@]}&quot;; do
+    pid=&quot;$(supervisorctl pid &quot;$service&quot;)&quot;
+    test &quot;$pid&quot; -gt 0
+    printf &#39;%s working directory: &#39; &quot;$service&quot;
+    readlink -f &quot;/proc/$pid/cwd&quot;
+  done
+  git -C &quot;$GIT_ROOT&quot; status --short
+  git -C &quot;$GIT_ROOT&quot; rev-parse HEAD
+  df -h &quot;$BASE_ROOT&quot; /var/backups
+)
+</code></pre>
+<p>Record each service&#39;s actual old release, command/wrapper, production port, configuration file and log locations. A retained checkout and an exported release are different directories. Reconcile a dirty server checkout; do not reset it. If applications use different root/app-specific settings, reconcile them before building. Confirm free disk for a full new release, database dump and isolated restore. Keep source/releases/private files blocked from HTTP by the existing ISPConfig-managed configuration.</p>
+<h2 id="4-fetch-the-immutable-release-and-preserve-configuration">4. Fetch the immutable release and preserve configuration</h2>
+<pre><code class="language-bash">(
+  set -euo pipefail
+  git -C &quot;$GIT_ROOT&quot; fetch origin
+  git -C &quot;$GIT_ROOT&quot; cat-file -e &quot;$TARGET_COMMIT^{commit}&quot;
+  git -C &quot;$GIT_ROOT&quot; merge-base --is-ancestor &quot;$TARGET_COMMIT&quot; origin/main
+  install -d -m 750 -o &quot;$SITE_USER&quot; -g &quot;$SITE_GROUP&quot; &quot;$NEW_RELEASE&quot; &quot;$CACHE_ROOT&quot;
+  git -C &quot;$GIT_ROOT&quot; archive &quot;$TARGET_COMMIT&quot; | tar -x -C &quot;$NEW_RELEASE&quot;
+  install -d -m 700 &quot;$BACKUP_ROOT&quot; &quot;$BACKUP_ROOT/supervisor&quot;
+  printf &#39;%s\n&#39; &quot;$TARGET_COMMIT&quot; &gt; &quot;$NEW_RELEASE/RELEASE_COMMIT&quot;
+  printf &#39;%s\n&#39; &quot;$ACTIVE_RELEASE&quot; &gt; &quot;$BACKUP_ROOT/old-api-release.txt&quot;
+  supervisorctl status &quot;${SERVICES[@]}&quot; &gt; &quot;$BACKUP_ROOT/services-before.txt&quot;
+  install -m 600 -o &quot;$SITE_USER&quot; -g &quot;$SITE_GROUP&quot; &quot;$ACTIVE_RELEASE/.env&quot; &quot;$NEW_RELEASE/.env&quot;
+)
+</code></pre>
+<p>Back up <strong>each site-specific Supervisor configuration file/wrapper you will edit</strong> to <code>$BACKUP_ROOT/supervisor</code> and record its original path. Keep this directory private: those files may include credentials. Preserve the old release and all persistent media, object storage, roster photos and caches. Do not copy <code>node_modules</code> or <code>.next</code> from the old release.</p>
+<p>If production has app-specific <code>.env*</code> files or settings only in Supervisor, copy/reconcile those privately for the appropriate apps before building. Browser API origins are embedded at build time. Preserve production <code>API_BASE_URL</code>, <code>API_ORIGIN</code>, <code>PUBLIC_BASE_URL</code>, <code>PLATFORM_BASE_URL</code>, <code>TEAMS_BASE_URL</code>, <code>STATS_BASE_URL</code>, <code>PORT</code>, database/storage settings and existing session secrets. Do not copy the laptop <code>.env</code>, <code>.test</code> domains, ports <strong>3103–3106</strong>, <code>PUBLIC_SITE_MODE=full</code> preview override, mock server, snapshot JSON or anything from <code>output/</code> into production. <code>API_ORIGIN</code> may legitimately use the existing internal loopback API port.</p>
+<p>Run and retain the read-only host inventory after extraction; review output before sharing:</p>
+<pre><code class="language-bash">read -r -e -p &#39;Verified ISPConfig website root for path inventory: &#39; SITE_ROOT
+SITE_ROOT=&quot;$SITE_ROOT&quot; SITE_USER=&quot;$SITE_USER&quot; \
+  bash &quot;$NEW_RELEASE/scripts/deploy/collect-host-facts.sh&quot; \
+  &gt; &quot;$BACKUP_ROOT/host-facts.txt&quot;
+chown -R &quot;$SITE_USER:$SITE_GROUP&quot; &quot;$NEW_RELEASE&quot; &quot;$CACHE_ROOT&quot;
+</code></pre>
+<p>Verify <code>SITE_ROOT</code> is the actual ISPConfig website root before that optional path inventory. The host script reports information; it does not configure the server.</p>
+<h2 id="5-install-and-build-the-inactive-release-site-user">5. Install and build the inactive release — site user</h2>
+<p>Use the established site-specific pnpm/Corepack cache. Do not update the lockfile or use a global package-manager upgrade.</p>
+<pre><code class="language-bash">run_app() {
+  sudo -u &quot;$SITE_USER&quot; -H env PATH=&quot;$RUNTIME_PATH&quot; CI=true \
+    XDG_CACHE_HOME=&quot;$CACHE_ROOT&quot; COREPACK_HOME=&quot;$CACHE_ROOT/corepack&quot; \
+    &quot;$PNPM_BIN&quot; --dir &quot;$NEW_RELEASE&quot; &quot;$@&quot;
+}
+(
+  set -euo pipefail
+  run_app install --frozen-lockfile --prod=false
+  run_app --filter api exec jest --runInBand
+  run_app --filter api build
+  run_app --filter web build
+  run_app --filter platform build
+  run_app --filter stats build
+  run_app --filter teams build
+  test -s &quot;$NEW_RELEASE/apps/api/dist/src/main.js&quot;
+  for app in web platform stats teams; do
+    test -s &quot;$NEW_RELEASE/apps/$app/.next/BUILD_ID&quot;
+  done
+)
+</code></pre>
+<p>Build sequentially on this shared host. All five artifacts are built so a shared release/current link cannot strand the unchanged teams app. Include <code>packages/shared/countdown.ts</code> and <code>.css</code>; Git archive includes them. Use the repository&#39;s normal API <code>dist/src/main.js</code> and Next.js <strong>next start</strong> launch layout. No standalone server is configured; do not invent <code>server.js</code> paths. Do not run production integration tests against live tables: PostgreSQL integration tests require an explicit loopback test URL and write only temporary tables.</p>
+<h2 id="6-back-up-and-rehearse-the-database-changes-before-activation">6. Back up and rehearse the database changes before activation</h2>
+<p>The existing one-off migration URL is required. Load it privately; do not paste the value into the guide or logs. <code>PGDATABASE</code> keeps the URI out of command-line arguments.</p>
+<pre><code class="language-bash">export MIGRATION_DATABASE_URL=&quot;$(env -u MIGRATION_DATABASE_URL &quot;$NODE_BIN&quot; \
+  --env-file=&quot;$NEW_RELEASE/.env&quot; -e &#39;
+  const u=process.env.MIGRATION_DATABASE_URL;
+  if(!u)process.exit(1);
+  process.stdout.write(u);&#39;)&quot;
+(
+  set -euo pipefail
+  PGDATABASE=&quot;$MIGRATION_DATABASE_URL&quot; psql -X -v ON_ERROR_STOP=1 -c \
+    &#39;SELECT id,created_at FROM drizzle.__drizzle_migrations ORDER BY created_at DESC LIMIT 4;&#39;
+  PGDATABASE=&quot;$MIGRATION_DATABASE_URL&quot; psql -X -v ON_ERROR_STOP=1 -c \
+    &quot;SELECT status,count(*) FROM match GROUP BY status ORDER BY status;&quot;
+  PGDATABASE=&quot;$MIGRATION_DATABASE_URL&quot; psql -X -v ON_ERROR_STOP=1 -c \
+    &quot;COPY (SELECT id,status,team_a_score,team_b_score,version,scheduled_at FROM match ORDER BY id) TO STDOUT WITH CSV HEADER&quot; \
+    &gt; &quot;$BACKUP_ROOT/match-state-before.csv&quot;
+  PGDATABASE=&quot;$MIGRATION_DATABASE_URL&quot; psql -X -v ON_ERROR_STOP=1 -c \
+    &quot;COPY (SELECT id,stage_id FROM match ORDER BY id) TO STDOUT WITH CSV HEADER&quot; \
+    &gt; &quot;$BACKUP_ROOT/match-stage-before.csv&quot;
+  PGDATABASE=&quot;$MIGRATION_DATABASE_URL&quot; psql -X -v ON_ERROR_STOP=1 -c \
+    &quot;COPY (SELECT * FROM match_broadcast ORDER BY match_id) TO STDOUT WITH CSV HEADER&quot; \
+    &gt; &quot;$BACKUP_ROOT/broadcast-before.csv&quot;
+  PGDATABASE=&quot;$MIGRATION_DATABASE_URL&quot; pg_dump --format=custom \
+    --file=&quot;$BACKUP_ROOT/database-before.dump&quot;
+  pg_restore --list &quot;$BACKUP_ROOT/database-before.dump&quot; \
+    &gt; &quot;$BACKUP_ROOT/database-before.list&quot;
+  sha256sum &quot;$BACKUP_ROOT/database-before.dump&quot; &gt; &quot;$BACKUP_ROOT/database-before.dump.sha256&quot;
+)
+</code></pre>
+<p>The last migration before this release should be <strong>0043</strong> (<code>created_at=1791158400000</code>), or 0044 may already be installed. The new migration is <strong>0044</strong>, timestamp <code>1792454400000</code>. Compare the database journal with <code>apps/api/drizzle/meta/_journal.json</code>. Stop if older migrations are also pending; investigate the deployed baseline rather than applying a surprise multi-release upgrade. Preserve any existing off-server backup and confirm a recovery owner.</p>
+<p>Prove the backup can restore into a <strong>new, isolated database</strong> using the established DBA restore procedure. For the confirmed local PostgreSQL installation, the following creates a uniquely named scratch database; it does not overwrite production. The existing migration identity must have the required ownership/superuser rights for the restored objects.</p>
+<pre><code class="language-bash">export TEST_DB=&quot;gameday_verify_$(date -u +%Y%m%d%H%M%S)&quot;
+(
+  set -euo pipefail
+  sudo -u postgres createdb &quot;$TEST_DB&quot;
+  sudo -u postgres pg_restore --exit-on-error --no-owner --no-acl \
+    --dbname=&quot;$TEST_DB&quot; &lt; &quot;$BACKUP_ROOT/database-before.dump&quot;
+)
+export TEST_DB
+export TEST_DB_URL=&quot;$(&quot;$NODE_BIN&quot; -e &#39;
+  const u=new URL(process.env.MIGRATION_DATABASE_URL);
+  u.pathname=&quot;/&quot;+process.env.TEST_DB;
+  process.stdout.write(u.toString());&#39;)&quot;
+run_test_db() {
+  sudo -u &quot;$SITE_USER&quot; -H env PATH=&quot;$RUNTIME_PATH&quot; \
+    MIGRATION_DATABASE_URL=&quot;$TEST_DB_URL&quot; \
+    &quot;$PNPM_BIN&quot; --dir &quot;$NEW_RELEASE&quot; --filter api &quot;$@&quot;
+}
+(
+  set -euo pipefail
+  run_test_db db:migrate
+  run_test_db db:repair-qualifier-standings --dry-run | tee &quot;$BACKUP_ROOT/test-standings-plan.json&quot;
+  run_test_db db:repair-qualifier-standings --apply | tee &quot;$BACKUP_ROOT/test-standings-apply.json&quot;
+  run_test_db db:update-qualifier-broadcasts --dry-run | tee &quot;$BACKUP_ROOT/test-videos-plan.json&quot;
+  run_test_db db:update-qualifier-broadcasts --apply | tee &quot;$BACKUP_ROOT/test-videos-apply.json&quot;
+  run_test_db db:repair-qualifier-standings --dry-run
+)
+</code></pre>
+<p>Expect eight teams and only the existing official qualifier fixtures in the standings plan. The second standings plan should need zero team/fixture links. Video plans must show all seven playing days, skipping 22 October, with the supplied YouTube IDs and Day 1 <code>t=13s</code>/embed <code>start=13</code>. The scripts validate all intended rows before writing, preserve match data and featured selections, and are idempotent. They are not fixture importers.</p>
+<p>Do not run <code>db:seed</code>, account bootstrap commands, <code>db:prepare-rehearsal</code> or <code>db:import-loc-fixtures</code> on the live installation. In particular, re-importing an old 28-match schedule is not the standings repair.</p>
+<h2 id="7-smoke-test-inactive-artifacts">7. Smoke-test inactive artifacts</h2>
+<p>Choose verified unused loopback ports (<code>ss -lntp</code>) and use an SSH tunnel for browser checks. Keep the existing launch method, correct environment and site user. Smoke-run the built API against the isolated database with all database connection roles redirected to that isolated database; do not let a smoke API accidentally connect to production. The DBA must supply the appropriate test-role credentials if production separates migration/runtime/public roles. Verify <code>/</code> returns <strong>Hello World!</strong> and public JSON endpoints work. This repository does not expose a separate <code>/health</code> route.</p>
+<p>Run each Next build in the foreground on an unused port; stop with Ctrl+C after the browser check. Example for the website, after entering an unused port:</p>
+<pre><code class="language-bash">read -r -p &#39;Verified unused website smoke port: &#39; SMOKE_PORT
+sudo -u &quot;$SITE_USER&quot; -H env PATH=&quot;$RUNTIME_PATH&quot; \
+  &quot;$NODE_BIN&quot; --env-file=&quot;$NEW_RELEASE/.env&quot; \
+  &quot;$PNPM_BIN&quot; --dir &quot;$NEW_RELEASE/apps/web&quot; exec next start \
+  --hostname 127.0.0.1 --port &quot;$SMOKE_PORT&quot;
+</code></pre>
+<p>In a second shell, enter the same port and <code>curl --fail http://127.0.0.1:$SMOKE_PORT/</code>. Expect HTTP 200. Curl alone cannot verify a browser countdown or video selector. For isolated browser/API rehearsal, provide the reviewed test API origins at build time; do not later deploy those test-origin artifacts as production. Rebuild using production settings before activation.</p>
+<h2 id="8-apply-live-changes-between-games">8. Apply live changes between games</h2>
+<p>Coordinate a short write pause with the scorer/timekeeper and confirm no match is currently in play. Stop the existing edge sync writer during this boundary if installed, recording its service name; update/migrate any venue edge database/API to the same release before resuming synchronization. Both nullable fields travel through edge sync; mixed versions must not overwrite new clock state.</p>
+<p>Take a fresh production dump and fresh CSV snapshots using step 6 immediately before these commands if writes continued during the build/rehearsal. The CSV comparison below requires the baseline taken during this write pause, not an earlier snapshot. Keep those pre-change stage/broadcast records for targeted recovery. Ensure the production <code>MIGRATION_DATABASE_URL</code> is still loaded; test commands passed their override only to child processes.</p>
+<pre><code class="language-bash">run_live_db() {
+  sudo -u &quot;$SITE_USER&quot; -H env PATH=&quot;$RUNTIME_PATH&quot; \
+    MIGRATION_DATABASE_URL=&quot;$MIGRATION_DATABASE_URL&quot; \
+    &quot;$PNPM_BIN&quot; --dir &quot;$NEW_RELEASE&quot; --filter api &quot;$@&quot;
+}
+(
+  set -euo pipefail
+  run_live_db db:migrate
+  run_live_db db:repair-qualifier-standings --dry-run | tee &quot;$BACKUP_ROOT/live-standings-plan.json&quot;
+  run_live_db db:update-qualifier-broadcasts --dry-run | tee &quot;$BACKUP_ROOT/live-videos-plan.json&quot;
+)
+</code></pre>
+<p>Review both plans. Stop on unexpected team/fixture/day assignments. Then:</p>
+<pre><code class="language-bash">(
+  set -euo pipefail
+  run_live_db db:repair-qualifier-standings --apply | tee &quot;$BACKUP_ROOT/live-standings-apply.json&quot;
+  run_live_db db:update-qualifier-broadcasts --apply | tee &quot;$BACKUP_ROOT/live-videos-apply.json&quot;
+  PGDATABASE=&quot;$MIGRATION_DATABASE_URL&quot; psql -X -v ON_ERROR_STOP=1 -c \
+    &quot;SELECT column_name FROM information_schema.columns WHERE table_schema=&#39;public&#39; AND table_name=&#39;match&#39; AND column_name IN (&#39;period_ended_at&#39;,&#39;start_countdown_ends_at&#39;);&quot;
+  PGDATABASE=&quot;$MIGRATION_DATABASE_URL&quot; psql -X -v ON_ERROR_STOP=1 -c \
+    &quot;COPY (SELECT id,status,team_a_score,team_b_score,version,scheduled_at FROM match ORDER BY id) TO STDOUT WITH CSV HEADER&quot; \
+    &gt; &quot;$BACKUP_ROOT/match-state-after.csv&quot;
+  cmp &quot;$BACKUP_ROOT/match-state-before.csv&quot; &quot;$BACKUP_ROOT/match-state-after.csv&quot;
+)
+</code></pre>
+<p>Expect both columns and no output from <code>cmp</code> (identical match-state CSVs). If the comparison differs, investigate whether someone wrote during the agreed pause; do not blindly restore the database. Apply media/standings metadata to the cloud source of truth, not a stale edge copy. Retain before/apply reports. Do not change scores to make standings appear. The scripts do not fix missing or incorrectly scheduled fixtures; reconcile those separately with the LOC if noticed.</p>
+<h2 id="9-switch-only-the-recorded-services">9. Switch only the recorded services</h2>
+<p>Edit the backed-up site Supervisor stanzas/wrappers to point their directories and release references at <code>$NEW_RELEASE</code>, preserving <strong>existing user, runtime, ports, environment and logs</strong>. Keep ISPConfig proxy/TLS and private-file protections unchanged. If this installation uses a shared current symlink, switch it using the existing deployment procedure only after confirming every affected app was built. Do not change both stanzas and a symlink blindly.</p>
+<pre><code class="language-bash">(
+  set -euo pipefail
+  supervisorctl reread
+  supervisorctl update &quot;${SERVICES[@]}&quot;
+  supervisorctl restart &quot;$API_SERVICE&quot;
+  supervisorctl restart &quot;$WEB_SERVICE&quot; &quot;$PLATFORM_SERVICE&quot;
+  test -z &quot;$STATS_SERVICE&quot; || supervisorctl restart &quot;$STATS_SERVICE&quot;
+  test -z &quot;$TEAMS_SERVICE&quot; || supervisorctl restart &quot;$TEAMS_SERVICE&quot;
+  supervisorctl status &quot;${SERVICES[@]}&quot;
+)
+</code></pre>
+<p><code>update</code> may already restart a changed program. Never use <code>restart all</code> on this shared host. Check the recorded loopback API port first, then production HTTPS. Resume edge sync only after its API/schema versions match and verify its last error/status. Refresh all officials&#39;, statistics, arena and gym browser tabs so no old frontend remains cached. Complete the checks below before ending the write pause.</p>
+<h2 id="10-acceptance-owner-developer-and-officials">10. Acceptance — owner, developer and officials</h2>
+<ul>
+<li>API <code>/</code> returns Hello World; public <code>/public/match-centre</code>, <code>/public/standings</code> and <code>/public/broadcast/live.json</code> load without 500s. Website/platform/statistics login works. The root API endpoint alone is only a liveness check, not database health.</li>
+<li>Standings have eight teams. Yesterday&#39;s finalized results contribute automatically; current matches do not count until End Game. Confirm played/wins/points against the recorded results. Existing implementation uses 2 points per win, then goal difference and goals scored; do not change competition scoring rules during this deployment.</li>
+<li>Homepage has compact next-game introduction, today&#39;s fixtures/results, standings, approved Watch area, BTMI and squads. No pending partner blocks, empty newsroom or “page follows” copy. Confirm mobile layout.</li>
+<li>Videos: Day 1 <strong>19 Oct</strong> <code>qrTZAoZeD58</code> at 13s; Day 2 <strong>20 Oct</strong> <code>gx9Y9W3jYYw</code>; Day 3 <strong>21 Oct</strong> <code>K1d_4lA3Zt8</code>; Day 4 <strong>23 Oct</strong> <code>e9fffnsXqTk</code>; Day 5 <strong>24 Oct</strong> <code>K3dBgFlVMgg</code>; Day 6 <strong>25 Oct</strong> <code>PRjYMNLu238</code>; Day 7 <strong>26 Oct</strong> <code>WUCCEOQCwzw</code>. Check automatic day selection, direct YouTube fallback and past-game playback. Full-day recordings do not yet have individual match timestamps.</li>
+<li>On an <strong>existing isolated rehearsal fixture</strong>, sign in as separate timekeeper/scorer. Scorer is locked before Start Game. Start Game uses an in-app confirmation. Pause at 1:00: adding/removing goals remains possible. Adjust Clock works; zero does not end the quarter. End Quarter starts the existing 4/8/4 break countdown. Start Next Quarter works immediately before that countdown finishes; recovery/current-quarter and Next Quarter controls remain usable. End Game confirms in-app and locks goal additions/corrections.</li>
+<li>Test 1:01, 1:00, 0:01 and 0:00 preparation countdowns: red flashing occurs only 1:00–0:01 before play, across official/statistics/public/gym/arena screens. A playing clock at 1:00 or 0:45 stays normal. Reduced-motion devices show solid red. No countdown cue locks a control.</li>
+<li>Confirm the live-score strip stays above the selected day&#39;s match schedule, including while browsing replays. Its “live/latest/next” label is separate from the selected video date.</li>
+<li>Check audience/arena flags including VCT, roster photos, existing BTMI animation and current broadcast feeds. Test source/secret denial: <code>.env</code>, <code>.git/config</code>, <code>pnpm-lock.yaml</code>, source directories and private release paths must return 403/404, while normal static assets and TLS still work.</li>
+<li>Record the release SHA, migration report, data-plan/apply reports, service status, test evidence and operator sign-off. Do not manufacture test goals on an official match to prove controls. Keep the production recovery point and old app release until accepted.</li>
+</ul>
+<h2 id="11-troubleshooting-and-recovery">11. Troubleshooting and recovery</h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Check/action</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Standings remain <code>[]</code></td>
+<td>Verify the standings repair was applied to the database read by the running API; inspect stage/team entries and official fixtures&#39; stage IDs. Do not re-enter results.</td>
+</tr>
+<tr>
+<td>New columns missing / API 500</td>
+<td>Stop the switch; verify 0044 ran on the API database, with its established privileged migration identity. Inspect API logs.</td>
+</tr>
+<tr>
+<td>Correct video data, old page</td>
+<td>Verify public web build/release and build-time API origin, then refresh the browser/cache. Select Automatic in the day picker.</td>
+</tr>
+<tr>
+<td>Preview/test domains or ports in bundles</td>
+<td>Restore production environment and rebuild Next apps; editing <code>.env</code> after build is insufficient.</td>
+</tr>
+<tr>
+<td>Supervisor BACKOFF / Apache 502</td>
+<td>Inspect only the affected program&#39;s stderr, command, working directory, runtime, environment and loopback listener before changing proxy configuration.</td>
+</tr>
+<tr>
+<td>YouTube refuses embedding</td>
+<td>Use the direct YouTube link; check broadcaster embedding permissions/stream availability. Do not swap a day&#39;s URL for another day.</td>
+</tr>
+<tr>
+<td>Timekeeper works, scorer is still locked on pause</td>
+<td>An old scorer tab/API is likely still active; check all app release paths and refresh both clients.</td>
+</tr>
+<tr>
+<td>Edge sync error / stale clock state</td>
+<td>Keep sync stopped, align cloud/edge release and schema, then resume and inspect receipts. Do not reseed either database.</td>
+</tr>
+</tbody></table>
+<p><strong>Application rollback:</strong> restore each backed-up service configuration/wrapper to its recorded old release, or restore the verified prior current symlink using the established method. Reread/update/restart only this site&#39;s recorded programs; confirm old API/login/site health. The two additive nullable columns can remain while running the old application. Do not drop them as an improvised rollback.</p>
+<p><strong>Data rollback:</strong> standings and video changes are metadata only. If a mapping needs undoing, restore only the affected stage/team/fixture-stage/broadcast metadata using the pre-change records and DBA review. Do not restore a whole production database dump once new goals, registrations or other live writes have arrived: that would lose those writes. A full restore is a coordinated incident-recovery operation, not a routine application rollback. Do not remove newly created stage/team entries if they are now used by legitimate live changes.</p>
+<p>Retain the scratch restore and evidence until acceptance, then remove them through the existing DBA retention procedure. Keep secrets and database dumps out of Git, public document roots and shared chat attachments.</p>
+<h2 id="local-release-evidence">Local release evidence</h2>
+<p>132 API tests / 21 suites passed, including temporary-table PostgreSQL checks. Production builds of <strong>API, web, platform, stats and teams</strong> all passed from a clean Git export of the pinned application commit with a frozen-lockfile dependency installation. Local verification used Node 24.19.0/pnpm 9.15.0; the unchanged deployment runtime remains Node 24.14.0/pnpm 9.15.0, and must build/test on the server as above. Changed-code TypeScript/ESLint checks passed; existing Next.js image optimization warnings are non-blocking. Browser checks covered operator controls, scoring boundaries, red countdown boundaries, the seven date/video mappings, replay/gallery behavior, BTMI-only placements, homepage section order and 320/390/820/1440px layouts. Local preview servers, sample match data, screenshots and <code>.env</code> files are intentionally excluded from the commit. Target-server restore rehearsal and production deployment remain the developer&#39;s steps above.</p>
+</main></div><footer>Production settings and live records remain on the server. No local preview data is included.</footer></body></html>
