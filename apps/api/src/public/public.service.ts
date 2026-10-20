@@ -3,6 +3,7 @@ import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Pool } from 'pg';
 import { ConfigService } from '@nestjs/config';
 import { PUBLIC_POOL } from '../db/db.tokens';
+import { intervalRemainingSeconds } from '../gameday/gameday-rules';
 import { OFFICIAL_MATCH_SQL, REHEARSAL_MATCH_SQL } from './rehearsal-policy';
 import {
   aggregateMatchAnalytics,
@@ -46,6 +47,8 @@ const MATCH_SELECT = `
          m.clock_remaining_seconds AS "clockRemainingSeconds",
          m.clock_running AS "clockRunning",
          m.clock_started_at AS "clockStartedAt",
+         m.period_ended_at AS "periodEndedAt",
+         m.start_countdown_ends_at AS "startCountdownEndsAt",
          s.name AS "stageName",
          ta.country_code AS "teamACode", ta.name AS "teamAName",
          tb.country_code AS "teamBCode", tb.name AS "teamBName",
@@ -81,6 +84,8 @@ interface MatchRow {
   clockRemainingSeconds: number;
   clockRunning: boolean;
   clockStartedAt: Date | null;
+  periodEndedAt?: Date | null;
+  startCountdownEndsAt?: Date | null;
   broadcastProvider: string | null;
   watchUrl: string | null;
   embedUrl: string | null;
@@ -147,6 +152,7 @@ function shapeMatch(r: MatchRow) {
     id: r.id,
     isRehearsal: r.isRehearsal ?? false,
     scheduledAt: r.scheduledAt,
+    startCountdownEndsAt: r.startCountdownEndsAt ?? null,
     venue: r.venue,
     court: r.court,
     round: r.roundLabel,
@@ -229,26 +235,11 @@ function liveClock(row: MatchRow, now = new Date()) {
 }
 
 function intervalClock(row: MatchRow, now = new Date()) {
-  const duration =
-    row.currentPeriod === 2
-      ? 8 * 60
-      : row.currentPeriod === 1 || row.currentPeriod === 3
-        ? 4 * 60
-        : null;
-  if (
-    duration === null ||
-    row.status !== 'live' ||
-    !row.clockRunning ||
-    !row.clockStartedAt
-  ) {
-    return null;
-  }
-  const elapsed = Math.floor(
-    (now.getTime() - row.clockStartedAt.getTime()) / 1000,
-  );
-  const intervalElapsed = elapsed - row.clockRemainingSeconds;
-  if (intervalElapsed < 0) return null;
-  const remaining = Math.max(0, duration - intervalElapsed);
+  const remaining =
+    row.status === 'live'
+      ? intervalRemainingSeconds(row.currentPeriod, row.periodEndedAt, now)
+      : null;
+  if (remaining === null) return null;
   return `${Math.floor(remaining / 60)
     .toString()
     .padStart(2, '0')}:${(remaining % 60).toString().padStart(2, '0')}`;
@@ -270,7 +261,27 @@ export function shapeBroadcastFeed(
     Quarter: row.currentPeriod > 0 ? `Q${row.currentPeriod}` : 'PRE',
     Clock: row.status === 'final' ? 'FT' : liveClock(row, now),
     IntervalClock: intervalClock(row, now),
-    ClockRunning: row.clockRunning,
+    PeriodEnded: Boolean(row.periodEndedAt),
+    GameStartCountdown:
+      ['scheduled', 'ready'].includes(row.status) && row.startCountdownEndsAt
+        ? liveClock(
+            {
+              ...row,
+              clockRemainingSeconds: Math.max(
+                0,
+                Math.ceil(
+                  (row.startCountdownEndsAt.getTime() - now.getTime()) / 1000,
+                ),
+              ),
+              clockRunning: false,
+            },
+            now,
+          )
+        : null,
+    ExpectedStartAt: ['scheduled', 'ready'].includes(row.status)
+      ? (row.startCountdownEndsAt?.toISOString() ?? null)
+      : null,
+    ClockRunning: row.clockRunning && liveClock(row, now) !== '00:00',
     TeamAAbbr: row.teamACode,
     TeamAName: row.teamAName,
     TeamAScore: row.teamAScore,
@@ -291,7 +302,8 @@ export function liveBroadcastFilter(matchId?: string) {
     ? 'WHERE m.id = $1'
     : `WHERE ${OFFICIAL_MATCH_SQL}
        AND (m.status IN ('ready', 'live', 'suspended', 'awaiting_confirmation', 'final')
-       OR (COALESCE(mb.featured, false) = true AND m.status = 'scheduled'))`;
+       OR (COALESCE(mb.featured, false) = true AND m.status = 'scheduled')
+       OR (m.start_countdown_ends_at IS NOT NULL AND m.status = 'scheduled'))`;
 }
 
 export interface StandingRow {
@@ -746,8 +758,10 @@ export class PublicService {
        ORDER BY m.scheduled_at DESC NULLS LAST LIMIT 1`,
     );
     let next = await this.pool.query<MatchRow>(
-      `${MATCH_SELECT} WHERE ${OFFICIAL_MATCH_SQL} AND m.status = 'scheduled' AND m.scheduled_at >= now()
-       ORDER BY m.scheduled_at ASC LIMIT 1`,
+      `${MATCH_SELECT} WHERE ${OFFICIAL_MATCH_SQL} AND m.status IN ('scheduled', 'ready')
+       AND (m.start_countdown_ends_at IS NOT NULL OR m.scheduled_at >= now())
+       ORDER BY (m.start_countdown_ends_at IS NOT NULL) DESC,
+         COALESCE(m.start_countdown_ends_at, m.scheduled_at) ASC LIMIT 1`,
     );
     if (!next.rows[0]) {
       // No future fixture (e.g. demo dataset is in the past) — fall back to the
@@ -768,6 +782,7 @@ export class PublicService {
     const { rows } = await this.pool.query<MatchRow>(
       `${MATCH_SELECT} ${where}
        ORDER BY CASE WHEN m.status IN ('live', 'suspended', 'awaiting_confirmation') THEN 0 ELSE 1 END,
+         CASE WHEN m.status IN ('scheduled', 'ready') AND m.start_countdown_ends_at IS NOT NULL THEN 0 ELSE 1 END,
          m.updated_at DESC,
          COALESCE(mb.featured, false) DESC,
          m.scheduled_at DESC NULLS LAST LIMIT 1`,

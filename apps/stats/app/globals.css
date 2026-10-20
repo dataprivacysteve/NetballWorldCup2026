@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "../../../packages/shared/countdown.css";
 
 @theme inline {
   --font-display: var(--font-display), Georgia, serif;

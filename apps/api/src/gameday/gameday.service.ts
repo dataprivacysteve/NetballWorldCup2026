@@ -28,12 +28,13 @@ import {
 import { CorrectStatsEventDto, RecordStatsEventDto } from './stats.dto';
 import {
   canChangeScore,
-  canStartPeriod,
   clockRemaining,
+  intervalRemainingSeconds,
   MATCH_CLOCK_ROLES,
   MATCH_PREPARATION_ROLES,
   MATCH_START_REQUIRED_ROLES,
 } from './gameday-rules';
+import { clockTransition } from './clock-transition';
 
 type Db = NodePgDatabase<typeof schema>;
 
@@ -163,6 +164,25 @@ export class GameDayService {
     return {
       match: {
         ...match,
+        startCountdownRemainingSeconds: match.startCountdownEndsAt
+          ? Math.max(
+              0,
+              Math.ceil(
+                (match.startCountdownEndsAt.getTime() - Date.now()) / 1000,
+              ),
+            )
+          : null,
+        intervalRemainingSeconds:
+          match.status === 'live'
+            ? intervalRemainingSeconds(match.currentPeriod, match.periodEndedAt)
+            : null,
+        clockRunning:
+          match.clockRunning &&
+          clockRemaining(
+            match.clockRemainingSeconds,
+            match.clockRunning,
+            match.clockStartedAt,
+          ) > 0,
         clockRemainingSeconds: clockRemaining(
           match.clockRemainingSeconds,
           match.clockRunning,
@@ -190,9 +210,9 @@ export class GameDayService {
         'scorer',
       ]);
       const match = await this.lockMatch(db, matchId, dto.expectedVersion);
-      if (!canChangeScore(match.status, match.clockRunning)) {
+      if (!canChangeScore(match.status)) {
         throw new BadRequestException(
-          'The score can be changed only while the match clock is running',
+          'Scoring is available only after Start Game and before End Game',
         );
       }
       if (dto.playerId) {
@@ -353,9 +373,9 @@ export class GameDayService {
         'scorer',
       ]);
       const match = await this.lockMatch(db, matchId, dto.expectedVersion);
-      if (!canChangeScore(match.status, match.clockRunning)) {
+      if (!canChangeScore(match.status)) {
         throw new BadRequestException(
-          'The score can be corrected only while the match clock is running',
+          'Scoring is available only after Start Game and before End Game',
         );
       }
       const [goal] = await db
@@ -441,55 +461,8 @@ export class GameDayService {
       const patch: Partial<typeof schema.match.$inferInsert> = {
         version: match.version + 1,
         updatedAt: now,
+        ...clockTransition(match, dto, userId, now),
       };
-      if (dto.action === 'start_period') {
-        if (!canStartPeriod(match.status, match.currentPeriod, remaining)) {
-          throw new BadRequestException(
-            'The next period cannot be started now',
-          );
-        }
-        patch.status = 'live';
-        patch.currentPeriod = match.currentPeriod + 1;
-        patch.clockRemainingSeconds = match.periodDurationSeconds;
-        patch.clockRunning = true;
-        patch.clockStartedAt = now;
-      } else if (dto.action === 'start_clock' || dto.action === 'resume') {
-        if (match.status === 'suspended' && dto.action === 'resume')
-          patch.status = 'live';
-        else if (match.status !== 'live')
-          throw new BadRequestException('The match is not live');
-        if (match.clockRunning || remaining <= 0)
-          throw new BadRequestException('The clock cannot be started');
-        patch.clockRemainingSeconds = remaining;
-        patch.clockRunning = true;
-        patch.clockStartedAt = now;
-      } else if (dto.action === 'stop_clock') {
-        if (!match.clockRunning)
-          throw new BadRequestException('The clock is already stopped');
-        patch.clockRemainingSeconds = remaining;
-        patch.clockRunning = false;
-        patch.clockStartedAt = null;
-      } else if (dto.action === 'end_period') {
-        if (match.status !== 'live')
-          throw new BadRequestException('The match is not live');
-        patch.clockRemainingSeconds = remaining;
-        patch.clockRunning = false;
-        patch.clockStartedAt = null;
-        if (match.currentPeriod === 4) {
-          patch.status = 'final';
-          patch.resultConfirmedAt = now;
-          patch.resultConfirmedBy = userId;
-        }
-      } else if (dto.action === 'suspend') {
-        if (match.status !== 'live')
-          throw new BadRequestException('Only a live match can be suspended');
-        if (!dto.reason?.trim())
-          throw new BadRequestException('A suspension reason is required');
-        patch.status = 'suspended';
-        patch.clockRemainingSeconds = remaining;
-        patch.clockRunning = false;
-        patch.clockStartedAt = null;
-      }
       const sequence = await this.nextSequence(db, matchId);
       const [event] = await db
         .insert(schema.matchEvent)
@@ -499,7 +472,21 @@ export class GameDayService {
           eventType: `clock.${dto.action}`,
           period: patch.currentPeriod ?? match.currentPeriod,
           clockSeconds: patch.clockRemainingSeconds ?? remaining,
-          payload: dto.reason?.trim() ? { reason: dto.reason.trim() } : null,
+          payload: {
+            ...(dto.reason?.trim() ? { reason: dto.reason.trim() } : {}),
+            ...(dto.action === 'adjust_clock'
+              ? {
+                  previousSeconds: remaining,
+                  remainingSeconds: dto.remainingSeconds,
+                }
+              : {}),
+            ...(dto.action === 'set_start_countdown'
+              ? {
+                  countdownMinutes: dto.countdownMinutes,
+                  endsAt: patch.startCountdownEndsAt?.toISOString(),
+                }
+              : {}),
+          },
           recordedBy: userId,
         })
         .returning();
@@ -888,6 +875,8 @@ export class GameDayService {
           clockRemainingSeconds: match.periodDurationSeconds,
           clockRunning: true,
           clockStartedAt: now,
+          periodEndedAt: null,
+          startCountdownEndsAt: null,
           version: match.version + 1,
           updatedAt: now,
         })

@@ -438,6 +438,8 @@ async function main() {
              clock_remaining_seconds = 900,
              clock_running = false,
              clock_started_at = NULL,
+             period_ended_at = NULL,
+             start_countdown_ends_at = NULL,
              centre_pass_team = NULL,
              version = 0,
              result_confirmed_at = NULL,

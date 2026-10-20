@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "../../../packages/shared/countdown.css";
 
 /* GameDay brand tokens (see DESIGN-SYSTEM.md). The platform/ops console is
    Console (light), same palette and fonts as teams. */

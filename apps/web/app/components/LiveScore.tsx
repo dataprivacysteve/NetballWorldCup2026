@@ -1,12 +1,16 @@
 "use client";
 
 import { usePublicPoll } from "./usePublicPoll";
+import { countdownAlertClass } from "../../../../packages/shared/countdown";
 
 type Feed = {
   MatchId: string;
   Status: string;
   Quarter: string;
   Clock: string;
+  GameStartCountdown: string | null;
+  IntervalClock: string | null;
+  PeriodEnded: boolean;
   TeamAAbbr: string;
   TeamAName: string;
   TeamAScore: number;
@@ -21,8 +25,10 @@ type Feed = {
 
 export function LiveScore({
   delayedMessage,
+  compact = false,
 }: {
   delayedMessage?: string | null;
+  compact?: boolean;
 }) {
   const { data: feed, delayed } = usePublicPoll<Feed | null>(
     "/public/broadcast/live.json",
@@ -31,6 +37,7 @@ export function LiveScore({
   );
 
   if (!feed) {
+    if (compact) return null;
     return (
       <div className="live-score-empty">
         {delayed
@@ -40,11 +47,30 @@ export function LiveScore({
     );
   }
   return (
-    <div className="live-score" aria-live="polite">
+    <div className={`live-score${compact ? " live-score-compact" : ""}`} aria-live="polite">
+      {compact && <div className="live-score-heading">{feed.Status === 'FINAL' ? 'Latest result' : ['SCHEDULED','READY'].includes(feed.Status) ? 'Next match score' : 'Live match score'}</div>}
       <div className="live-score-meta">
         <span>{feed.Status}</span>
-        <b>{feed.Quarter}</b>
-        <strong>{feed.Clock}</strong>
+        <b>
+          {["SCHEDULED", "READY"].includes(feed.Status)
+            ? "Game starts in"
+            : feed.PeriodEnded
+              ? "Quarter ended"
+              : feed.Quarter}
+        </b>
+        <strong
+          className={countdownAlertClass(
+            ["SCHEDULED", "READY"].includes(feed.Status)
+              ? feed.GameStartCountdown
+              : feed.PeriodEnded && feed.Status !== "FINAL"
+                ? feed.IntervalClock
+                : null,
+          )}
+        >
+          {["SCHEDULED", "READY"].includes(feed.Status)
+            ? (feed.GameStartCountdown ?? "Awaiting start")
+            : (feed.IntervalClock ?? feed.Clock)}
+        </strong>
       </div>
       <div className="live-score-sides">
         <div>

@@ -1,0 +1,16 @@
+/* Flash preparation countdowns once per second during their final minute. */
+.ready-countdown-alert {
+  color: #ff6b6b !important;
+  animation: ready-countdown-flash 1s step-end infinite;
+}
+.ready-countdown-alert .n,
+.ready-countdown-alert b {
+  color: inherit !important;
+}
+@keyframes ready-countdown-flash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ready-countdown-alert { animation: none; }
+}

@@ -61,17 +61,24 @@ describe('GameDay rules', () => {
     expect(MATCH_START_REQUIRED_ROLES).toEqual(['scorer', 'timekeeper']);
   });
 
-  it('starts only the next completed period', () => {
-    expect(canStartPeriod('ready', 0, 900)).toBe(false);
-    expect(canStartPeriod('live', 1, 0)).toBe(true);
-    expect(canStartPeriod('live', 1, 320)).toBe(false);
-    expect(canStartPeriod('live', 4, 0)).toBe(false);
+  it('lets the timekeeper advance quarters without a clock or interval gate', () => {
+    expect(canStartPeriod('ready', 0)).toBe(false);
+    expect(canStartPeriod('live', 1)).toBe(true);
+    expect(canStartPeriod('suspended', 2)).toBe(true);
+    expect(canStartPeriod('live', 4)).toBe(false);
   });
 
-  it('locks every score change while the clock is stopped', () => {
-    expect(canChangeScore('live', true)).toBe(true);
-    expect(canChangeScore('live', false)).toBe(false);
-    expect(canChangeScore('suspended', false)).toBe(false);
-    expect(canChangeScore('awaiting_confirmation', false)).toBe(false);
+  it('opens scoring from Start Game until End Game, independently of the clock', () => {
+    expect(canChangeScore('live')).toBe(true);
+    expect(canChangeScore('suspended')).toBe(true);
+    for (const status of [
+      'scheduled',
+      'ready',
+      'final',
+      'awaiting_confirmation',
+      'cancelled',
+      'postponed',
+    ])
+      expect(canChangeScore(status)).toBe(false);
   });
 });

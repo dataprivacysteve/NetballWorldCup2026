@@ -7,14 +7,16 @@ type Entry = { id: string; day: string; label: string; content: ReactNode };
 export function MatchDayList({
   entries,
   kind,
+  initialDay,
 }: {
   entries: Entry[];
   kind: "fixtures" | "results";
+  initialDay?: string;
 }) {
   const selectId = useId();
-  const [selected, setSelected] = useState(entries[0]?.day ?? "");
+  const [selected, setSelected] = useState("");
   const days = Array.from(new Map(entries.map((entry) => [entry.day, entry.label])));
-  const activeDay = days.some(([day]) => day === selected) ? selected : days[0]?.[0];
+  const activeDay = days.some(([day]) => day === selected) ? selected : days.some(([day]) => day === initialDay) ? initialDay : days[0]?.[0];
   const visible = entries.filter((entry) => entry.day === activeDay);
 
   if (!entries.length) {

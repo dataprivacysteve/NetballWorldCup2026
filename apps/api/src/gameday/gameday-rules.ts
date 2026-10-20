@@ -15,21 +15,31 @@ export const MATCH_CLOCK_ROLES = ['timekeeper'] as const;
 export const MATCH_PREPARATION_ROLES = ['timekeeper'] as const;
 export const MATCH_START_REQUIRED_ROLES = ['scorer', 'timekeeper'] as const;
 
-export function canStartPeriod(
-  status: string,
-  currentPeriod: number,
-  remainingSeconds: number,
-): boolean {
+export function canStartPeriod(status: string, currentPeriod: number): boolean {
   const nextPeriod =
-    status === 'live' &&
+    ['live', 'suspended'].includes(status) &&
     currentPeriod > 0 &&
-    currentPeriod < 4 &&
-    remainingSeconds === 0;
+    currentPeriod < 4;
   return nextPeriod;
 }
 
-export function canChangeScore(status: string, clockRunning: boolean): boolean {
-  return status === 'live' && clockRunning;
+export function canChangeScore(status: string): boolean {
+  return status === 'live' || status === 'suspended';
+}
+
+export function intervalRemainingSeconds(
+  period: number,
+  endedAt: Date | null | undefined,
+  now = new Date(),
+): number | null {
+  const duration =
+    period === 2 ? 8 * 60 : period === 1 || period === 3 ? 4 * 60 : null;
+  if (duration === null || !endedAt) return null;
+  return Math.max(
+    0,
+    duration -
+      Math.max(0, Math.floor((now.getTime() - endedAt.getTime()) / 1000)),
+  );
 }
 
 export function teamSheetProblems(

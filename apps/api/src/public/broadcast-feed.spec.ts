@@ -46,7 +46,7 @@ describe('broadcast feed', () => {
     expect(Object.keys(feed).some((key) => /home|away/i.test(key))).toBe(false);
   });
 
-  it('counts down the agreed interval after a quarter reaches zero', () => {
+  it('counts down the agreed interval only after the timekeeper ends the quarter', () => {
     const row: Parameters<typeof shapeBroadcastFeed>[0] = {
       id: 'cb1ae091-7238-4c80-9ad0-a457f30ad122',
       scheduledAt: new Date('2026-08-01T12:00:00Z'),
@@ -61,6 +61,7 @@ describe('broadcast feed', () => {
       clockRemainingSeconds: 900,
       clockRunning: true,
       clockStartedAt: new Date('2026-08-01T12:00:00Z'),
+      periodEndedAt: new Date('2026-08-01T12:15:00Z'),
       stageName: 'Group A',
       teamACode: 'BRB',
       teamAName: 'Barbados',
@@ -76,6 +77,44 @@ describe('broadcast feed', () => {
     const feed = shapeBroadcastFeed(row, new Date('2026-08-01T12:15:05Z'));
     expect(feed.Clock).toBe('00:00');
     expect(feed.IntervalClock).toBe('07:55');
+    expect(feed.PeriodEnded).toBe(true);
+    expect(
+      shapeBroadcastFeed(
+        { ...row, periodEndedAt: null },
+        new Date('2026-08-01T12:16:00Z'),
+      ).IntervalClock,
+    ).toBeNull();
+    expect(
+      shapeBroadcastFeed(
+        { ...row, clockRunning: false, clockRemainingSeconds: 60 },
+        new Date('2026-08-01T12:15:05Z'),
+      ).IntervalClock,
+    ).toBe('07:55');
+    const waiting = shapeBroadcastFeed(
+      {
+        ...row,
+        status: 'scheduled',
+        currentPeriod: 0,
+        periodEndedAt: null,
+        startCountdownEndsAt: new Date('2026-08-01T12:20:00Z'),
+      },
+      new Date('2026-08-01T12:15:05Z'),
+    );
+    expect(waiting).toMatchObject({
+      Status: 'SCHEDULED',
+      Quarter: 'PRE',
+      GameStartCountdown: '04:55',
+    });
+    expect(
+      shapeBroadcastFeed(
+        {
+          ...row,
+          status: 'scheduled',
+          startCountdownEndsAt: new Date('2026-08-01T12:00:00Z'),
+        },
+        new Date('2026-08-01T12:15:05Z'),
+      ).GameStartCountdown,
+    ).toBe('00:00');
     expect(
       shapeBroadcastFeed(
         { ...row, currentPeriod: 1 },

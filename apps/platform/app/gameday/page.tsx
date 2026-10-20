@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { TimekeeperControls } from "./timekeeper-controls";
+import { countdownAlertClass } from "../../../../packages/shared/countdown";
 import {
   assignedMatchSchedule,
   groupAssignedMatches,
@@ -85,6 +87,12 @@ export default function GameDayPage() {
   }
 
   const role = selected?.assignmentRole;
+  const readinessSeconds =
+    state && ["scheduled", "ready"].includes(state.match.status)
+      ? state.match.startCountdownRemainingSeconds
+      : state && ["live", "suspended"].includes(state.match.status)
+        ? state.match.intervalRemainingSeconds
+        : null;
   const matchDays = groupAssignedMatches(matches);
   const selectedSchedule = selected
     ? assignedMatchSchedule(selected.scheduledAt)
@@ -230,13 +238,19 @@ export default function GameDayPage() {
                   />
                   <div className="text-center">
                     <p className="font-mono text-[0.62rem] uppercase tracking-[0.14em] text-white/45">
-                      Period {state.match.currentPeriod || "–"} ·{" "}
-                      {state.match.status.replaceAll("_", " ")}
+                      {readinessSeconds !== null
+                        ? state.match.currentPeriod === 0
+                          ? "Game starts in"
+                          : "Next quarter in"
+                        : `Period ${state.match.currentPeriod || "–"}`}{" "}
+                      · {state.match.status.replaceAll("_", " ")}
                     </p>
                     <div
-                      className={`mt-2 font-mono text-6xl font-bold ${state.match.clockRunning ? "text-[#f5c84c]" : "text-white"}`}
+                      className={`mt-2 font-mono text-6xl font-bold ${state.match.clockRunning ? "text-[#f5c84c]" : "text-white"} ${countdownAlertClass(readinessSeconds)}`}
                     >
-                      {clockLabel(state.match.clockRemainingSeconds)}
+                      {clockLabel(
+                        readinessSeconds ?? state.match.clockRemainingSeconds,
+                      )}
                     </div>
                     <p className="mt-2 text-xs text-white/40">
                       {selected.venue ?? "Venue TBC"} ·{" "}
@@ -269,8 +283,9 @@ export default function GameDayPage() {
                           <button
                             disabled={
                               busy ||
-                              state.match.status !== "live" ||
-                              !state.match.clockRunning ||
+                              !["live", "suspended"].includes(
+                                state.match.status,
+                              ) ||
                               !removableGoal[side]
                             }
                             onClick={() => {
@@ -297,8 +312,9 @@ export default function GameDayPage() {
                           <button
                             disabled={
                               busy ||
-                              state.match.status !== "live" ||
-                              !state.match.clockRunning
+                              !["live", "suspended"].includes(
+                                state.match.status,
+                              )
                             }
                             onClick={() =>
                               command((version) =>
@@ -320,17 +336,21 @@ export default function GameDayPage() {
               )}
 
               {role === "timekeeper" && (
-                <ClockControls
+                <TimekeeperControls
+                  key={selected.id}
                   disabled={busy}
-                  status={state.match.status}
-                  running={state.match.clockRunning}
-                  period={state.match.currentPeriod}
-                  remaining={state.match.clockRemainingSeconds}
-                  run={(action) =>
+                  match={state.match}
+                  run={(action, options) =>
                     command((version) =>
                       action === "start_game"
                         ? api.startMatch(selected.id, version)
-                        : api.clockCommand(selected.id, version, action),
+                        : api.clockCommand(
+                            selected.id,
+                            version,
+                            action,
+                            undefined,
+                            options,
+                          ),
                     )
                   }
                 />
@@ -374,26 +394,6 @@ function TeamScore({
   );
 }
 
-function ActionPanel({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6">
-      <h2 className="font-display text-xl font-bold">{title}</h2>
-      <p className="mt-2 max-w-2xl text-sm leading-6 text-white/50">
-        {description}
-      </p>
-      <div className="mt-5">{children}</div>
-    </div>
-  );
-}
-
 function ReadOnlyClockNotice() {
   return (
     <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
@@ -405,90 +405,5 @@ function ReadOnlyClockNotice() {
         assigned timekeeper can start, stop, or otherwise operate the clock.
       </p>
     </div>
-  );
-}
-
-function ClockControls({
-  disabled,
-  status,
-  running,
-  period,
-  remaining,
-  run,
-}: {
-  disabled: boolean;
-  status: string;
-  running: boolean;
-  period: number;
-  remaining: number;
-  run: (action: string, reason?: string) => Promise<void>;
-}) {
-  const periodComplete = status === "live" && period > 0 && remaining === 0;
-  const action =
-    status === "scheduled" || (status === "ready" && period === 0)
-      ? {
-          label: "Start game",
-          command: "start_game",
-          style: "bg-emerald-400 text-[#071b15]",
-        }
-      : periodComplete && period < 4
-        ? {
-            label: "Start next period",
-            command: "start_period",
-            style: "bg-[#f5c84c] text-[#0b1029]",
-          }
-        : periodComplete && period === 4
-          ? {
-              label: "Finish game",
-              command: "end_period",
-              style: "bg-[#f5c84c] text-[#0b1029]",
-            }
-          : status === "suspended"
-            ? {
-                label: "Resume clock",
-                command: "resume",
-                style: "bg-emerald-400 text-[#071b15]",
-              }
-            : running
-              ? {
-                  label: "Stop clock",
-                  command: "stop_clock",
-                  style: "bg-white text-[#0b1029]",
-                }
-              : status === "live"
-                ? {
-                    label: "Resume clock",
-                    command: "start_clock",
-                    style: "bg-emerald-400 text-[#071b15]",
-                  }
-                : null;
-
-  return (
-    <ActionPanel
-      title="Match clock"
-      description="Use the single button below. Starting the game or next period begins the countdown immediately."
-    >
-      {action ? (
-        <button
-          className={`min-h-16 w-full rounded-xl px-6 py-4 text-lg font-bold disabled:opacity-40 sm:w-auto ${action.style}`}
-          disabled={disabled}
-          onClick={() => {
-            if (
-              action.command === "start_game" &&
-              !window.confirm(
-                "Start this game now? Period 1 and the match clock will begin immediately.",
-              )
-            ) {
-              return;
-            }
-            void run(action.command);
-          }}
-        >
-          {action.label}
-        </button>
-      ) : (
-        <p className="text-sm text-white/55">No clock action is required.</p>
-      )}
-    </ActionPanel>
   );
 }

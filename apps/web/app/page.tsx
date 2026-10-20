@@ -1,14 +1,13 @@
-import { Fragment } from "react";
 import {
   MatchCentreProvider,
-  LastNextGames,
-  FixtureStrip,
+  TournamentLiveIntro,
+  NextGameCountdown,
   ScheduleResults,
   LiveStandings,
   WatchLive,
 } from "./components/PublicMatchCentre";
 import { federation } from "./lib/config";
-import { publicApi, type Sponsor, type Squad } from "./lib/api";
+import { publicApi, type Squad } from "./lib/api";
 import { Header } from "./components/Header";
 import { Countdown } from "./components/Countdown";
 import { NationsExplorer } from "./components/NationsExplorer";
@@ -40,7 +39,6 @@ export default async function Home() {
     publicApi.nations(),
     publicApi.matchCentre(),
   ]);
-  const { fixtures, results } = matchCentre;
 
   const squadEntries = await Promise.all(
     nations.map(
@@ -50,15 +48,6 @@ export default async function Home() {
   );
   const squads: Record<string, Squad | null> = Object.fromEntries(squadEntries);
 
-  const days =
-    tournament?.startsOn && tournament?.endsOn
-      ? Math.round(
-          (new Date(tournament.endsOn).getTime() -
-            new Date(tournament.startsOn).getTime()) /
-            86400000,
-        ) + 1
-      : 8;
-  const totalMatches = fixtures.length + results.length;
   const datesLabel =
     tournament?.startsOn && tournament?.endsOn
       ? `${fdate(tournament.startsOn, { day: "numeric", month: "short" })}–${fdate(
@@ -66,87 +55,25 @@ export default async function Home() {
           { day: "numeric", month: "short", year: "numeric" },
         )}`
       : "TBC";
-  const sponsorByTier = (tier: Sponsor["tier"]) =>
-    experience?.sponsors.find(
-      (sponsor) => sponsor.websiteEnabled && sponsor.tier === tier,
-    ) ?? null;
-  const supportingSponsors = (experience?.sponsors ?? []).filter(
-    (sponsor) =>
-      sponsor.websiteEnabled &&
-      !/\bbtmi\b|barbados tourism marketing/i.test(sponsor.name),
-  );
 
   return (
     <MatchCentreProvider initial={matchCentre}>
-      <>
+      <div className="tournament-live">
         <Header
           logoSrc={tournament?.brandReverseLogoUrl ?? federation.brand.logoSrc}
+          showNews={Boolean(experience?.news?.length)}
         />
 
-        {/* HERO */}
-        <section className="hero" id="top">
-          <div
-            className="hero-photo"
-            style={
-              (experience?.heroImageUrl ?? federation.hero.image)
-                ? {
-                    backgroundImage: `url(${experience?.heroImageUrl ?? federation.hero.image}), radial-gradient(circle at 70% 30%, #1c2b4a, #0a0a12 60%)`,
-                  }
-                : undefined
-            }
-          />
-          <div className="hero-scrim" />
-          <div className="wrap hero-inner">
-            <h1 className="disp">
-              {federation.hero.titleLines.map((w, i) => (
-                <Fragment key={w}>
-                  {i > 0 && <br />}
-                  <span
-                    className={
-                      i === federation.hero.outlinedIndex ? "o" : undefined
-                    }
-                  >
-                    {w}
-                  </span>
-                </Fragment>
-              ))}
-            </h1>
-            <div className="hero-sub">
-              {experience?.heroStrapline ?? (
-                <>
-                  {nations.length} nations · {federation.hero.subLead}{" "}
-                  <span>{federation.hero.subAccent}</span>
-                </>
-              )}
-            </div>
-            <div className="hero-cta">
-              <a className="btn btn-gold" href="#schedule">
-                View schedule
-              </a>
-              <a className="btn btn-out" href="#watch">
-                ▶ Watch live
-              </a>
-            </div>
-            <div className="hero-meta">
-              <div>
-                <div className="k">Dates</div>
-                <div className="v">{datesLabel}</div>
-              </div>
-              <div>
-                <div className="k">Host</div>
-                <div className="v">{federation.hero.host}</div>
-              </div>
-            </div>
-          </div>
-        </section>
+        <TournamentLiveIntro datesLabel={datesLabel} venue={federation.hero.host} imageUrl={experience?.heroImageUrl ?? federation.hero.image ?? null} />
 
         {/* COUNTDOWN */}
-        <div className="cbar">
-          <div className="cbar-in">
-            <span className="cl">Tournament tip-off in</span>
-            <Countdown target={tournament?.startsOn ?? null} mode="units" />
-          </div>
-        </div>
+        <NextGameCountdown startsOn={tournament?.startsOn ?? null} />
+
+        <ScheduleResults />
+
+        <LiveStandings />
+
+        <WatchLive delayedMessage={experience?.delayedUpdatesMessage} />
 
         {/* LEAD TOURNAMENT PARTNER */}
         <div className="adband">
@@ -170,18 +97,9 @@ export default async function Home() {
           </div>
         </div>
 
-        <LastNextGames />
-
-        <FixtureStrip />
-
-        <ScheduleResults
-          silverAd={
-            <AdBanner slot="Silver" sponsor={sponsorByTier("silver")} />
-          }
-        />
 
         {/* NATIONS -> SQUADS */}
-        <section className="sec" id="nations">
+        {nations.length > 0 && (<section className="sec" id="nations">
           <div className="wrap">
             <div className="sec-head">
               <h2 className="disp">
@@ -194,92 +112,9 @@ export default async function Home() {
             </div>
             <NationsExplorer nations={nations} squads={squads} />
           </div>
-        </section>
+        </section>)}
 
-        {/* STATS */}
-        <div className="stats">
-          <div className="wrap stats-in">
-            <Stat n={nations.length} l="Nations" />
-            <Stat n={days} l="Days of play" />
-            <Stat n={totalMatches} l="Matches" />
-            <Stat n={2} l="Top two qualify" />
-          </div>
-        </div>
-
-        <LiveStandings />
-
-        <WatchLive
-          bronzeAd={
-            <AdBanner slot="Bronze" sponsor={sponsorByTier("bronze")} />
-          }
-          delayedMessage={experience?.delayedUpdatesMessage}
-        />
-
-        {/* NEWS (newsroom — content slice to follow) */}
-        <section className="sec" id="news">
-          <div className="wrap">
-            <div className="sec-head">
-              <h2 className="disp">
-                <small>Newsroom</small>Latest
-              </h2>
-            </div>
-            <div className="news">
-              {(experience?.news ?? []).length === 0 ? (
-                <div className="nc">
-                  <div
-                    className="img"
-                    style={{
-                      backgroundImage:
-                        "url(/news/netball-newsroom-card-1200x750.jpg)",
-                      backgroundSize: "cover",
-                      backgroundPosition: "center",
-                    }}
-                  >
-                    <span className="cat">Newsroom</span>
-                  </div>
-                  <div className="body">
-                    <h4>Tournament newsroom</h4>
-                    <div className="date">
-                      Official updates will be published here.
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                experience?.news.map((article) => (
-                  <a
-                    className="nc"
-                    key={article.id}
-                    href={"/news/" + article.slug}
-                  >
-                    <div
-                      className="img"
-                      style={
-                        article.imageUrl
-                          ? {
-                              backgroundImage: `url(${article.imageUrl})`,
-                              backgroundSize: "cover",
-                              backgroundPosition: "center",
-                            }
-                          : undefined
-                      }
-                    >
-                      <span className="cat">Newsroom</span>
-                    </div>
-                    <div className="body">
-                      <h4>{article.title}</h4>
-                      <p>{article.summary}</p>
-                      <div className="date">
-                        {article.publishedAt
-                          ? dayLabel(article.publishedAt)
-                          : "Official update"}
-                      </div>
-                    </div>
-                  </a>
-                ))
-              )}
-            </div>
-          </div>
-        </section>
+        {!!experience?.news?.length && <section className="sec" id="news"><div className="wrap"><div className="sec-head"><h2 className="disp"><small>Newsroom</small>Latest updates</h2></div><div className="news">{experience.news.map(article => <a className="nc" key={article.id} href={'/news/'+article.slug}><div className="img" style={article.imageUrl ? {backgroundImage:'url('+article.imageUrl+')',backgroundSize:'cover',backgroundPosition:'center'} : undefined}><span className="cat">Newsroom</span></div><div className="body"><h4>{article.title}</h4><p>{article.summary}</p><div className="date">{article.publishedAt ? dayLabel(article.publishedAt) : 'Official update'}</div></div></a>)}</div></div></section>}
 
         {/* SPONSORS (logos only) */}
         <div className="sponsors" id="sponsors">
@@ -311,20 +146,6 @@ export default async function Home() {
                   />
                 </a>
               </div>
-              {supportingSponsors.map((sponsor) => (
-                <a
-                  className="sp"
-                  key={sponsor.id}
-                  href={sponsor.destinationUrl ?? "#sponsors"}
-                >
-                  {sponsor.logoUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={sponsor.logoUrl} alt={sponsor.name} />
-                  ) : (
-                    <span className="sp-ph">{sponsor.name}</span>
-                  )}
-                </a>
-              ))}
             </div>
           </div>
         </div>
@@ -341,7 +162,6 @@ export default async function Home() {
               {experience?.aboutText ??
                 `The Americas Netball Regional Qualifier 2026 brings the region's top nations together to compete for a place at the 2027 Netball World Cup in Sydney. Operated by ${federation.brand.org}.`}
             </p>
-            <p>A dedicated About page follows.</p>
           </div>
         </section>
 
@@ -389,7 +209,7 @@ export default async function Home() {
             </div>
           </div>
         </footer>
-      </>
+      </div>
     </MatchCentreProvider>
   );
 }
@@ -456,34 +276,3 @@ function ComingSoon() {
 }
 
 // ---- small server components ----
-function Stat({ n, l }: { n: number; l: string }) {
-  return (
-    <div className="st">
-      <div className="n">{n}</div>
-      <div className="l">{l}</div>
-    </div>
-  );
-}
-
-function AdBanner({
-  slot,
-  sponsor,
-}: {
-  slot: "Silver" | "Bronze";
-  sponsor: Sponsor | null;
-}) {
-  const ad = slot === "Silver" ? federation.ads.silver : federation.ads.bronze;
-  return (
-    <a className="adslot ad-banner" href={sponsor?.destinationUrl ?? ad.href}>
-      {sponsor?.logoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={sponsor.logoUrl} alt={sponsor.name} />
-      ) : (
-        <>
-          <span className="adtag">{slot} Partner</span>
-          <span className="adph">Partner announcement pending</span>
-        </>
-      )}
-    </a>
-  );
-}

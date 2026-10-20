@@ -13,6 +13,7 @@ dist/
 .next.stale-*/
 .next.partial-*/
 build/
+*.tsbuildinfo
 
 # logs / os cruft
 *.log

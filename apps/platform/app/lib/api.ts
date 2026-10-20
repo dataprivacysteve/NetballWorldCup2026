@@ -564,6 +564,10 @@ export type GameDayState = {
     periodDurationSeconds: number;
     clockRemainingSeconds: number;
     clockRunning: boolean;
+    periodEndedAt: string | null;
+    startCountdownEndsAt: string | null;
+    startCountdownRemainingSeconds: number | null;
+    intervalRemainingSeconds: number | null;
     centrePassTeam: "A" | "B" | null;
     version: number;
   };
@@ -986,10 +990,11 @@ export const api = {
     expectedVersion: number,
     action: string,
     reason?: string,
+    options?: { remainingSeconds?: number; countdownMinutes?: number },
   ) =>
     req(`/gameday/matches/${id}/clock`, {
       method: "POST",
-      body: { expectedVersion, action, reason },
+      body: { expectedVersion, action, reason, ...options },
     }),
   changePosition: (
     id: string,

@@ -1,4 +1,6 @@
 import { randomUUID } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { Client, Pool } from 'pg';
 import { ConfigService } from '@nestjs/config';
 import { PublicService } from './public.service';
@@ -66,6 +68,12 @@ integration('rehearsal isolation (PostgreSQL)', () => {
         `CREATE TEMP TABLE "${name}" (LIKE public."${name}" INCLUDING DEFAULTS)`,
       );
     }
+    // Exercise the new migration only against this connection's temporary match
+    // table, including on developer databases that have not been migrated yet.
+    const clockMigration = readFileSync(resolve(__dirname, '../../drizzle/0044_timekeeper_controls.sql'), 'utf8')
+      .replaceAll('ALTER TABLE "match"', 'ALTER TABLE pg_temp."match"')
+      .replaceAll('ADD COLUMN ', 'ADD COLUMN IF NOT EXISTS ');
+    await client.query(clockMigration);
     for (const name of views) {
       await client.query(
         `CREATE TEMP TABLE "${name}" AS SELECT * FROM public."${name}" WITH NO DATA`,
@@ -191,6 +199,54 @@ integration('rehearsal isolation (PostgreSQL)', () => {
     expect((await service.fixtures()).map((match) => match.id)).toEqual([finalEvening, unscheduled]);
     expect((await service.results()).map((match) => match.id)).toEqual([official]);
     expect((await service.lastNext()).next?.id).toBe(finalEvening);
+  });
+
+  it('runs countdown, scoring, explicit quarter boundaries and End Game through the database ledger', async () => {
+    const scorer = randomUUID();
+    const timekeeper = randomUUID();
+    const venue = randomUUID();
+    const court = randomUUID();
+    await client.query('INSERT INTO venue (id,tournament_id,name) VALUES ($1,$2,$3)', [venue, tournament, 'Temporary test venue']);
+    await client.query('INSERT INTO court (id,venue_id,name) VALUES ($1,$2,$3)', [court, venue, 'Temporary test court']);
+    await client.query("UPDATE match SET status = 'scheduled', current_period = 0, court_id = $2, scheduled_at = now() - interval '20 minutes' WHERE id = $1", [official, court]);
+    for (const [user, role] of [[scorer, 'scorer'], [timekeeper, 'timekeeper']]) {
+      await client.query('INSERT INTO match_official_assignment (match_id,app_user_id,role) VALUES ($1,$2,$3)', [official, user, role]);
+    }
+    const version = async () => Number((await client.query('SELECT version FROM match WHERE id = $1', [official])).rows[0].version);
+    const goal = async () => gameDay.recordGoal(official, scorer, 'scorer', { expectedVersion: await version(), teamSide: 'A' });
+    const clock = async (action: Parameters<typeof gameDay.clockCommand>[3]['action'], extra = {}) => gameDay.clockCommand(official, timekeeper, 'timekeeper', { action, expectedVersion: await version(), ...extra });
+
+    await expect(goal()).rejects.toThrow('after Start Game');
+    await expect(gameDay.clockCommand(official, scorer, 'scorer', { action: 'set_start_countdown', countdownMinutes: 20, expectedVersion: await version() })).rejects.toThrow('timekeeper');
+    await clock('set_start_countdown', { countdownMinutes: 20 });
+    expect((await service.lastNext()).next?.id).toBe(official);
+    expect(await service.liveBroadcast()).toMatchObject({ MatchId: official, Status: 'SCHEDULED', GameStartCountdown: '20:00' });
+    await clock('set_start_countdown', { countdownMinutes: 5 });
+    expect(await service.liveBroadcast()).toMatchObject({ Status: 'SCHEDULED', GameStartCountdown: '05:00' });
+    await clock('clear_start_countdown');
+    expect((await service.liveBroadcast(official))?.GameStartCountdown).toBeNull();
+
+    await gameDay.startMatch(official, timekeeper, 'timekeeper', await version());
+    expect((await service.liveBroadcast())?.ExpectedStartAt).toBeNull();
+    await clock('stop_clock');
+    const firstGoal = await goal();
+    await gameDay.correctGoal(official, scorer, 'scorer', { expectedVersion: await version(), eventId: firstGoal.event.id, reason: 'Paused goal correction' });
+    await clock('adjust_clock', { remainingSeconds: 0 });
+    await goal();
+    expect(await service.liveBroadcast()).toMatchObject({ Clock: '00:00', PeriodEnded: false, IntervalClock: null });
+    await clock('adjust_clock', { remainingSeconds: 60 });
+    await clock('end_period');
+    expect(await service.liveBroadcast()).toMatchObject({ Clock: '01:00', PeriodEnded: true, IntervalClock: '04:00' });
+    await goal();
+    await clock('start_period');
+    expect(await service.liveBroadcast()).toMatchObject({ Quarter: 'Q2', Clock: '15:00', ClockRunning: false, PeriodEnded: false, IntervalClock: null });
+    await clock('end_period');
+    expect((await service.liveBroadcast())?.IntervalClock).toBe('08:00');
+    await clock('end_game');
+    await expect(goal()).rejects.toThrow('before End Game');
+    await expect(gameDay.correctGoal(official, scorer, 'scorer', { expectedVersion: await version(), eventId: firstGoal.event.id, reason: 'Too late to correct' })).rejects.toThrow('before End Game');
+    expect(await service.liveBroadcast()).toMatchObject({ Status: 'FINAL', Clock: 'FT', IntervalClock: null });
+    expect((await client.query('SELECT event_type FROM match_event WHERE match_id=$1 ORDER BY sequence DESC LIMIT 1', [official])).rows[0].event_type).toBe('clock.end_game');
   });
 
   it('excludes every rehearsal marker independently, even in an official group', async () => {

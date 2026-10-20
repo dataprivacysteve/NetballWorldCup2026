@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { countryFlag } from "../lib/countries";
+import { countdownAlertClass } from "../../../../packages/shared/countdown";
 
 const API =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://api.netballamericas.test";
@@ -15,6 +16,8 @@ const DISPLAY_FLAGS: Record<string, string> = {
   JAM: "/flags/jam.svg",
   KNA: "/flags/kna.svg",
   LCA: "/flags/lca.svg",
+  SVG: "/flags/svg.svg",
+  VCT: "/flags/vct.svg",
   TTO: "/flags/tto.svg",
   USA: "/flags/usa.svg",
   VGB: "/flags/vgb.svg",
@@ -28,6 +31,9 @@ type BroadcastFeed = {
   Quarter: string;
   Clock: string;
   IntervalClock: string | null;
+  PeriodEnded: boolean;
+  GameStartCountdown: string | null;
+  ExpectedStartAt: string | null;
   ClockRunning: boolean;
   TeamAAbbr: string;
   TeamAName: string;
@@ -235,7 +241,7 @@ export default function LiveAudienceDisplay() {
     },
   ] as const;
   const quarterEnd =
-    feed.Status !== "FINAL" && feed.Clock === "00:00"
+    feed.Status !== "FINAL" && feed.PeriodEnded
       ? quarterEndNotice(feed.Quarter)
       : null;
 
@@ -271,7 +277,15 @@ export default function LiveAudienceDisplay() {
         ))}
 
         <div className="col-start-2 row-start-1 flex min-w-0 flex-col items-center text-center">
-          {quarterEnd ? (
+          {["SCHEDULED", "READY"].includes(feed.Status) ? (
+            <div className="flex flex-col items-center text-center">
+              <p className="text-[clamp(1.15rem,2vw,2.5rem)] font-extrabold uppercase tracking-wide text-[#f4c430]">
+                {feed.GameStartCountdown === "00:00" ? "Awaiting start" : feed.GameStartCountdown ? "Game starts in" : "Awaiting game start"}
+              </p>
+              {feed.GameStartCountdown && <p className={`mt-5 font-mono text-[clamp(4rem,8vw,9rem)] font-bold leading-none tabular-nums ${countdownAlertClass(feed.GameStartCountdown)}`}>{feed.GameStartCountdown}</p>}
+              {feed.ExpectedStartAt && <p className="mt-5 text-[clamp(1rem,1.5vw,2rem)] font-bold">Expected start {new Intl.DateTimeFormat("en-GB", { timeZone: "America/Barbados", hour: "2-digit", minute: "2-digit" }).format(new Date(feed.ExpectedStartAt))} AST</p>}
+            </div>
+          ) : quarterEnd ? (
             <div className="flex flex-col items-center rounded-[clamp(1rem,2vw,2rem)] border-2 border-[#f4c430]/60 bg-[#0d1835] px-[clamp(1rem,2vw,2.5rem)] py-[clamp(1.25rem,3vh,3rem)] shadow-[0_1.5rem_5rem_rgba(0,0,0,.4)]">
               <p className="text-[clamp(2rem,4.25vw,5rem)] font-black uppercase leading-[.92] tracking-[-0.04em] text-[#f4c430]">
                 {quarterEnd.heading}
@@ -280,7 +294,7 @@ export default function LiveAudienceDisplay() {
                 {quarterEnd.detail}
               </p>
               {feed.IntervalClock && (
-                <p className="mt-[clamp(1rem,2.5vh,2rem)] text-[clamp(3.5rem,7vw,8rem)] font-black leading-none tracking-[-0.055em] text-white tabular-nums">
+                <p className={`mt-[clamp(1rem,2.5vh,2rem)] text-[clamp(3.5rem,7vw,8rem)] font-black leading-none tracking-[-0.055em] text-white tabular-nums ${countdownAlertClass(feed.IntervalClock)}`}>
                   {feed.IntervalClock}
                 </p>
               )}

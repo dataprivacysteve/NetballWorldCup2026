@@ -5,13 +5,13 @@ import {
   ApiError,
   api,
   type Me,
-  type SheetPlayer,
   type StatsEventType,
   type StatsMatch,
   type StatsState,
   type TeamSide,
 } from "./lib/api";
 import { aggregate, eventLabel, shooting } from "./lib/stats";
+import { countdownAlertClass } from "../../../packages/shared/countdown";
 
 const positions = [
   "Goal Shooter",
@@ -103,10 +103,10 @@ export default function StatsConsole({
   const [matches, setMatches] = useState<StatsMatch[]>([]);
   const [matchId, setMatchId] = useState("");
   const [state, setState] = useState<StatsState | null>(null);
-  const [receivedAt, setReceivedAt] = useState(Date.now());
+  const [receivedAt, setReceivedAt] = useState(() => Date.now());
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [tick, setTick] = useState(Date.now());
+  const [tick, setTick] = useState(() => Date.now());
 
   const refreshState = useCallback(async (id: string) => {
     const next = await api.state(id);
@@ -138,14 +138,14 @@ export default function StatsConsole({
   }, [me]);
   useEffect(() => {
     if (!matchId) return;
-    void refreshState(matchId).catch((reason: unknown) =>
-      setError(message(reason)),
-    );
+    const initial = window.setTimeout(() => {
+      void refreshState(matchId).catch((reason: unknown) => setError(message(reason)));
+    }, 0);
     const poll = window.setInterval(
       () => void refreshState(matchId).catch(() => undefined),
       2500,
     );
-    return () => window.clearInterval(poll);
+    return () => { window.clearTimeout(initial); window.clearInterval(poll); };
   }, [matchId, refreshState]);
   useEffect(() => {
     const timer = window.setInterval(() => setTick(Date.now()), 250);
@@ -174,6 +174,14 @@ export default function StatsConsole({
   );
   const canRecord =
     me.user.platformRole === "stats_lineup" && requestedMode === "recorder";
+  const preparationSeconds = state && ["scheduled", "ready"].includes(state.match.status)
+    ? state.match.startCountdownRemainingSeconds
+    : state && ["live", "suspended"].includes(state.match.status)
+      ? state.match.intervalRemainingSeconds
+      : null;
+  const preparationClock = typeof preparationSeconds === "number"
+    ? Math.max(0, preparationSeconds - Math.max(0, Math.floor((tick - receivedAt) / 1000)))
+    : null;
 
   async function run(command: (version: number) => Promise<unknown>) {
     if (!state || !matchId) return;
@@ -277,7 +285,7 @@ export default function StatsConsole({
           </div>
         ) : (
           <>
-            <ScoreHeader match={selected} state={state} clock={clock} />
+            <ScoreHeader match={selected} state={state} clock={clock} preparationClock={preparationClock} />
             {requestedMode === "host" ? (
               <HostDesk state={state} match={selected} />
             ) : (
@@ -337,8 +345,8 @@ function Recorder({
   );
 
   useEffect(() => {
-    setPlayerId("");
-    setPositionPlayer("");
+    const reset = window.setTimeout(() => { setPlayerId(""); setPositionPlayer(""); }, 0);
+    return () => window.clearTimeout(reset);
   }, [side]);
 
   function record(type: StatsEventType, needsPlayer = false) {
@@ -902,10 +910,12 @@ function ScoreHeader({
   match,
   state,
   clock,
+  preparationClock,
 }: {
   match: StatsMatch;
   state: StatsState;
   clock: number;
+  preparationClock: number | null;
 }) {
   return (
     <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#111a40] to-[#0c1331] p-5 shadow-2xl sm:p-7">
@@ -918,10 +928,10 @@ function ScoreHeader({
         />
         <div className="text-center">
           <p className="font-mono text-[0.62rem] font-bold uppercase tracking-[0.15em] text-[#f6c934]">
-            Q{state.match.currentPeriod || "PRE"}
+            {preparationClock !== null ? state.match.currentPeriod === 0 ? "Game starts in" : "Next quarter in" : `Q${state.match.currentPeriod || "PRE"}`}
           </p>
-          <p className="mt-1 font-mono text-5xl font-bold sm:text-6xl">
-            {clockLabel(clock)}
+          <p className={`mt-1 font-mono text-5xl font-bold sm:text-6xl ${countdownAlertClass(preparationClock)}`}>
+            {clockLabel(preparationClock ?? clock)}
           </p>
           <p className="mt-2 text-xs text-white/40">
             {match.venue ?? "Venue TBC"} · {match.court ?? "Court TBC"}

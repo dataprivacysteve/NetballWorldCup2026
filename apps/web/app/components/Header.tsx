@@ -7,8 +7,10 @@ import { federation } from "../lib/config";
 // Fixed top nav. Transparent over the hero, gains a blurred backdrop on scroll.
 export function Header({
   logoSrc,
+  showNews = true,
 }: {
   logoSrc?: string | null;
+  showNews?: boolean;
 }) {
   const [scrolled, setScrolled] = useState(false);
   const [logoFailed, setLogoFailed] = useState(false);
@@ -43,7 +45,7 @@ export function Header({
           )}
         </a>
         <nav className="nav-links">
-          {federation.nav.map((n) => (
+          {federation.nav.filter(n => showNews || n.href !== '#news').map((n) => (
             <a key={n.label} href={n.href.startsWith("#") ? homePrefix + n.href : n.href}>
               {n.label}
             </a>

@@ -96,20 +96,44 @@ export class CorrectGoalDto extends VersionedCommandDto {
 export class ClockCommandDto extends VersionedCommandDto {
   @IsIn([
     'start_period',
+    'start_next_period',
     'start_clock',
     'stop_clock',
     'end_period',
     'suspend',
     'resume',
+    'adjust_clock',
+    'end_game',
+    'set_start_countdown',
+    'clear_start_countdown',
   ])
   action!:
     | 'start_period'
+    | 'start_next_period'
     | 'start_clock'
     | 'stop_clock'
     | 'end_period'
     | 'suspend'
-    | 'resume';
+    | 'resume'
+    | 'adjust_clock'
+    | 'end_game'
+    | 'set_start_countdown'
+    | 'clear_start_countdown';
   @IsOptional() @IsString() reason?: string;
+  @ValidateIf(
+    (dto: ClockCommandDto) =>
+      dto.action === 'adjust_clock' || dto.remainingSeconds !== undefined,
+  )
+  @IsInt()
+  @Min(0)
+  remainingSeconds?: number;
+  @ValidateIf(
+    (dto: ClockCommandDto) =>
+      dto.action === 'set_start_countdown' ||
+      dto.countdownMinutes !== undefined,
+  )
+  @IsIn([5, 10, 15, 20])
+  countdownMinutes?: number;
 }
 
 export class PositionChangeDto extends VersionedCommandDto {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { countdownAlertClass } from "../../../../packages/shared/countdown";
 
 const API =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://api.netballamericas.test";
@@ -29,6 +30,7 @@ type MatchSide = { code: string; name: string; score: number | null };
 type Match = {
   id: string;
   scheduledAt: string | null;
+  startCountdownEndsAt: string | null;
   venue: string | null;
   court: string | null;
   round: string | null;
@@ -96,27 +98,23 @@ export default function ArenaHoldingDisplay() {
     let cancelled = false;
     async function refresh() {
       try {
-        const [standingsResponse, fixturesResponse, resultsResponse, experienceResponse] =
+        const [matchCentreResponse, experienceResponse] =
           await Promise.all([
-            fetch(`${API}/public/standings`, { cache: "no-store" }),
-            fetch(`${API}/public/fixtures`, { cache: "no-store" }),
-            fetch(`${API}/public/results`, { cache: "no-store" }),
+            fetch(`${API}/public/match-centre`, { cache: "no-store" }),
             fetch(`${API}/public/experience`, { cache: "no-store" }),
           ]);
-        if (!standingsResponse.ok || !fixturesResponse.ok || !resultsResponse.ok) return;
-        const [standings, fixtures, results, experience] = await Promise.all([
-          standingsResponse.json() as Promise<StandingGroup[]>,
-          fixturesResponse.json() as Promise<Match[]>,
-          resultsResponse.json() as Promise<Match[]>,
+        if (!matchCentreResponse.ok) return;
+        const [matchCentre, experience] = await Promise.all([
+          matchCentreResponse.json() as Promise<Pick<ArenaData, "standings" | "fixtures" | "results">>,
           experienceResponse.ok
             ? (experienceResponse.json() as Promise<Experience>)
             : Promise.resolve({ sponsors: [] } as Experience),
         ]);
         if (!cancelled) {
           setData({
-            standings,
-            fixtures,
-            results,
+            standings: matchCentre.standings,
+            fixtures: matchCentre.fixtures,
+            results: matchCentre.results,
             advertisements: (experience.sponsors ?? []).filter(
               (item) => item.displayEnabled && item.displayImageUrl,
             ),
@@ -128,7 +126,7 @@ export default function ArenaHoldingDisplay() {
       }
     }
     void refresh();
-    const poll = window.setInterval(() => void refresh(), 30_000);
+    const poll = window.setInterval(() => void refresh(), 5_000);
     return () => {
       cancelled = true;
       window.clearInterval(poll);
@@ -136,14 +134,16 @@ export default function ArenaHoldingDisplay() {
   }, []);
 
   useEffect(() => {
-    setNow(new Date());
+    const initial = window.setTimeout(() => setNow(new Date()), 0);
     const timer = window.setInterval(() => setNow(new Date()), 1000);
-    return () => window.clearInterval(timer);
+    return () => {
+      window.clearTimeout(initial);
+      window.clearInterval(timer);
+    };
   }, []);
 
   useEffect(() => {
     if (data.advertisements.length < 2) {
-      setAdvertisementIndex(0);
       return;
     }
     const current =
@@ -178,22 +178,28 @@ export default function ArenaHoldingDisplay() {
   const nextMatch = useMemo(
     () =>
       data.fixtures.find((match) =>
+        ["scheduled", "ready"].includes(match.status) && match.startCountdownEndsAt,
+      ) ?? data.fixtures.find((match) =>
         ["scheduled", "ready"].includes(match.status),
-      ) ?? data.fixtures[0] ?? null,
+      ) ?? null,
     [data.fixtures],
   );
+
+  const currentMatch = data.fixtures.find((match) =>
+    ["live", "suspended", "awaiting_confirmation"].includes(match.status),
+  ) ?? null;
 
   const venueFrames = useMemo(() => {
     const frames: Array<
       | { kind: "standings"; page: { group: StandingGroup; rows: Standing[] } }
       | { kind: "matches"; result: Match | null; nextMatch: Match | null }
     > = standingsPages.map((page) => ({ kind: "standings", page }));
-    const lastResult = data.results[0] ?? null;
-    if (lastResult || nextMatch) {
-      frames.push({ kind: "matches", result: lastResult, nextMatch });
+    const currentOrLastMatch = currentMatch ?? data.results[0] ?? null;
+    if (currentOrLastMatch || nextMatch) {
+      frames.push({ kind: "matches", result: currentOrLastMatch, nextMatch });
     }
     return frames;
-  }, [data.results, nextMatch, standingsPages]);
+  }, [currentMatch, data.results, nextMatch, standingsPages]);
 
   useEffect(() => {
     if (venueFrames.length < 2) return;
@@ -261,7 +267,7 @@ export default function ArenaHoldingDisplay() {
               />
             )}
             {activeVenueFrame?.kind === "matches" && (
-              <MatchOverview result={activeVenueFrame.result} nextMatch={activeVenueFrame.nextMatch} />
+              <MatchOverview result={activeVenueFrame.result} nextMatch={activeVenueFrame.nextMatch} now={now} />
             )}
             {!activeVenueFrame && (
               <div className="grid h-full place-items-center rounded-2xl border border-white/10 bg-white/[.045]">
@@ -363,16 +369,17 @@ function StandingsCard({
   );
 }
 
-function MatchOverview({ result, nextMatch }: { result: Match | null; nextMatch: Match | null }) {
+function MatchOverview({ result, nextMatch, now }: { result: Match | null; nextMatch: Match | null; now: Date | null }) {
   return (
     <div className="grid h-full min-h-0 grid-cols-2 gap-[clamp(1rem,2vw,2.5rem)]">
-      <MatchPanel title="Last match" match={result} showScores />
-      <MatchPanel title="Next match" match={nextMatch} />
+      <MatchPanel title={result?.status === "live" ? "Live match" : result && result.status !== "final" ? "Current match" : "Last match"} match={result} showScores />
+      <MatchPanel title="Next match" match={nextMatch} now={now} />
     </div>
   );
 }
 
-function MatchPanel({ title, match, showScores = false }: { title: string; match: Match | null; showScores?: boolean }) {
+function MatchPanel({ title, match, showScores = false, now = null }: { title: string; match: Match | null; showScores?: boolean; now?: Date | null }) {
+  const secondsToStart = match?.startCountdownEndsAt && now ? Math.max(0, Math.ceil((Date.parse(match.startCountdownEndsAt) - now.getTime()) / 1000)) : null;
   return (
     <article className="flex h-full min-h-0 flex-col overflow-hidden rounded-3xl border-2 border-white/15 bg-white/[.055] p-[clamp(1.5rem,2.5vw,3rem)] shadow-[0_2rem_5rem_rgba(0,0,0,.24)]">
       <h2 className="shrink-0 font-display text-[clamp(2rem,3.2vw,4rem)] font-black leading-none">{title}</h2>
@@ -382,13 +389,14 @@ function MatchPanel({ title, match, showScores = false }: { title: string; match
             <VenueTeamRow team={match.teamA} showScore={showScores} />
             <div className="flex items-center gap-4">
               <span className="h-px flex-1 bg-white/15" />
-              <span className="font-display text-[clamp(1.6rem,2.5vw,3rem)] font-black text-[#f4c430]">{showScores ? "FINAL" : "VS"}</span>
+              <span className="font-display text-[clamp(1.6rem,2.5vw,3rem)] font-black text-[#f4c430]">{!showScores ? "VS" : match.status === "live" ? "LIVE · PROVISIONAL" : match.status === "suspended" ? "SUSPENDED" : match.status === "awaiting_confirmation" ? "AWAITING CONFIRMATION" : "FINAL"}</span>
               <span className="h-px flex-1 bg-white/15" />
             </div>
             <VenueTeamRow team={match.teamB} showScore={showScores} />
           </div>
           <div className="shrink-0 border-t border-white/15 pt-[clamp(.75rem,1.2vh,1.2rem)] text-center">
-            <p className="font-display text-[clamp(1.25rem,2vw,2.5rem)] font-black uppercase">{eventTime(match.scheduledAt)}</p>
+            {!showScores && secondsToStart !== null && <p className={`mb-2 font-display text-[clamp(1.5rem,2.5vw,3rem)] font-black text-[#f4c430] tabular-nums ${countdownAlertClass(secondsToStart)}`}>{secondsToStart === 0 ? "Awaiting start" : `Starts in ${String(Math.floor(secondsToStart / 60)).padStart(2, "0")}:${String(secondsToStart % 60).padStart(2, "0")}`}</p>}
+            <p className="font-display text-[clamp(1.25rem,2vw,2.5rem)] font-black uppercase">{!showScores && match.startCountdownEndsAt ? `Expected ${eventTime(match.startCountdownEndsAt)}` : eventTime(match.scheduledAt)}</p>
           </div>
         </>
       ) : (

@@ -118,6 +118,10 @@ export const match = pgTable('match', {
     .default(900),
   clockRunning: boolean('clock_running').notNull().default(false),
   clockStartedAt: timestamp('clock_started_at', { withTimezone: true }),
+  periodEndedAt: timestamp('period_ended_at', { withTimezone: true }),
+  startCountdownEndsAt: timestamp('start_countdown_ends_at', {
+    withTimezone: true,
+  }),
   centrePassTeam: text('centre_pass_team'),
   version: integer('version').notNull().default(0),
   resultConfirmedAt: timestamp('result_confirmed_at', { withTimezone: true }),

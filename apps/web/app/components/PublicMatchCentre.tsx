@@ -2,9 +2,9 @@
 import { createContext, useContext, type ReactNode } from "react";
 import type { Match, MatchCentreData } from "../lib/api";
 import { Crest } from "./Crest";
-import { Countdown } from "./Countdown";
+import { Countdown, useCountdownNow } from "./Countdown";
 import { MatchDayList } from "./MatchDayList";
-import { LiveScore } from "./LiveScore";
+import { BroadcastCoverage } from "./BroadcastCoverage";
 import { usePublicPoll } from "./usePublicPoll";
 
 const MatchCentreContext = createContext<MatchCentreData | null>(null);
@@ -57,6 +57,55 @@ const dateTimeLabel = (iso: string | null) =>
 const timeLabel = (iso: string | null) =>
   iso ? fdate(iso, { hour: "2-digit", minute: "2-digit" }) : "v";
 
+export function TournamentLiveIntro({ datesLabel, venue, imageUrl }: { datesLabel: string; venue: string; imageUrl: string | null }) {
+  const { fixtures, lastNext } = useMatchCentre();
+  const now = useCountdownNow();
+  const active = fixtures.find(match => ['live','suspended'].includes(match.status));
+  const pending = fixtures.filter(match => ['scheduled','ready'].includes(match.status) && match.scheduledAt)
+    .sort((a,b) => Date.parse(a.startCountdownEndsAt ?? a.scheduledAt!) - Date.parse(b.startCountdownEndsAt ?? b.scheduledAt!));
+  const next = pending.find(match => now !== null && Date.parse(match.startCountdownEndsAt ?? match.scheduledAt!) >= now) ?? lastNext.next;
+  const match = active ?? next;
+  return <section className="live-intro" id="top" style={imageUrl ? { backgroundImage:`linear-gradient(90deg,rgba(10,10,18,.97),rgba(10,10,18,.85)),url(${imageUrl})` } : undefined}>
+    <div className="wrap live-intro-grid">
+      <div><p className="live-intro-kicker">Netball World Cup 2027 · Americas</p><h1 className="disp">THE QUALIFIER.<br/><span>EVERY GAME HERE.</span></h1><p className="live-intro-meta">{datesLabel} · {venue}</p><div className="live-intro-actions"><a className="btn btn-gold" href="#watch">Watch live &amp; replays ↗</a><a className="live-intro-score-link" href="#schedule">Scores &amp; schedule →</a></div></div>
+      <div className="live-intro-match"><div className="live-intro-match-top"><span>{active ? 'On court now' : 'Next on court'}</span><a href="#schedule">Full schedule ↗</a></div>{match ? <><p className="live-intro-match-time">{active ? 'Live match' : dateTimeLabel(match.startCountdownEndsAt ?? match.scheduledAt)} · AST</p><div className="live-intro-match-teams"><div><Crest code={match.teamA.code} size={44}/><strong>{match.teamA.code}</strong><span>{match.teamA.name}</span></div><b>{active ? `${match.teamA.score ?? 0}–${match.teamB.score ?? 0}` : 'v'}</b><div><Crest code={match.teamB.code} size={44}/><strong>{match.teamB.code}</strong><span>{match.teamB.name}</span></div></div></> : <p className="live-intro-no-match">See the results and catch up on every recording below.</p>}</div>
+    </div>
+  </section>;
+}
+
+export function NextGameCountdown({ startsOn }: { startsOn: string | null }) {
+  const { fixtures } = useMatchCentre();
+  const now = useCountdownNow();
+  const upcoming = now === null ? [] : fixtures
+    .filter((match) =>
+      (match.status === "scheduled" || match.status === "ready") &&
+      (match.startCountdownEndsAt || (match.scheduledAt && Date.parse(match.scheduledAt) > now)),
+    )
+    .sort((a, b) => Number(Boolean(b.startCountdownEndsAt)) - Number(Boolean(a.startCountdownEndsAt)) || Date.parse(a.startCountdownEndsAt ?? a.scheduledAt!) - Date.parse(b.startCountdownEndsAt ?? b.scheduledAt!));
+  const next = upcoming[0];
+  const live = fixtures.find((match) => match.status === "live");
+  const beforeStart = now !== null && startsOn !== null && Date.parse(startsOn) > now;
+  const target = next?.startCountdownEndsAt ?? (beforeStart ? startsOn : next?.scheduledAt ?? null);
+  const label = now === null ? "Match centre" : next?.startCountdownEndsAt
+    ? `Next game: ${next.teamA.name} v ${next.teamB.name} in`
+    : beforeStart
+    ? "Tournament tip-off in"
+    : next
+      ? `Next game: ${next.teamA.name} v ${next.teamB.name} in`
+      : live
+        ? `Live now: ${live.teamA.name} v ${live.teamB.name}`
+        : "No upcoming games scheduled";
+
+  return (
+    <div className="cbar">
+      <div className="cbar-in">
+        <span className="cl">{label}</span>
+        {target && <Countdown target={target} mode="units" />}
+      </div>
+    </div>
+  );
+}
+
 export function LastNextGames() {
   const { lastNext } = useMatchCentre();
   return (
@@ -81,7 +130,7 @@ export function LastNextGames() {
                 <div className="sptab">Next Game</div>
                 <div className="bar">
                   <Countdown
-                    target={lastNext.next?.scheduledAt ?? null}
+                    target={lastNext.next?.startCountdownEndsAt ?? lastNext.next?.scheduledAt ?? null}
                     mode="inline"
                   />
                 </div>
@@ -129,8 +178,10 @@ export function FixtureStrip() {
   );
 }
 
-export function ScheduleResults({ silverAd }: { silverAd: ReactNode }) {
+export function ScheduleResults() {
   const { fixtures, results } = useMatchCentre();
+  const now = useCountdownNow();
+  const today = now === null ? undefined : dayLabel(new Date(now).toISOString());
   return (
     <>
       {/* SCHEDULE & RESULTS */}
@@ -140,7 +191,6 @@ export function ScheduleResults({ silverAd }: { silverAd: ReactNode }) {
             <h2 className="disp">
               <small>Match Centre</small>Schedule &amp; Results
             </h2>
-            {silverAd}
           </div>
           <div className="sr-2">
             <div>
@@ -150,6 +200,7 @@ export function ScheduleResults({ silverAd }: { silverAd: ReactNode }) {
               </div>
               <MatchDayList
                 kind="fixtures"
+                initialDay={today}
                 entries={fixtures.map((match) => ({
                   id: match.id,
                   day: dayLabel(match.scheduledAt),
@@ -193,7 +244,7 @@ export function LiveStandings() {
             </h2>
           </div>
           {standings.length === 0 ? (
-            <EmptyRow label="Standings appear once results are in." />
+            <EmptyRow label="League standings are being updated. Completed match scores are available in Results above." />
           ) : (
             <div
               className={standings.length === 1 ? "standings-single" : "sr-2"}
@@ -214,76 +265,9 @@ export function LiveStandings() {
   );
 }
 
-export function WatchLive({
-  bronzeAd,
-  delayedMessage,
-}: {
-  bronzeAd: ReactNode;
-  delayedMessage?: string | null;
-}) {
-  const { broadcasts } = useMatchCentre();
-  const featuredBroadcast =
-    broadcasts.find((match) => match.broadcast.featured) ??
-    broadcasts[0] ??
-    null;
-  return (
-    <>
-      {/* WATCH */}
-      <section className="sec" id="watch">
-        <div className="wrap">
-          <div className="sec-head">
-            <h2 className="disp">
-              <small>Broadcast</small>Watch Live
-            </h2>
-            {bronzeAd}
-          </div>
-          <div className="watch">
-            <div className="watch-stage">
-              <span className="live">
-                ●{" "}
-                {featuredBroadcast?.broadcast.status === "live"
-                  ? "Live"
-                  : "Broadcast"}
-              </span>
-              {featuredBroadcast?.broadcast.embedUrl ? (
-                <iframe
-                  src={featuredBroadcast.broadcast.embedUrl}
-                  title={`${featuredBroadcast.teamA.name} versus ${featuredBroadcast.teamB.name}`}
-                  allow="autoplay; fullscreen; picture-in-picture"
-                  allowFullScreen
-                />
-              ) : (
-                <LiveScore delayedMessage={delayedMessage} />
-              )}
-            </div>
-            <div className="watch-info">
-              {featuredBroadcast?.broadcast.embedUrl && (
-                <LiveScore delayedMessage={delayedMessage} />
-              )}
-              <h3 className="disp">
-                {featuredBroadcast
-                  ? `${featuredBroadcast.teamA.code} v ${featuredBroadcast.teamB.code}`
-                  : "Centre Court"}
-              </h3>
-              <p>
-                Every match, live and free across the region — with commentary,
-                replays and live scoring.
-              </p>
-              <a
-                className="btn btn-gold"
-                href={featuredBroadcast?.broadcast.watchUrl ?? "#schedule"}
-              >
-                {featuredBroadcast?.broadcast.status === "live"
-                  ? "Watch now"
-                  : "View schedule"}
-              </a>
-              <div className="by">Host broadcast · SportsBB</div>
-            </div>
-          </div>
-        </div>
-      </section>
-    </>
-  );
+export function WatchLive({ delayedMessage }: { delayedMessage?: string | null }) {
+  const { broadcasts, results } = useMatchCentre();
+  return <BroadcastCoverage broadcasts={broadcasts} results={results} delayedMessage={delayedMessage} />;
 }
 function EmptyRow({ label }: { label: string }) {
   return (
@@ -328,7 +312,7 @@ function NextGame({ match }: { match: Match | null }) {
   if (!match) return <EmptyRow label="Fixtures to be confirmed." />;
   return (
     <>
-      <div className="ln-date">{dateTimeLabel(match.scheduledAt)}</div>
+      <div className="ln-date">{match.startCountdownEndsAt ? `Expected ${dateTimeLabel(match.startCountdownEndsAt)}` : dateTimeLabel(match.scheduledAt)}</div>
       <div className="ln-match">
         <div className="ln-side">
           <Crest code={match.teamA.code} size={62} />
@@ -383,6 +367,7 @@ function ScheduleItem({ match }: { match: Match }) {
       <div className="sr-cap">
         {match.teamA.name} v {match.teamB.name}
       </div>
+      {match.broadcast.watchUrl && <a className="coverage-match-link" href={match.broadcast.watchUrl} target="_blank" rel="noopener noreferrer">{match.status === 'live' ? 'Watch Live' : 'Watch Stream'} ↗</a>}
     </div>
   );
 }
@@ -403,6 +388,7 @@ function ResultItem({ match }: { match: Match }) {
       <div className="sr-cap">
         {match.teamA.name} v {match.teamB.name}
       </div>
+      {match.broadcast.replayUrl && <a className="coverage-match-link" href={match.broadcast.replayUrl} target="_blank" rel="noopener noreferrer">Watch Replay · day recording ↗</a>}
     </div>
   );
 }

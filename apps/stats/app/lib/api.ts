@@ -95,6 +95,8 @@ export type StatsState = {
     teamBDelegationId: string;
     centrePassTeam: TeamSide | null;
     clockStartedAt: string | null;
+    startCountdownRemainingSeconds: number | null;
+    intervalRemainingSeconds: number | null;
   };
   events: StatsEvent[];
   teamSheets: Array<{

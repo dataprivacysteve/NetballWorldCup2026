@@ -1,9 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { countdownAlertClass } from "../../../../packages/shared/countdown";
 
-function parts(targetMs: number, nowMs: number): [number, number, number, number] {
-  let s = Math.max(0, Math.floor((targetMs - nowMs) / 1000));
+function parts(
+  targetMs: number,
+  nowMs: number,
+): [number, number, number, number] {
+  let s = Math.max(0, Math.ceil((targetMs - nowMs) / 1000));
   const d = Math.floor(s / 86400);
   s %= 86400;
   const h = Math.floor(s / 3600);
@@ -13,6 +17,20 @@ function parts(targetMs: number, nowMs: number): [number, number, number, number
   return [d, h, m, s];
 }
 const pad = (n: number) => String(n).padStart(2, "0");
+
+export function useCountdownNow() {
+  const [nowMs, setNowMs] = useState<number | null>(null);
+  useEffect(() => {
+    const update = () => setNowMs(Date.now());
+    const initial = setTimeout(update, 0);
+    const interval = setInterval(update, 1000);
+    return () => {
+      clearTimeout(initial);
+      clearInterval(interval);
+    };
+  }, []);
+  return nowMs;
+}
 
 // Live countdown. `units` drives the gold tip-off bar; `inline` is the compact
 // timer in the Next Game header. Renders a stable placeholder on the server /
@@ -24,18 +42,7 @@ export function Countdown({
   target: string | null;
   mode: "units" | "inline";
 }) {
-  const [nowMs, setNowMs] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (!target) return;
-    const update = () => setNowMs(Date.now());
-    const initial = setTimeout(update, 0);
-    const interval = setInterval(update, 1000);
-    return () => {
-      clearTimeout(initial);
-      clearInterval(interval);
-    };
-  }, [target]);
+  const nowMs = useCountdownNow();
 
   if (!target || nowMs === null) {
     return mode === "inline" ? (
@@ -46,10 +53,11 @@ export function Countdown({
   }
 
   const [d, h, m, s] = parts(new Date(target).getTime(), nowMs);
+  const alertClass = countdownAlertClass(d * 86400 + h * 3600 + m * 60 + s);
 
   if (mode === "inline") {
     return (
-      <span className="bar-cd">
+      <span className={`bar-cd ${alertClass}`}>
         <b>{pad(d)}</b>d<b>{pad(h)}</b>h<b>{pad(m)}</b>m<b>{pad(s)}</b>s
       </span>
     );
@@ -62,7 +70,7 @@ export function Countdown({
     ["Sec", s],
   ];
   return (
-    <div className="cd">
+    <div className={`cd ${alertClass}`}>
       {units.map(([t, n]) => (
         <div className="u" key={t}>
           <div className="n">{pad(n)}</div>

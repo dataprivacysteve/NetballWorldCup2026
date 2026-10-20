@@ -80,6 +80,7 @@ export type Side = { code: string; name: string; score: number | null };
 export type Match = {
   id: string;
   scheduledAt: string | null;
+  startCountdownEndsAt: string | null;
   venue: string | null;
   court: string | null;
   round: string | null;
