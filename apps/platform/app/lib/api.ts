@@ -6,6 +6,8 @@ import { showSuccessToast } from "../components/toast";
 const BASE = process.env.NEXT_PUBLIC_API_BASE_URL as string;
 
 function successMessage(path: string): string {
+  if (path.endsWith("/result"))
+    return "The official final result was published.";
   if (path.includes("/admin/review/") && path.endsWith("/approve"))
     return "The team was approved and accreditation status was updated.";
   if (path.includes("approve"))
@@ -423,6 +425,7 @@ export type Stage = {
 };
 export type AdminMatch = {
   id: string;
+  version: number;
   stageId: string | null;
   stageName: string | null;
   scheduledAt: string | null;
@@ -471,6 +474,17 @@ export type MatchPatch = Partial<{
   roundLabel: string | null;
   status: AdminMatch["status"];
 }>;
+export type MatchResultChange = {
+  id: string;
+  recordedAt: string;
+  recordedBy: string;
+  actorName: string | null;
+  payload: {
+    before: { status: string; teamAScore: number; teamBScore: number };
+    after: { status: string; teamAScore: number; teamBScore: number };
+    reason: string;
+  };
+};
 export type MatchBroadcast = {
   matchId: string;
   provider: string | null;
@@ -728,9 +742,14 @@ export const api = {
   controlGameDayAccounts: () =>
     req<GameDayAccount[]>("/control/gameday/accounts"),
   updateControlGameDayAccount: (id: string, body: UpdateGameDayAccount) =>
-    req<GameDayAccount>(`/control/gameday/accounts/${id}`, { method: "PATCH", body }),
+    req<GameDayAccount>(`/control/gameday/accounts/${id}`, {
+      method: "PATCH",
+      body,
+    }),
   deleteControlGameDayAccount: (id: string) =>
-    req<{ ok: boolean }>(`/control/gameday/accounts/${id}`, { method: "DELETE" }),
+    req<{ ok: boolean }>(`/control/gameday/accounts/${id}`, {
+      method: "DELETE",
+    }),
   createControlGameDayAccount: (body: {
     email: string;
     displayName: string;
@@ -818,7 +837,10 @@ export const api = {
     ),
 
   restorePlayerPhotoPublication: (playerId: string) =>
-    req<PlayerPhotoPublication>("/admin/players/" + playerId + "/photo-publication/restore", { method: "POST" }),
+    req<PlayerPhotoPublication>(
+      "/admin/players/" + playerId + "/photo-publication/restore",
+      { method: "POST" },
+    ),
 
   // Roster accreditation review
   listReview: () => req<ReviewQueueItem[]>("/admin/review"),
@@ -892,6 +914,21 @@ export const api = {
     req<AdminMatch>(`/admin/match/matches/${id}`, { method: "PATCH", body }),
   deleteMatch: (id: string) =>
     req<{ ok: boolean }>(`/admin/match/matches/${id}`, { method: "DELETE" }),
+  publishMatchResult: (
+    id: string,
+    body: {
+      teamAScore: number;
+      teamBScore: number;
+      reason: string;
+      expectedVersion: number;
+    },
+  ) =>
+    req<AdminMatch>(`/admin/match/matches/${id}/result`, {
+      method: "POST",
+      body,
+    }),
+  matchResultHistory: (id: string) =>
+    req<MatchResultChange[]>(`/admin/match/matches/${id}/result-history`),
   matchBroadcast: (id: string) =>
     req<MatchBroadcast>(`/admin/match/matches/${id}/broadcast`),
   updateMatchBroadcast: (
@@ -912,7 +949,10 @@ export const api = {
     req<EdgeNode>(`/admin/match/edge-nodes/${id}`, { method: "DELETE" }),
   gameDayAccounts: () => req<GameDayAccount[]>("/admin/match/officials"),
   updateGameDayAccount: (id: string, body: UpdateGameDayAccount) =>
-    req<GameDayAccount>(`/admin/match/officials/${id}`, { method: "PATCH", body }),
+    req<GameDayAccount>(`/admin/match/officials/${id}`, {
+      method: "PATCH",
+      body,
+    }),
   deleteGameDayAccount: (id: string) =>
     req<{ ok: boolean }>(`/admin/match/officials/${id}`, { method: "DELETE" }),
   createGameDayAccount: (body: {

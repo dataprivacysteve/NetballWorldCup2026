@@ -23,7 +23,7 @@ One table official records the score in GameDay. vMix reads the same published f
 | `Status` | (logic) | `LIVE` or `FINAL` — drive a "FT" indicator if wanted |
 | `Quarter` | Quarter | e.g. `Q2` |
 | `Clock` | Clock | `MM:SS`, or `FT` at full time |
-| `TeamAAbbr` | TeamAAbbr | 3-letter code, e.g. `BRB` |
+| `TeamAAbbr` | TeamAAbbr | event display code, e.g. `BAR` |
 | `TeamAName` | TeamAName | full name, lower-third use |
 | `TeamAScore` | TeamAScore | integer |
 | `TeamAFlag` | TeamAFlag (image) | flag URL; vMix binds images by URL |
@@ -42,3 +42,22 @@ One table official records the score in GameDay. vMix reads the same published f
 - **System of record:** the bug and website show the *provisional* live score. The signed umpires' scoresheet remains the official result; the public number is confirmed when the match is marked final.
 - **Neutral fixture language:** Netball Americas fixtures use Team A and Team B. Neither side is treated as home or away.
 - **Push alternative (not recommended):** vMix also has an HTTP API (`SetText`) GameDay could push to. It is lower-latency but breaks if the vMix machine's address changes — keep Data Sources (pull) as the primary.
+
+## Event country codes (20 October 2026)
+
+The public website, venue display and vMix abbreviations use the same event convention:
+
+| Internal country code | Presentation code | Flag file |
+|---|---|---|
+| BRB | BAR | brb.svg |
+| CAN | CAN | can.svg |
+| GRD | GRN | grd.svg |
+| LCA | LCA | lca.svg |
+| SVG or VCT | SVG | svg.svg |
+| TTO | TRI | tto.svg |
+| USA | USA | usa.svg |
+| VGB | BVI | vgb.svg |
+
+The shared `@gameday/countries` workspace package owns this mapping. These are approved event abbreviations, not a claim to follow one international coding standard. Database keys, squad URLs and registration identifiers retain their existing values. Feed field names and XPath are unchanged; flag URLs continue using the existing asset filenames. Both XML and JSON broadcast feeds use the presentation abbreviations, including enhanced statistics feeds.
+
+Deployment must include `packages/countries`, the updated application package manifests and `pnpm-lock.yaml`. From the release root, run `pnpm install --frozen-lockfile`, then rebuild the API, website and platform through the normal release process. No database migration or reseed is required. Existing vMix column mappings continue to work; remove any title logic that assumes the previous abbreviation values.

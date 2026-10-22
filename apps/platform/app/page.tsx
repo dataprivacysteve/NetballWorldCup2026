@@ -1,11 +1,14 @@
 "use client";
 
+import { countryDisplayCode } from "@gameday/countries";
+
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import Advertising from "./advertising";
 import WebNews from "./web-news";
 import PhotoGovernance from "./photo-governance";
 import GameDayAccounts from "./game-day-accounts";
+import MatchResultEditor from "./match-result-editor";
 import FederationConsole from "./federation-console";
 import {
   api,
@@ -1073,11 +1076,11 @@ function Overview({
                         </span>
                       </div>
                       <p className="mt-2 font-semibold text-ink">
-                        {match.teamACode}{" "}
+                        {countryDisplayCode(match.teamACode)}{" "}
                         <span className="mx-1 font-normal text-ink-faded">
                           vs
                         </span>{" "}
-                        {match.teamBCode}
+                        {countryDisplayCode(match.teamBCode)}
                       </p>
                       <p className="mt-1 text-xs text-ink-muted">
                         {match.venue ?? "Venue TBC"}
@@ -1914,7 +1917,7 @@ function whenLabel(iso: string | null) {
 }
 function Matches() {
   const [now, setNow] = useState(() => Date.now());
-  const [showPast, setShowPast] = useState(false);
+  const [showPast, setShowPast] = useState(true);
   const [nations, setNations] = useState<MatchNation[] | null>(null);
   const [stages, setStages] = useState<Stage[] | null>(null);
   const [venues, setVenues] = useState<MatchVenue[] | null>(null);
@@ -1995,7 +1998,8 @@ function Matches() {
     };
   }, []);
 
-  const fixtures = matches === null ? null : visibleFixtures(matches, now, showPast);
+  const fixtures =
+    matches === null ? null : visibleFixtures(matches, now, showPast);
 
   return (
     <div className="space-y-8">
@@ -2061,10 +2065,16 @@ function Matches() {
             <div className="p-5">
               <EmptyState
                 icon="matches"
-                title={matches.length === 0 ? "No fixtures yet" : "No upcoming fixtures"}
-                description={matches.length === 0
-                  ? "Use the fixture form above to create the first match."
-                  : "Show past games to view earlier fixtures and results."}
+                title={
+                  matches.length === 0
+                    ? "No fixtures yet"
+                    : "No upcoming fixtures"
+                }
+                description={
+                  matches.length === 0
+                    ? "Use the fixture form above to create the first match."
+                    : "Show past games to view earlier fixtures and results."
+                }
               />
             </div>
           ) : (
@@ -2317,7 +2327,11 @@ function GameDayStaffing({
       <h2 className={labelCls}>GameDay staffing &amp; access</h2>
       <ErrorBanner error={error} />
       <div className="grid gap-4 lg:grid-cols-2">
-        <form onSubmit={createAccount} autoComplete="off" className={`${panel} space-y-3 p-5`}>
+        <form
+          onSubmit={createAccount}
+          autoComplete="off"
+          className={`${panel} space-y-3 p-5`}
+        >
           <h3 className="font-display text-lg font-bold text-ink">
             Create role account
           </h3>
@@ -2606,6 +2620,40 @@ function MatchRow({
   venues: MatchVenue[];
   onChange: () => void;
 }) {
+  const [busy, setBusy] = useState(false);
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 p-4">
+      <MatchFixtureControls
+        key={`${m.status}-${m.scheduledAt}-${m.courtId}`}
+        m={m}
+        venues={venues}
+        onChange={onChange}
+        busy={busy}
+        setBusy={setBusy}
+      />
+      <MatchResultEditor
+        match={m}
+        busy={busy}
+        setBusy={setBusy}
+        onPublished={onChange}
+      />
+    </div>
+  );
+}
+
+function MatchFixtureControls({
+  m,
+  venues,
+  onChange,
+  busy,
+  setBusy,
+}: {
+  m: AdminMatch;
+  venues: MatchVenue[];
+  onChange: () => void;
+  busy: boolean;
+  setBusy: (value: boolean) => void;
+}) {
   const [status, setStatus] = useState<AdminMatch["status"]>(m.status);
   const [courtId, setCourtId] = useState(m.courtId ?? "");
   const [scheduledAt, setScheduledAt] = useState(
@@ -2618,7 +2666,8 @@ function MatchRow({
           .slice(0, 16)
       : "",
   );
-  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const canEdit = [...MATCH_STATUSES, "ready"].includes(m.status);
 
   const dirty =
     status !== m.status ||
@@ -2635,30 +2684,65 @@ function MatchRow({
 
   async function save() {
     setBusy(true);
+    setError(null);
     try {
       await api.updateMatch(m.id, {
-        status,
+        ...(status !== m.status ? { status } : {}),
         courtId: courtId || null,
         scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : null,
       });
       onChange();
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : "Could not save fixture",
+      );
     } finally {
       setBusy(false);
     }
   }
   async function del() {
-    if (!confirm(`Delete ${m.teamAName} v ${m.teamBName}?`)) return;
+    if (
+      !confirm(
+        `Delete ${m.teamAName} v ${m.teamBName}? Its assignments, team sheets and broadcast settings will also be removed. Games with recorded activity must be cancelled instead.`,
+      )
+    )
+      return;
     setBusy(true);
+    setError(null);
     try {
       await api.deleteMatch(m.id);
       onChange();
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : "Could not delete fixture",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function cancel() {
+    if (
+      !confirm(
+        `Cancel ${m.teamAName} v ${m.teamBName}? This stops its clock and removes it from the live display. Recorded history will be kept.`,
+      )
+    )
+      return;
+    setBusy(true);
+    setError(null);
+    try {
+      await api.updateMatch(m.id, { status: "cancelled" });
+      onChange();
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : "Could not cancel fixture",
+      );
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 p-4">
+    <div className="contents">
       <div className="min-w-[3rem] font-mono text-[0.6rem] uppercase tracking-[0.06em] text-ink-muted">
         {m.stageName ?? "—"}
         <div className="text-ink-faded">{whenLabel(m.scheduledAt)}</div>
@@ -2666,7 +2750,7 @@ function MatchRow({
       <div className="flex flex-1 items-center justify-end gap-2 text-right">
         <span className="font-semibold text-ink">{m.teamAName}</span>
         <span className="rounded bg-bg-soft px-1.5 py-0.5 font-mono text-[0.58rem] font-bold text-navy">
-          {m.teamACode}
+          {countryDisplayCode(m.teamACode)}
         </span>
       </div>
       <span className="w-10 text-center font-display text-lg font-bold text-ink">
@@ -2678,35 +2762,37 @@ function MatchRow({
       </span>
       <div className="flex flex-1 items-center gap-2">
         <span className="rounded bg-bg-soft px-1.5 py-0.5 font-mono text-[0.58rem] font-bold text-navy">
-          {m.teamBCode}
+          {countryDisplayCode(m.teamBCode)}
         </span>
         <span className="font-semibold text-ink">{m.teamBName}</span>
       </div>
       <select
         value={status}
         onChange={(e) => setStatus(e.target.value as AdminMatch["status"])}
+        disabled={busy || !canEdit}
         className="rounded-md border border-line-strong bg-white px-2 py-1 text-xs font-semibold uppercase text-ink"
       >
-        {(MATCH_STATUSES.includes(m.status) ? MATCH_STATUSES : [m.status]).map(
-          (s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ),
-        )}
+        {(canEdit
+          ? Array.from(new Set([m.status, ...MATCH_STATUSES]))
+          : [m.status]
+        ).map((s) => (
+          <option key={s} value={s}>
+            {s}
+          </option>
+        ))}
       </select>
       <input
         type="datetime-local"
         value={scheduledAt}
         onChange={(e) => setScheduledAt(e.target.value)}
-        disabled={!MATCH_STATUSES.includes(m.status)}
+        disabled={busy || !canEdit}
         className="rounded-md border border-line-strong bg-white px-2 py-1 text-xs text-ink disabled:opacity-50"
         aria-label={`Schedule ${m.teamAName} versus ${m.teamBName}`}
       />
       <select
         value={courtId}
         onChange={(e) => setCourtId(e.target.value)}
-        disabled={!MATCH_STATUSES.includes(m.status)}
+        disabled={busy || !canEdit}
         className="rounded-md border border-line-strong bg-white px-2 py-1 text-xs text-ink disabled:opacity-50"
         aria-label={`Court ${m.teamAName} versus ${m.teamBName}`}
       >
@@ -2721,11 +2807,20 @@ function MatchRow({
       </select>
       <button
         onClick={save}
-        disabled={busy || !dirty}
+        disabled={busy || !dirty || !canEdit}
         className="rounded-md bg-navy px-3 py-1 text-xs font-semibold text-white disabled:opacity-40"
       >
         Save
       </button>
+      {m.status !== "cancelled" && (
+        <button
+          onClick={cancel}
+          disabled={busy}
+          className="rounded-md border border-line-strong px-3 py-1 text-xs font-semibold text-bad disabled:opacity-40"
+        >
+          Cancel game
+        </button>
+      )}
       <button
         onClick={del}
         disabled={busy}
@@ -2734,6 +2829,11 @@ function MatchRow({
       >
         <Icon name="close" className="h-4 w-4" />
       </button>
+      {error && (
+        <p role="alert" className="w-full text-sm text-bad">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

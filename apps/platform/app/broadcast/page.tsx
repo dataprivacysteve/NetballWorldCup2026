@@ -1,5 +1,7 @@
 "use client";
 
+import { countryDisplayCode } from "@gameday/countries";
+
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -96,7 +98,7 @@ export default function BroadcastPage() {
           <form onSubmit={save} className="enterprise-panel space-y-4 p-6">
             <label className="block text-sm font-semibold">Fixture
               <select className="enterprise-input mt-1 w-full" value={selected} onChange={(event) => setSelected(event.target.value)}>
-                {matches.map((match) => <option key={match.id} value={match.id}>{match.teamACode} v {match.teamBCode} · {match.roundLabel ?? "Fixture"}</option>)}
+                {matches.map((match) => <option key={match.id} value={match.id}>{countryDisplayCode(match.teamACode)} v {countryDisplayCode(match.teamBCode)} · {match.roundLabel ?? "Fixture"}</option>)}
               </select>
             </label>
             {value && <>

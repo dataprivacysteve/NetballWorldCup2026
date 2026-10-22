@@ -1,3 +1,4 @@
+import { countryIsoCode } from "@gameday/countries";
 import countries from "i18n-iso-countries";
 import en from "i18n-iso-countries/langs/en.json";
 
@@ -5,14 +6,14 @@ countries.registerLocale(en);
 
 export function countryLabel(code: string | null | undefined) {
   if (!code) return "Not provided";
-  const normalized = code.trim().toUpperCase();
+  const normalized = countryIsoCode(code);
   const name = countries.getName(normalized, "en");
   return name ? `${name} — ${normalized}` : `Unknown country code — ${normalized}`;
 }
 
 export function countryFlag(code: string | null | undefined) {
   if (!code) return "🌐";
-  const normalized = code.trim().toUpperCase();
+  const normalized = countryIsoCode(code);
   const alpha2 =
     normalized.length === 2 ? normalized : countries.alpha3ToAlpha2(normalized);
   if (!alpha2 || alpha2.length !== 2) return "🌐";

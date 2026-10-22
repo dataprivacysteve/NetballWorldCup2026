@@ -271,7 +271,7 @@ integration('rehearsal isolation (PostgreSQL)', () => {
       played: 1,
       goalsFor: 2,
       goalsAgainst: 1,
-      points: 2,
+      points: 3,
     });
     expect(await service.standings(trainingGroup)).toEqual([]);
   });
@@ -335,17 +335,17 @@ integration('rehearsal isolation (PostgreSQL)', () => {
       expect(await service.liveBroadcast()).toMatchObject({ TeamAScore: winner === 'A' ? 2 : 1, TeamBScore: winner === 'B' ? 2 : 1, Provisional: false });
       const standings = (await service.standings())[0].rows;
       expect(standings.find((row) => row.countryCode === 'BRB')).toMatchObject({
-        played: 1, points: winner === 'A' ? 2 : 0, goalsFor: winner === 'A' ? 2 : 1, goalsAgainst: winner === 'B' ? 2 : 1,
+        played: 1, points: winner === 'A' ? 3 : 0, goalsFor: winner === 'A' ? 2 : 1, goalsAgainst: winner === 'B' ? 2 : 1,
       });
       expect(standings.find((row) => row.countryCode === 'CAN')).toMatchObject({
-        played: 1, points: winner === 'B' ? 2 : 0, goalsFor: winner === 'B' ? 2 : 1, goalsAgainst: winner === 'A' ? 2 : 1,
+        played: 1, points: winner === 'B' ? 3 : 0, goalsFor: winner === 'B' ? 2 : 1, goalsAgainst: winner === 'A' ? 2 : 1,
       });
       expect((await service.results()).find((match) => match.id === official)?.teamA.score).toBe(winner === 'A' ? 2 : 1);
     },
   );
 
   it('returns no default feed if rehearsal is the only eligible match', async () => {
-    await client.query("UPDATE match SET status = 'scheduled' WHERE id = $1", [
+    await client.query("UPDATE match SET status = 'cancelled' WHERE id = $1", [
       official,
     ]);
     expect(await service.liveBroadcast()).toBeNull();

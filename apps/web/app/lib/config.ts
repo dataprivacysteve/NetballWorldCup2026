@@ -1,3 +1,4 @@
+import { countryIsoCode, countryFlagCode } from "@gameday/countries";
 // ---------------------------------------------------------------------------
 // Federation config — the export-product seam.
 //
@@ -84,7 +85,7 @@ export const federation = {
 
 export function nationTheme(code: string) {
   return (
-    federation.nations[code] ?? {
+    federation.nations[countryIsoCode(code)] ?? {
       flag: "",
       color: "#62627A",
     }
@@ -95,5 +96,5 @@ export function nationTheme(code: string) {
 // tries this first and falls back to the emoji/ISO monogram if the file is
 // missing, so dropping flag files in is all that's needed.
 export function flagSrc(code: string) {
-  return `/flags/${(code === "VCT" ? "SVG" : code).toLowerCase()}.svg`;
+  return `/flags/${countryFlagCode(code)}.svg`;
 }

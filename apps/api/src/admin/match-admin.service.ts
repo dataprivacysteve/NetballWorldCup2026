@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { Pool } from 'pg';
 import { drizzle, NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { and, asc, eq, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, max, or, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { PRIVILEGED_POOL } from '../db/db.tokens';
 import * as schema from '../db/schema';
@@ -27,6 +27,7 @@ import {
   UpdateMatchDto,
   UpsertMatchBroadcastDto,
   CreateEdgeNodeDto,
+  PublishMatchResultDto,
 } from './match-admin.dto';
 import { hashPassword } from '../auth/password.util';
 
@@ -613,91 +614,254 @@ export class MatchAdminService {
   }
 
   async updateMatch(id: string, dto: UpdateMatchDto) {
-    const [current] = await this.db
-      .select()
-      .from(schema.match)
-      .where(eq(schema.match.id, id));
-    if (!current) throw new NotFoundException('Match not found');
-    if (!['scheduled', 'postponed', 'cancelled'].includes(current.status)) {
-      throw new BadRequestException(
-        'A match cannot be rescheduled after match preparation begins',
-      );
-    }
-    const scheduledAt =
-      dto.scheduledAt === undefined
-        ? current.scheduledAt
-        : dto.scheduledAt
-          ? new Date(dto.scheduledAt)
-          : null;
-    if (scheduledAt && Number.isNaN(scheduledAt.getTime())) {
-      throw new BadRequestException('Scheduled time must be a valid ISO date');
-    }
-    const stageId = dto.stageId === undefined ? current.stageId : dto.stageId;
-    const courtId = dto.courtId === undefined ? current.courtId : dto.courtId;
-    await this.validateFixtureReferences(
-      current.teamADelegationId,
-      current.teamBDelegationId,
-      stageId ?? null,
-      courtId ?? null,
-    );
-    const patch: Partial<typeof schema.match.$inferInsert> = {
-      updatedAt: new Date(),
-    };
-    if (dto.stageId !== undefined) patch.stageId = dto.stageId;
-    if (dto.scheduledAt !== undefined) patch.scheduledAt = scheduledAt;
-    if (dto.courtId !== undefined) patch.courtId = dto.courtId;
-    if (dto.roundLabel !== undefined) patch.roundLabel = dto.roundLabel;
-    if (dto.status !== undefined) patch.status = dto.status;
-    if (dto.sortOrder !== undefined) patch.sortOrder = dto.sortOrder;
+    return this.db.transaction(async (tx) => {
+      await tx.execute(sql`SELECT id FROM "match" WHERE id = ${id} FOR UPDATE`);
+      const [current] = await tx
+        .select()
+        .from(schema.match)
+        .where(eq(schema.match.id, id));
+      if (!current) throw new NotFoundException('Match not found');
+      const cancelling = dto.status === 'cancelled';
+      if (
+        !cancelling &&
+        !['scheduled', 'ready', 'postponed', 'cancelled'].includes(
+          current.status,
+        )
+      ) {
+        throw new BadRequestException(
+          'This match has started. Cancel it to remove it from play while preserving its history.',
+        );
+      }
+      if (
+        !cancelling &&
+        current.status === 'cancelled' &&
+        (current.currentPeriod > 0 ||
+          current.teamAScore > 0 ||
+          current.teamBScore > 0 ||
+          current.resultConfirmedAt)
+      ) {
+        throw new BadRequestException(
+          'A cancelled match with recorded play cannot be reopened. Create a replacement fixture.',
+        );
+      }
+      const scheduledAt =
+        dto.scheduledAt === undefined
+          ? current.scheduledAt
+          : dto.scheduledAt
+            ? new Date(dto.scheduledAt)
+            : null;
+      if (scheduledAt && Number.isNaN(scheduledAt.getTime())) {
+        throw new BadRequestException(
+          'Scheduled time must be a valid ISO date',
+        );
+      }
+      const stageId = dto.stageId === undefined ? current.stageId : dto.stageId;
+      const courtId = dto.courtId === undefined ? current.courtId : dto.courtId;
+      if (dto.stageId !== undefined || dto.courtId !== undefined)
+        await this.validateFixtureReferences(
+          current.teamADelegationId,
+          current.teamBDelegationId,
+          stageId ?? null,
+          courtId ?? null,
+          tx,
+        );
+      const patch: Partial<typeof schema.match.$inferInsert> = {
+        updatedAt: new Date(),
+        version: current.version + 1,
+      };
+      if (dto.stageId !== undefined) patch.stageId = dto.stageId;
+      if (dto.scheduledAt !== undefined) patch.scheduledAt = scheduledAt;
+      if (dto.courtId !== undefined) patch.courtId = dto.courtId;
+      if (dto.roundLabel !== undefined) patch.roundLabel = dto.roundLabel;
+      if (dto.status !== undefined) patch.status = dto.status;
+      if (dto.sortOrder !== undefined) patch.sortOrder = dto.sortOrder;
 
-    const [row] = await this.db
-      .update(schema.match)
-      .set(patch)
-      .where(eq(schema.match.id, id))
-      .returning();
-    if (!row) throw new NotFoundException('Match not found');
-    return row;
+      if (dto.status === 'cancelled' || dto.status === 'postponed') {
+        patch.clockRunning = false;
+        patch.clockStartedAt = null;
+        patch.startCountdownEndsAt = null;
+        patch.periodEndedAt = null;
+        await tx
+          .update(schema.matchBroadcast)
+          .set({ featured: false, status: 'archived', updatedAt: new Date() })
+          .where(eq(schema.matchBroadcast.matchId, id));
+      }
+
+      const [row] = await tx
+        .update(schema.match)
+        .set(patch)
+        .where(eq(schema.match.id, id))
+        .returning();
+      if (!row) throw new NotFoundException('Match not found');
+      return row;
+    });
+  }
+
+  async publishResult(id: string, userId: string, dto: PublishMatchResultDto) {
+    return this.db.transaction(async (tx) => {
+      await tx.execute(sql`SELECT id FROM "match" WHERE id = ${id} FOR UPDATE`);
+      const [current] = await tx
+        .select()
+        .from(schema.match)
+        .where(eq(schema.match.id, id));
+      if (!current) throw new NotFoundException('Match not found');
+      if (current.version !== dto.expectedVersion) {
+        throw new ConflictException(
+          'This game changed while you were entering the result. Refresh the fixture and review the latest score before publishing.',
+        );
+      }
+      const reason = dto.reason.trim();
+      if (
+        reason.length < 5 ||
+        reason.length > 1000 ||
+        ![dto.teamAScore, dto.teamBScore].every(
+          (score) =>
+            Number.isInteger(score) && score >= 0 && score <= 2147483647,
+        )
+      ) {
+        throw new BadRequestException(
+          'Enter non-negative whole-number scores and a reason of 5–1000 characters.',
+        );
+      }
+      const before = {
+        status: current.status,
+        teamAScore: current.teamAScore,
+        teamBScore: current.teamBScore,
+        resultConfirmedAt: current.resultConfirmedAt,
+        resultConfirmedBy: current.resultConfirmedBy,
+      };
+      const after = {
+        status: 'final' as const,
+        teamAScore: dto.teamAScore,
+        teamBScore: dto.teamBScore,
+      };
+      const [last] = await tx
+        .select({ sequence: max(schema.matchEvent.sequence) })
+        .from(schema.matchEvent)
+        .where(eq(schema.matchEvent.matchId, id));
+      const [event] = await tx
+        .insert(schema.matchEvent)
+        .values({
+          matchId: id,
+          sequence: (last?.sequence ?? 0) + 1,
+          eventType: 'result.loc_published',
+          recordedBy: userId,
+          payload: { before, after, reason, source: 'official_score_sheet' },
+        })
+        .returning({ id: schema.matchEvent.id });
+      const [updated] = await tx
+        .update(schema.match)
+        .set({
+          ...after,
+          clockRunning: false,
+          clockStartedAt: null,
+          periodEndedAt: null,
+          startCountdownEndsAt: null,
+          resultConfirmedAt: new Date(),
+          resultConfirmedBy: userId,
+          version: current.version + 1,
+          updatedAt: new Date(),
+        })
+        .where(eq(schema.match.id, id))
+        .returning();
+      // Use the existing official result source without inventing player goals
+      // or changing any previously captured scoring/quarter events.
+      const classification = await tx.execute<{ isRehearsal: boolean }>(sql`
+        SELECT ${sql.raw(REHEARSAL_MATCH_SQL)} AS "isRehearsal" FROM "match" m WHERE m.id = ${id}
+      `);
+      if (!classification.rows[0]?.isRehearsal) {
+        await tx
+          .insert(schema.historicalMatchProvenance)
+          .values({
+            matchId: id,
+            datasetId: schema.SYSTEM_OF_RECORD_DATASET_ID,
+            sourceRecordId: id,
+            confidence: 'high',
+            recordStatus: 'official',
+          })
+          .onConflictDoNothing();
+      }
+      await tx.insert(schema.historicalGovernanceEvent).values({
+        actorUserId: userId,
+        action: 'match.result.published',
+        targetType: 'match',
+        targetId: id,
+        details: {
+          before,
+          after,
+          reason,
+          eventId: event.id,
+          source: 'official_score_sheet',
+        },
+      });
+      return updated;
+    });
+  }
+
+  async resultHistory(id: string) {
+    await this.requireMatch(id);
+    return this.db
+      .select({
+        id: schema.matchEvent.id,
+        recordedAt: schema.matchEvent.recordedAt,
+        recordedBy: schema.matchEvent.recordedBy,
+        actorName: schema.appUser.displayName,
+        payload: schema.matchEvent.payload,
+      })
+      .from(schema.matchEvent)
+      .leftJoin(
+        schema.appUser,
+        eq(schema.appUser.id, schema.matchEvent.recordedBy),
+      )
+      .where(
+        and(
+          eq(schema.matchEvent.matchId, id),
+          eq(schema.matchEvent.eventType, 'result.loc_published'),
+        ),
+      )
+      .orderBy(desc(schema.matchEvent.sequence))
+      .limit(50);
   }
 
   async deleteMatch(id: string) {
-    const [existing] = await this.db
-      .select({ status: schema.match.status })
-      .from(schema.match)
-      .where(eq(schema.match.id, id));
-    if (!existing) throw new NotFoundException('Match not found');
-    if (!['scheduled', 'postponed', 'cancelled'].includes(existing.status)) {
-      throw new BadRequestException(
-        'A match cannot be deleted after match preparation begins',
-      );
-    }
-    const [[assignment], [sheet], [event]] = await Promise.all([
-      this.db
-        .select({ id: schema.matchOfficialAssignment.id })
-        .from(schema.matchOfficialAssignment)
-        .where(eq(schema.matchOfficialAssignment.matchId, id))
-        .limit(1),
-      this.db
-        .select({ id: schema.matchTeamSheet.id })
-        .from(schema.matchTeamSheet)
-        .where(eq(schema.matchTeamSheet.matchId, id))
-        .limit(1),
-      this.db
+    return this.db.transaction(async (tx) => {
+      await tx.execute(sql`SELECT id FROM "match" WHERE id = ${id} FOR UPDATE`);
+      const [existing] = await tx
+        .select()
+        .from(schema.match)
+        .where(eq(schema.match.id, id));
+      if (!existing) throw new NotFoundException('Match not found');
+      if (
+        !['scheduled', 'ready', 'postponed', 'cancelled'].includes(
+          existing.status,
+        ) ||
+        existing.currentPeriod > 0 ||
+        existing.teamAScore > 0 ||
+        existing.teamBScore > 0 ||
+        existing.resultConfirmedAt
+      ) {
+        throw new BadRequestException(
+          'This match has recorded play. Cancel it instead to preserve its history.',
+        );
+      }
+      const [event] = await tx
         .select({ id: schema.matchEvent.id })
         .from(schema.matchEvent)
         .where(eq(schema.matchEvent.matchId, id))
-        .limit(1),
-    ]);
-    if (assignment || sheet || event) {
-      throw new BadRequestException(
-        'Remove operational assignments and team-sheet preparation before deleting this fixture',
-      );
-    }
-    const [row] = await this.db
-      .delete(schema.match)
-      .where(eq(schema.match.id, id))
-      .returning({ id: schema.match.id });
-    if (!row) throw new NotFoundException('Match not found');
-    return { ok: true };
+        .limit(1);
+      if (event) {
+        throw new BadRequestException(
+          'This match has recorded activity. Cancel it instead to preserve its history.',
+        );
+      }
+      // Foreign-key cascades remove assignments, team sheets and broadcast settings.
+      const [row] = await tx
+        .delete(schema.match)
+        .where(eq(schema.match.id, id))
+        .returning({ id: schema.match.id });
+      if (!row) throw new NotFoundException('Match not found');
+      return { ok: true };
+    });
   }
 
   private async validateFixtureReferences(
@@ -705,9 +869,10 @@ export class MatchAdminService {
     teamBId: string,
     stageId: string | null,
     courtId: string | null,
+    db: Pick<NodePgDatabase<typeof schema>, 'select'> = this.db,
   ) {
     const tournamentId = await this.tournamentId;
-    const teams = await this.db
+    const teams = await db
       .select({ id: schema.delegation.id })
       .from(schema.delegation)
       .where(
@@ -722,7 +887,7 @@ export class MatchAdminService {
       );
     }
     if (stageId) {
-      const [stage] = await this.db
+      const [stage] = await db
         .select({ id: schema.stage.id })
         .from(schema.stage)
         .where(
@@ -737,7 +902,7 @@ export class MatchAdminService {
         );
     }
     if (courtId) {
-      const [court] = await this.db
+      const [court] = await db
         .select({ id: schema.court.id })
         .from(schema.court)
         .innerJoin(schema.venue, eq(schema.venue.id, schema.court.venueId))

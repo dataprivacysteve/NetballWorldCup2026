@@ -39,6 +39,7 @@
     "db:bootstrap-stats": "tsx src/db/bootstrap-stats.ts"
   },
   "dependencies": {
+    "@gameday/countries": "workspace:*",
     "@aws-sdk/client-s3": "^3.1066.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.4",

@@ -1,5 +1,7 @@
 "use client";
 
+import { countryDisplayCode } from "@gameday/countries";
+
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -630,7 +632,7 @@ function GameDayOperations() {
               <h3 className="font-display text-xl font-bold">Assign fixture crew</h3>
               <p className="mt-1 text-sm text-ink-muted">Assign one scorer to run goals and the match clock. A dedicated timekeeper is optional.</p>
             </div>
-            <label><span className={label}>Fixture</span><select className={input} value={matchId} onChange={(event) => setMatchId(event.target.value)}><option value="">Select fixture…</option>{matches.map((match) => <option key={match.id} value={match.id}>{match.teamACode} v {match.teamBCode} · {match.roundLabel ?? "Fixture"}</option>)}</select></label>
+            <label><span className={label}>Fixture</span><select className={input} value={matchId} onChange={(event) => setMatchId(event.target.value)}><option value="">Select fixture…</option>{matches.map((match) => <option key={match.id} value={match.id}>{countryDisplayCode(match.teamACode)} v {countryDisplayCode(match.teamBCode)} · {match.roundLabel ?? "Fixture"}</option>)}</select></label>
             <div className="space-y-3">
               {gameDayRoles.map((item) => {
                 const assigned = visibleAssignments.find((row) => row.role === item.value);

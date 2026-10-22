@@ -36,13 +36,42 @@ describe('broadcast feed', () => {
       Clock: '09:50',
       IntervalClock: null,
       ClockRunning: true,
-      TeamAAbbr: 'BRB',
+      TeamAAbbr: 'BAR',
       TeamAScore: 12,
       TeamBAbbr: 'JAM',
       TeamBScore: 9,
       Provisional: true,
     });
     expect(feed.TeamAFlag).toBe('https://example.test/flags/brb.svg');
+    for (const [input, display, flag] of [
+      ['BRB', 'BAR', 'brb'],
+      ['BAR', 'BAR', 'brb'],
+      ['TTO', 'TRI', 'tto'],
+      ['TRI', 'TRI', 'tto'],
+      ['GRD', 'GRN', 'grd'],
+      ['VGB', 'BVI', 'vgb'],
+      ['VCT', 'SVG', 'svg'],
+      ['SVG', 'SVG', 'svg'],
+      ['CAN', 'CAN', 'can'],
+      ['USA', 'USA', 'usa'],
+      ['LCA', 'LCA', 'lca'],
+    ]) {
+      const mapped = shapeBroadcastFeed(
+        { ...row, teamACode: input, teamBCode: input },
+        now,
+        'https://example.test/',
+      );
+      expect(mapped).toMatchObject({
+        TeamAAbbr: display,
+        TeamBAbbr: display,
+        TeamAFlag: 'https://example.test/flags/' + flag + '.svg',
+        TeamBFlag: 'https://example.test/flags/' + flag + '.svg',
+        MatchId: row.id,
+        TeamAScore: 12,
+        TeamBScore: 9,
+      });
+      expect(row.teamACode).toBe('BRB');
+    }
     expect(Object.keys(feed).some((key) => /home|away/i.test(key))).toBe(false);
   });
 

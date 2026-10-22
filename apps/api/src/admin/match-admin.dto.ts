@@ -6,7 +6,11 @@ import {
   IsString,
   IsUUID,
   MaxLength,
+  Max,
+  Min,
+  MinLength,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 const MATCH_STATUSES = ['scheduled', 'postponed', 'cancelled'] as const;
 
@@ -95,6 +99,19 @@ export class UpdateMatchDto {
   @IsOptional()
   @IsInt()
   sortOrder?: number;
+}
+
+export class PublishMatchResultDto {
+  @IsInt() @Min(0) @Max(2147483647) teamAScore!: number;
+  @IsInt() @Min(0) @Max(2147483647) teamBScore!: number;
+  @IsInt() @Min(0) expectedVersion!: number;
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
+  @IsString()
+  @MinLength(5)
+  @MaxLength(1000)
+  reason!: string;
 }
 
 export class UpsertMatchBroadcastDto {

@@ -1,5 +1,7 @@
 "use client";
 
+import { countryDisplayCode, countryFlagCode } from "@gameday/countries";
+
 import { useEffect, useState } from "react";
 import { countryFlag } from "../lib/countries";
 import { countdownAlertClass } from "../../../../packages/shared/countdown";
@@ -66,7 +68,10 @@ function quarterEndNotice(quarter: string) {
   if (quarter === "Q1")
     return { heading: "End of 1st quarter", detail: "4-minute interval" };
   if (quarter === "Q2")
-    return { heading: "End of 2nd quarter", detail: "Half-time · 8-minute interval" };
+    return {
+      heading: "End of 2nd quarter",
+      detail: "Half-time · 8-minute interval",
+    };
   if (quarter === "Q3")
     return { heading: "End of 3rd quarter", detail: "4-minute interval" };
   if (quarter === "Q4")
@@ -115,7 +120,9 @@ export default function LiveAudienceDisplay() {
     feed: null,
     error: null,
   });
-  const [advertisements, setAdvertisements] = useState<DisplayAdvertisement[]>([]);
+  const [advertisements, setAdvertisements] = useState<DisplayAdvertisement[]>(
+    [],
+  );
   const [advertisementIndex, setAdvertisementIndex] = useState(0);
 
   useEffect(() => {
@@ -131,6 +138,10 @@ export default function LiveAudienceDisplay() {
           signal: request.signal,
         });
         if (!response.ok) {
+          if (response.status === 404 && !cancelled) {
+            setState({ feed: null, error: "Waiting for the next match…" });
+            return;
+          }
           throw new Error(
             response.status === 404
               ? "No broadcast match is selected"
@@ -144,7 +155,9 @@ export default function LiveAudienceDisplay() {
         setState((current) => ({
           ...current,
           error:
-            cause instanceof Error ? cause.message : "Broadcast feed unavailable",
+            cause instanceof Error
+              ? cause.message
+              : "Broadcast feed unavailable",
         }));
       }
     }
@@ -196,9 +209,7 @@ export default function LiveAudienceDisplay() {
     const current = advertisements[advertisementIndex % advertisements.length];
     const timer = window.setTimeout(
       () =>
-        setAdvertisementIndex(
-          (index) => (index + 1) % advertisements.length,
-        ),
+        setAdvertisementIndex((index) => (index + 1) % advertisements.length),
       Math.max(5, current.displaySeconds) * 1000,
     );
     return () => window.clearTimeout(timer);
@@ -263,9 +274,13 @@ export default function LiveAudienceDisplay() {
             className={`flex min-w-0 flex-col items-center ${index ? "col-start-3 row-start-1" : "col-start-1 row-start-1"}`}
           >
             <CountryFlag
-              abbreviation={team.abbreviation}
+              abbreviation={countryDisplayCode(team.abbreviation)}
               name={team.name}
-              src={DISPLAY_FLAGS[team.abbreviation] ?? team.flag}
+              src={
+                DISPLAY_FLAGS[
+                  countryFlagCode(team.abbreviation).toUpperCase()
+                ] ?? team.flag
+              }
             />
             <p className="mt-[clamp(.75rem,2vh,1.5rem)] max-w-full truncate pb-[0.14em] text-center text-[clamp(1.5rem,3.2vw,4rem)] font-extrabold leading-[1.16] tracking-[-0.035em]">
               {team.name}
@@ -280,10 +295,30 @@ export default function LiveAudienceDisplay() {
           {["SCHEDULED", "READY"].includes(feed.Status) ? (
             <div className="flex flex-col items-center text-center">
               <p className="text-[clamp(1.15rem,2vw,2.5rem)] font-extrabold uppercase tracking-wide text-[#f4c430]">
-                {feed.GameStartCountdown === "00:00" ? "Awaiting start" : feed.GameStartCountdown ? "Game starts in" : "Awaiting game start"}
+                {feed.GameStartCountdown === "00:00"
+                  ? "Awaiting start"
+                  : feed.GameStartCountdown
+                    ? "Game starts in"
+                    : "Awaiting game start"}
               </p>
-              {feed.GameStartCountdown && <p className={`mt-5 font-mono text-[clamp(4rem,8vw,9rem)] font-bold leading-none tabular-nums ${countdownAlertClass(feed.GameStartCountdown)}`}>{feed.GameStartCountdown}</p>}
-              {feed.ExpectedStartAt && <p className="mt-5 text-[clamp(1rem,1.5vw,2rem)] font-bold">Expected start {new Intl.DateTimeFormat("en-GB", { timeZone: "America/Barbados", hour: "2-digit", minute: "2-digit" }).format(new Date(feed.ExpectedStartAt))} AST</p>}
+              {feed.GameStartCountdown && (
+                <p
+                  className={`mt-5 font-mono text-[clamp(4rem,8vw,9rem)] font-bold leading-none tabular-nums ${countdownAlertClass(feed.GameStartCountdown)}`}
+                >
+                  {feed.GameStartCountdown}
+                </p>
+              )}
+              {feed.ExpectedStartAt && (
+                <p className="mt-5 text-[clamp(1rem,1.5vw,2rem)] font-bold">
+                  Expected start{" "}
+                  {new Intl.DateTimeFormat("en-GB", {
+                    timeZone: "America/Barbados",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  }).format(new Date(feed.ExpectedStartAt))}{" "}
+                  AST
+                </p>
+              )}
             </div>
           ) : quarterEnd ? (
             <div className="flex flex-col items-center rounded-[clamp(1rem,2vw,2rem)] border-2 border-[#f4c430]/60 bg-[#0d1835] px-[clamp(1rem,2vw,2.5rem)] py-[clamp(1.25rem,3vh,3rem)] shadow-[0_1.5rem_5rem_rgba(0,0,0,.4)]">
@@ -294,7 +329,9 @@ export default function LiveAudienceDisplay() {
                 {quarterEnd.detail}
               </p>
               {feed.IntervalClock && (
-                <p className={`mt-[clamp(1rem,2.5vh,2rem)] text-[clamp(3.5rem,7vw,8rem)] font-black leading-none tracking-[-0.055em] text-white tabular-nums ${countdownAlertClass(feed.IntervalClock)}`}>
+                <p
+                  className={`mt-[clamp(1rem,2.5vh,2rem)] text-[clamp(3.5rem,7vw,8rem)] font-black leading-none tracking-[-0.055em] text-white tabular-nums ${countdownAlertClass(feed.IntervalClock)}`}
+                >
                   {feed.IntervalClock}
                 </p>
               )}
@@ -316,4 +353,3 @@ export default function LiveAudienceDisplay() {
     </main>
   );
 }
-

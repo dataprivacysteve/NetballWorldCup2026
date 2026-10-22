@@ -1,3 +1,4 @@
+import { countryDisplayCode, countryFlagCode } from '@gameday/countries';
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Pool } from 'pg';
@@ -25,7 +26,7 @@ import {
 // ---------------------------------------------------------------------------
 
 // Points model (Module 4 decision; make config-driven for the export chassis).
-const WIN_POINTS = 2;
+const WIN_POINTS = 3;
 const QUALIFY_TOP = 2; // top N of each group advance to the World Cup.
 const POSITION_NAMES: Record<string, string> = {
   GS: 'Goal Shooter',
@@ -282,14 +283,14 @@ export function shapeBroadcastFeed(
       ? (row.startCountdownEndsAt?.toISOString() ?? null)
       : null,
     ClockRunning: row.clockRunning && liveClock(row, now) !== '00:00',
-    TeamAAbbr: row.teamACode,
+    TeamAAbbr: countryDisplayCode(row.teamACode),
     TeamAName: row.teamAName,
     TeamAScore: row.teamAScore,
-    TeamAFlag: `${flagOrigin.replace(/\/$/, '')}/flags/${row.teamACode.toLowerCase()}.svg`,
-    TeamBAbbr: row.teamBCode,
+    TeamAFlag: `${flagOrigin.replace(/\/$/, '')}/flags/${countryFlagCode(row.teamACode)}.svg`,
+    TeamBAbbr: countryDisplayCode(row.teamBCode),
     TeamBName: row.teamBName,
     TeamBScore: row.teamBScore,
-    TeamBFlag: `${flagOrigin.replace(/\/$/, '')}/flags/${row.teamBCode.toLowerCase()}.svg`,
+    TeamBFlag: `${flagOrigin.replace(/\/$/, '')}/flags/${countryFlagCode(row.teamBCode)}.svg`,
     Venue: row.venue ?? '',
     Court: row.court ?? '',
     Provisional: row.isRehearsal === true || row.status !== 'final',
@@ -303,7 +304,8 @@ export function liveBroadcastFilter(matchId?: string) {
     : `WHERE ${OFFICIAL_MATCH_SQL}
        AND (m.status IN ('ready', 'live', 'suspended', 'awaiting_confirmation', 'final')
        OR (COALESCE(mb.featured, false) = true AND m.status = 'scheduled')
-       OR (m.start_countdown_ends_at IS NOT NULL AND m.status = 'scheduled'))`;
+       OR (m.start_countdown_ends_at IS NOT NULL AND m.status = 'scheduled')
+       OR (m.status = 'scheduled' AND m.scheduled_at >= now()))`;
 }
 
 export interface StandingRow {
@@ -781,11 +783,16 @@ export class PublicService {
     const where = liveBroadcastFilter(matchId);
     const { rows } = await this.pool.query<MatchRow>(
       `${MATCH_SELECT} ${where}
-       ORDER BY CASE WHEN m.status IN ('live', 'suspended', 'awaiting_confirmation') THEN 0 ELSE 1 END,
+       ORDER BY CASE
+           WHEN m.status IN ('live', 'suspended', 'awaiting_confirmation') THEN 0
+           WHEN m.status IN ('scheduled', 'ready') THEN 1
+           ELSE 2 END,
          CASE WHEN m.status IN ('scheduled', 'ready') AND m.start_countdown_ends_at IS NOT NULL THEN 0 ELSE 1 END,
+         CASE WHEN m.status IN ('scheduled', 'ready') AND COALESCE(mb.featured, false) THEN 0 ELSE 1 END,
+         CASE WHEN m.status IN ('scheduled', 'ready') THEN COALESCE(m.start_countdown_ends_at, m.scheduled_at) END ASC NULLS LAST,
+         CASE WHEN m.status IN ('scheduled', 'ready') THEN m.sort_order END ASC,
          m.updated_at DESC,
-         COALESCE(mb.featured, false) DESC,
-         m.scheduled_at DESC NULLS LAST LIMIT 1`,
+         m.scheduled_at DESC NULLS LAST, m.id LIMIT 1`,
       matchId ? [matchId] : [],
     );
     return rows[0]

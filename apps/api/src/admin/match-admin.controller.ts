@@ -15,8 +15,10 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Req,
   UseGuards,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { AuthGuard, LocOfficerGuard } from '../auth/auth.guard';
 import { MatchAdminService } from './match-admin.service';
 import {
@@ -28,6 +30,7 @@ import {
   UpdateMatchDto,
   UpsertMatchBroadcastDto,
   CreateEdgeNodeDto,
+  PublishMatchResultDto,
 } from './match-admin.dto';
 
 // OC match-centre management (Module 4 writer). Admin-only.
@@ -165,6 +168,20 @@ export class MatchAdminController {
   @Delete('matches/:id')
   deleteMatch(@Param('id', ParseUUIDPipe) id: string) {
     return this.svc.deleteMatch(id);
+  }
+
+  @Post('matches/:id/result')
+  publishResult(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: PublishMatchResultDto,
+    @Req() req: Request & { user: { userId: string } },
+  ) {
+    return this.svc.publishResult(id, req.user.userId, dto);
+  }
+
+  @Get('matches/:id/result-history')
+  resultHistory(@Param('id', ParseUUIDPipe) id: string) {
+    return this.svc.resultHistory(id);
   }
 
   @Get('matches/:id/broadcast')

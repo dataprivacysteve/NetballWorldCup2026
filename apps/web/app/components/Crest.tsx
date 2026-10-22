@@ -1,5 +1,7 @@
 "use client";
 
+import { countryDisplayCode } from "@gameday/countries";
+
 import { useState } from "react";
 import type { CSSProperties } from "react";
 import { nationTheme, flagSrc } from "../lib/config";
@@ -28,7 +30,7 @@ export function Crest({
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={flagSrc(code)}
-          alt={code}
+          alt={countryDisplayCode(code)}
           onError={() => setImgFailed(true)}
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
@@ -49,7 +51,7 @@ export function Crest({
       className={`crest iso${round ? " round" : ""}`}
       style={{ ...base, fontSize: Math.round(size * 0.3) }}
     >
-      {code}
+      {countryDisplayCode(code)}
     </span>
   );
 }

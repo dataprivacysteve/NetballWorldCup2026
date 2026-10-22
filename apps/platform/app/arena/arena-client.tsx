@@ -1,5 +1,6 @@
 "use client";
 
+import { countryFlagCode } from "@gameday/countries";
 import { useEffect, useMemo, useState } from "react";
 import { countdownAlertClass } from "../../../../packages/shared/countdown";
 
@@ -54,7 +55,7 @@ type ArenaData = {
 };
 
 function flagPath(code: string) {
-  const normalized = code.toLowerCase();
+  const normalized = countryFlagCode(code);
   return `/flags/${normalized}.${normalized === "xta" || normalized === "xtb" ? "png" : "svg"}`;
 }
 

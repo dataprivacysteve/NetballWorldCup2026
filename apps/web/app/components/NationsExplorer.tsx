@@ -1,5 +1,7 @@
 "use client";
 
+import { countryDisplayCode } from "@gameday/countries";
+
 import { useState } from "react";
 import { Crest } from "./Crest";
 import type { Nation, Squad } from "../lib/api";
@@ -30,7 +32,7 @@ export function NationsExplorer({
             <div>
               <div className="nm">{n.name}</div>
               <div className="iso">
-                {n.countryCode}
+                {countryDisplayCode(n.countryCode)}
                 {n.group ? ` · ${n.group}` : ""}
               </div>
             </div>

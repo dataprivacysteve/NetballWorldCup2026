@@ -1,5 +1,6 @@
 "use client";
 
+import { countryFlagCode } from "@gameday/countries";
 import { useEffect, useMemo, useState } from "react";
 
 const API = process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://api.netballamericas.test";
@@ -45,7 +46,7 @@ const MATCHUPS = [
 ] as const;
 
 function flagPath(code: string) {
-  return `/flags/${code.toLowerCase()}.svg`;
+  return `/flags/${countryFlagCode(code)}.svg`;
 }
 
 function playerPhoto(path: string | null) {

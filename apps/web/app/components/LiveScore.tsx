@@ -1,5 +1,7 @@
 "use client";
 
+import { countryDisplayCode } from "@gameday/countries";
+
 import { usePublicPoll } from "./usePublicPoll";
 import { countdownAlertClass } from "../../../../packages/shared/countdown";
 
@@ -74,13 +76,13 @@ export function LiveScore({
       </div>
       <div className="live-score-sides">
         <div>
-          <small>{feed.TeamAAbbr}</small>
+          <small>{countryDisplayCode(feed.TeamAAbbr)}</small>
           <span>{feed.TeamAName}</span>
           <b>{feed.TeamAScore}</b>
         </div>
         <em>–</em>
         <div>
-          <small>{feed.TeamBAbbr}</small>
+          <small>{countryDisplayCode(feed.TeamBAbbr)}</small>
           <span>{feed.TeamBName}</span>
           <b>{feed.TeamBScore}</b>
         </div>

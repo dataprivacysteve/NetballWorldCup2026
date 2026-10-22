@@ -1,4 +1,6 @@
 "use client";
+
+import { countryDisplayCode } from "@gameday/countries";
 import { createContext, useContext, type ReactNode } from "react";
 import type { Match, MatchCentreData } from "../lib/api";
 import { Crest } from "./Crest";
@@ -68,7 +70,7 @@ export function TournamentLiveIntro({ datesLabel, venue, imageUrl }: { datesLabe
   return <section className="live-intro" id="top" style={imageUrl ? { backgroundImage:`linear-gradient(90deg,rgba(10,10,18,.97),rgba(10,10,18,.85)),url(${imageUrl})` } : undefined}>
     <div className="wrap live-intro-grid">
       <div><p className="live-intro-kicker">Netball World Cup 2027 · Americas</p><h1 className="disp">THE QUALIFIER.<br/><span>EVERY GAME HERE.</span></h1><p className="live-intro-meta">{datesLabel} · {venue}</p><div className="live-intro-actions"><a className="btn btn-gold" href="#watch">Watch live &amp; replays ↗</a><a className="live-intro-score-link" href="#schedule">Scores &amp; schedule →</a></div></div>
-      <div className="live-intro-match"><div className="live-intro-match-top"><span>{active ? 'On court now' : 'Next on court'}</span><a href="#schedule">Full schedule ↗</a></div>{match ? <><p className="live-intro-match-time">{active ? 'Live match' : dateTimeLabel(match.startCountdownEndsAt ?? match.scheduledAt)} · AST</p><div className="live-intro-match-teams"><div><Crest code={match.teamA.code} size={44}/><strong>{match.teamA.code}</strong><span>{match.teamA.name}</span></div><b>{active ? `${match.teamA.score ?? 0}–${match.teamB.score ?? 0}` : 'v'}</b><div><Crest code={match.teamB.code} size={44}/><strong>{match.teamB.code}</strong><span>{match.teamB.name}</span></div></div></> : <p className="live-intro-no-match">See the results and catch up on every recording below.</p>}</div>
+      <div className="live-intro-match"><div className="live-intro-match-top"><span>{active ? 'On court now' : 'Next on court'}</span><a href="#schedule">Full schedule ↗</a></div>{match ? <><p className="live-intro-match-time">{active ? 'Live match' : dateTimeLabel(match.startCountdownEndsAt ?? match.scheduledAt)} · AST</p><div className="live-intro-match-teams"><div><Crest code={match.teamA.code} size={44}/><strong>{countryDisplayCode(match.teamA.code)}</strong><span>{match.teamA.name}</span></div><b>{active ? `${match.teamA.score ?? 0}–${match.teamB.score ?? 0}` : 'v'}</b><div><Crest code={match.teamB.code} size={44}/><strong>{countryDisplayCode(match.teamB.code)}</strong><span>{match.teamB.name}</span></div></div></> : <p className="live-intro-no-match">See the results and catch up on every recording below.</p>}</div>
     </div>
   </section>;
 }
@@ -162,7 +164,7 @@ export function FixtureStrip() {
                 <div>
                   <div className="when">{dayLabel(m.scheduledAt)}</div>
                   <div className="tm">
-                    {m.teamA.code} v {m.teamB.code}
+                    {countryDisplayCode(m.teamA.code)} v {countryDisplayCode(m.teamB.code)}
                   </div>
                   <div className="pl">{m.stage ?? "Fixture"}</div>
                 </div>

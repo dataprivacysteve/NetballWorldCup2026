@@ -1,5 +1,7 @@
 "use client";
 
+import { countryDisplayCode } from "@gameday/countries";
+
 import { useCallback, useEffect, useState } from "react";
 import { TimekeeperControls } from "./timekeeper-controls";
 import { countdownAlertClass } from "../../../../packages/shared/countdown";
@@ -196,9 +198,9 @@ export default function GameDayPage() {
                         {assignedMatchSchedule(match.scheduledAt).time}
                       </p>
                       <p className="text-sm font-bold">
-                        {match.teamACode}{" "}
+                        {countryDisplayCode(match.teamACode)}{" "}
                         <span className="text-white/35">vs</span>{" "}
-                        {match.teamBCode}
+                        {countryDisplayCode(match.teamBCode)}
                       </p>
                       <p className="mt-1 text-xs text-white/45">
                         {match.roundLabel ?? "Fixture"}
@@ -386,7 +388,7 @@ function TeamScore({
         {label}
       </p>
       <p className="mt-1 font-display text-3xl font-bold">{name}</p>
-      <p className="mt-1 text-sm text-white/50">{code}</p>
+      <p className="mt-1 text-sm text-white/50">{countryDisplayCode(code)}</p>
       <p className="mt-4 font-display text-7xl font-bold text-[#f5c84c]">
         {score}
       </p>
